@@ -372,7 +372,6 @@
 //   );
 // }
 
-
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -382,6 +381,7 @@ export default function ProductCard({
   viewMode = "grid",
   className = "",
 }) {
+  // Hooks called unconditionally at top
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
@@ -391,15 +391,15 @@ export default function ProductCard({
 
   if (!product) return null;
 
-  // ✅ FIXED: Correct image array logic
+  // Image array filtered for valid URLs
   const images =
     Array.isArray(product.images) && product.images.length > 0
-      ? product.images.filter((img) => img?.url) // Filter out images without URLs
+      ? product.images.filter((img) => img?.url)
       : [{ url: "/images/placeholder.jpg" }];
 
   const hasMultipleImages = images.length > 1;
 
-  // Auto slide
+  // Auto slide effect
   useEffect(() => {
     if (hasMultipleImages) {
       autoSlideRef.current = setInterval(() => {
@@ -409,7 +409,7 @@ export default function ProductCard({
     return () => clearInterval(autoSlideRef.current);
   }, [hasMultipleImages, images.length]);
 
-  // Touch swipe handlers
+  // Touch event handlers
   const onTouchStart = (e) => {
     if (!hasMultipleImages) return;
     e.stopPropagation();
@@ -429,15 +429,13 @@ export default function ProductCard({
     e.stopPropagation();
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-    if (isLeftSwipe)
+    if (distance > 50) {
       setCurrentImageIndex((currentImageIndex + 1) % images.length);
-    if (isRightSwipe)
+    } else if (distance < -50) {
       setCurrentImageIndex(
         (currentImageIndex - 1 + images.length) % images.length
       );
-
+    }
     autoSlideRef.current = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 4000);
@@ -462,7 +460,6 @@ export default function ProductCard({
 
   const goToProductPage = () => router.push(`/products/${product.id}`);
 
-  // ✅ SAFE: Get current image URL with fallback
   const currentImageUrl =
     images[currentImageIndex]?.url || "/images/placeholder.jpg";
 
@@ -487,8 +484,7 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* ✅ SAFE: Only render Image if we have a valid URL */}
-        {currentImageUrl && currentImageUrl !== "" ? (
+        {currentImageUrl ? (
           <Image
             src={currentImageUrl}
             alt={product?.name || "Product image"}
@@ -514,7 +510,7 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* ✅ OPTIONAL: Image indicators for multiple images */}
+        {/* Image Indicators */}
         {hasMultipleImages && (
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
             {images.map((_, index) => (
@@ -539,15 +535,12 @@ export default function ProductCard({
           BY: {product.businessName || product.sellerName || "Unknown Seller"}
         </p>
 
-        {/* Price Section with Offer Support */}
+        {/* Price Section */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            {/* Current/Offer Price */}
             <span className="text-sm font-bold text-gray-900">
               ₹{product.hasOffer ? product.offerPrice : product.price}
             </span>
-
-            {/* Original Price (if has offer) */}
             {product.hasOffer && (
               <span className="text-xs text-gray-500 line-through">
                 ₹{product.price}
@@ -555,7 +548,6 @@ export default function ProductCard({
             )}
           </div>
 
-          {/* Rating */}
           {product.rating > 0 && (
             <div className="flex items-center gap-1 text-xs">
               <span className="text-yellow-500">★</span>
@@ -575,8 +567,6 @@ export default function ProductCard({
             </span>
           </div>
         )}
-
-        {/* Low Stock Warning */}
         {product.stock > 0 && product.stock < 10 && (
           <div className="mt-2">
             <span className="bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full">
