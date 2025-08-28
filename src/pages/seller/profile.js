@@ -8,7 +8,7 @@ import {
   updatePassword,
 } from "firebase/auth";
 import { auth } from "../../lib/firebase";
-import SellerLayout from "../../components/seller/sellerLayout";
+import SellerLayout from "../../components/seller/SellerLayout";
 import { useSellerDashboard } from "../../hooks/useSeller";
 import { notify } from "../../lib/notifications";
 import {

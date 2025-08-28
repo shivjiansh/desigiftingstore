@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
-import SellerLayout from "../../components/seller/sellerLayout";
+import SellerLayout from "../../components/seller/SellerLayout";
 import { useSellerDashboard } from "../../hooks/useSeller";
 
 export default function SellerDashboard() {

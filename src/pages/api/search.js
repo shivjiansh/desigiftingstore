@@ -3,7 +3,7 @@ import {
   handleError, 
   sendSuccess, 
   methodNotAllowed 
-} from '/utils';
+} from './/utils';
 
 export default async function handler(req, res) {
   const { method } = req;
