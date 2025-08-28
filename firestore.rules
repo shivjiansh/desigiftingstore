@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection
+    match /users/{userId} {
+      // Users can read and write their own profile
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+      // Allow reading basic user info for sellers (for displaying seller names)
+      allow read: if request.auth != null && 
+        resource.data.role == 'seller' && 
+        request.auth.token.role == 'buyer';
+    }
+
+    // Products collection
+    match /products/{productId} {
+      // Anyone can read active products
+      allow read: if resource.data.isActive == true;
+
+      // Only sellers can create products
+      allow create: if request.auth != null && 
+        request.auth.token.role == 'seller' &&
+        request.data.sellerId == request.auth.uid;
+
+      // Only the seller who owns the product can update/delete
+      allow update, delete: if request.auth != null && 
+        request.auth.token.role == 'seller' &&
+        resource.data.sellerId == request.auth.uid;
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      // Buyers can read their own orders
+      allow read: if request.auth != null && 
+        request.auth.token.role == 'buyer' &&
+        resource.data.buyerId == request.auth.uid;
+
+      // Sellers can read orders for their products
+      allow read: if request.auth != null && 
+        request.auth.token.role == 'seller' &&
+        resource.data.sellerId == request.auth.uid;
+
+      // Buyers can create orders
+      allow create: if request.auth != null && 
+        request.auth.token.role == 'buyer' &&
+        request.data.buyerId == request.auth.uid;
+
+      // Sellers can update order status
+      allow update: if request.auth != null && 
+        request.auth.token.role == 'seller' &&
+        resource.data.sellerId == request.auth.uid &&
+        // Only allow updating specific fields
+        request.data.diff(resource.data).affectedKeys().hasOnly(
+          ['status', 'tracking', 'notes', 'statusHistory', 'updatedAt']
+        );
+    }
+
+    // Reviews collection
+    match /reviews/{reviewId} {
+      // Anyone can read reviews
+      allow read: if true;
+
+      // Only buyers can create reviews for products they've purchased
+      allow create: if request.auth != null && 
+        request.auth.token.role == 'buyer' &&
+        request.data.buyerId == request.auth.uid;
+
+      // Only the reviewer can update their review
+      allow update: if request.auth != null && 
+        resource.data.buyerId == request.auth.uid;
+    }
+
+    // Analytics collection (seller-specific)
+    match /analytics/{sellerId} {
+      // Only the seller can read their own analytics
+      allow read, write: if request.auth != null && 
+        request.auth.token.role == 'seller' &&
+        request.auth.uid == sellerId;
+    }
+
+    // Helper function to check if user has specific role
+    function hasRole(role) {
+      return request.auth != null && request.auth.token.role == role;
+    }
+
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
