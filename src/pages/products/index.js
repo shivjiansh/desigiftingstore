@@ -1094,7 +1094,8 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/products");
+      console.log("Fetching All products from API...");
+      const response = await fetch("/api/products/testy");
       if (response.ok) {
         const data = await response.json();
         console.log("Fetched products:", data);
