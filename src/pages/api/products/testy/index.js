@@ -1,29 +1,21 @@
-// pages/api/test.js
-export default function handler(req, res) {
+// pages/api/firebase-debug.js
+export default async function handler(req, res) {
   try {
-    console.log("=== Basic Test API Called ===");
-    console.log("Method:", req.method);
-    console.log("Timestamp:", new Date().toISOString());
+    const { adminDb } = await import("../../lib/firebaseAdmin");
 
-    const response = {
+    // Simple test query
+    const testDoc = await adminDb.collection("test").limit(1).get();
+
+    res.status(200).json({
       success: true,
-      message: "API is working!",
-      method: req.method,
-      nodeVersion: process.version,
-      environment: process.env.NODE_ENV,
-      timestamp: new Date().toISOString(),
-      platform: process.platform,
-      arch: process.arch,
-    };
-
-    console.log("Response:", response);
-    res.status(200).json(response);
+      message: "Firebase connection successful!",
+      docCount: testDoc.size,
+    });
   } catch (error) {
-    console.error("Basic test error:", error);
     res.status(500).json({
       success: false,
       error: error.message,
-      stack: error.stack,
+      code: error.code,
     });
   }
 }
