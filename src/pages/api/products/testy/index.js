@@ -1,7 +1,7 @@
 // pages/api/firebase-debug.js
 export default async function handler(req, res) {
   try {
-    const { adminDb } = await import("../../lib/firebaseAdmin");
+    const { adminDb } = await import("../../../../lib/firebaseAdmin");
 
     // Simple test query
     const testDoc = await adminDb.collection("test").limit(1).get();
