@@ -66,17 +66,24 @@ async function handleGetOrders(req, res) {
     return sendSuccess(res, orderData, 'Order retrieved successfully');
   }
   //fetch all orders for a specific user
-  if(userId){
-    console.log("Fetching orders for user (admin):", userId);
-    const ordersSnapshot = await adminDb.collection('orders').where('userId', '==', userId).get();
-    const orders = [];
-    ordersSnapshot.forEach(doc => {
-      orders.push({ id: doc.id, ...doc.data() });
-    });
-    console.log("Orders fetched:", orders.length);
-    return sendSuccess(res, orders, 'Orders retrieved successfully');
+if (userId) {
+  console.log("Fetching orders for user (admin):", userId);
+  const ordersSnapshot = await adminDb
+    .collection("orders")
+    .where("userId", "==", userId)
+    .orderBy("orderDate", "desc") // Order by orderDate descending
+    .limit(10) // Limit to 6 documents
+    .get();
 
-  }
+  const orders = [];
+  ordersSnapshot.forEach((doc) => {
+    orders.push({ id: doc.id, ...doc.data() });
+  });
+
+  console.log("Orders fetched:", orders.length);
+  return sendSuccess(res, orders, "Orders retrieved successfully");
+}
+
   //fetch all orders for a specific seller
   if(sellerId){ 
     console.log("Fetching orders for seller (admin):", sellerId);

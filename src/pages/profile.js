@@ -21,6 +21,7 @@ import {
   TruckIcon,
   StarIcon,
   PhotoIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Profile() {
@@ -385,6 +386,12 @@ export default function Profile() {
         <Header />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-700 hover:text-gray-900 mb-6"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-1" /> Back
+          </button>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">
             My Account
           </h1>

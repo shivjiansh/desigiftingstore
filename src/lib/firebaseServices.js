@@ -1,36 +1,44 @@
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   updateProfile,
   sendEmailVerification,
   sendPasswordResetEmail,
-  onAuthStateChanged
-} from 'firebase/auth';
-import { 
-  collection, 
-  doc, 
-  setDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+  onAuthStateChanged,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from "firebase/auth";
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  limit,
   startAfter,
   addDoc,
   serverTimestamp,
-  increment
-} from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
-} from 'firebase/storage';
-import { auth, db, storage } from './firebase';
+  increment,
+} from "firebase/firestore";
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from "firebase/storage";
+import { auth, db, storage } from "./firebase";
+
+// ✅ Create Google Provider
+const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: "select_account",
+});
 
 // Authentication Services
 export const authService = {
@@ -119,7 +127,84 @@ export const authService = {
     }
   },
 
-  //seller login
+  // ✅ NEW: Google Sign-In
+  async signInWithGoogle() {
+    try {
+      console.log("Firebase: Starting Google sign-in...");
+
+      // Sign in with Google popup
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+
+      console.log(
+        "Firebase: Google sign-in successful for:",
+        firebaseUser.email
+      );
+
+      // Check if user profile exists in Firestore
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      let userData;
+
+      if (userDoc.exists()) {
+        // Existing user - get their profile
+        userData = {
+          uid: firebaseUser.uid,
+          ...userDoc.data(),
+        };
+        console.log("Firebase: Existing user found");
+      } else {
+        // New user - create profile
+        userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          name: firebaseUser.displayName || "User",
+          displayName: firebaseUser.displayName || "User",
+          photoURL: firebaseUser.photoURL,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          isActive: true,
+          emailVerified: firebaseUser.emailVerified,
+          addresses: [],
+          wishlist: [],
+          // Note: role will be set by the auth store based on login page
+        };
+
+        // Save new user to Firestore
+        await setDoc(userDocRef, userData);
+        console.log("Firebase: New user profile created");
+      }
+
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error("Firebase: Google sign-in error:", error);
+
+      // Handle specific error cases
+      let errorMessage = "Google sign-in failed. Please try again.";
+
+      if (error.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-in was cancelled.";
+      } else if (error.code === "auth/popup-blocked") {
+        errorMessage = "Popup was blocked. Please allow popups and try again.";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your connection.";
+      } else if (
+        error.code === "auth/account-exists-with-different-credential"
+      ) {
+        errorMessage =
+          "An account already exists with this email using a different sign-in method.";
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        code: error.code,
+      };
+    }
+  },
+
+  // Seller login
   async sellerLogin(email, password) {
     try {
       const userCredential = await signInWithEmailAndPassword(
@@ -130,15 +215,22 @@ export const authService = {
       const user = userCredential.user;
 
       // Get user profile from Firestore
-      const userDoc = await getDoc(doc(db, "seller", user.uid));
+      const userDoc = await getDoc(doc(db, "users", user.uid)); // Changed from "seller" to "users"
       if (userDoc.exists()) {
         const userData = userDoc.data();
+
+        // Verify user is a seller
+        if (userData.role !== "seller") {
+          await signOut(auth); // Sign out if not a seller
+          throw new Error("Access denied. This login is for sellers only.");
+        }
+
         return { success: true, user: userData };
       } else {
         throw new Error("Seller profile not found");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Seller login error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -181,7 +273,7 @@ export const userService = {
   // Get user profile
   async getProfile(uid) {
     try {
-      const userDoc = await getDoc(doc(db, "user", uid));
+      const userDoc = await getDoc(doc(db, "users", uid)); // Fixed: changed "user" to "users"
       if (userDoc.exists()) {
         return { success: true, data: userDoc.data() };
       } else {
@@ -192,14 +284,22 @@ export const userService = {
       return { success: false, error: error.message };
     }
   },
-  //fetch seller profile
+
+  // Fetch seller profile
   async getSellerProfile(uid) {
     try {
-      const userDoc = await getDoc(doc(db, "seller", uid));
+      const userDoc = await getDoc(doc(db, "users", uid)); // Changed from "seller" to "users"
       if (userDoc.exists()) {
-        return { success: true, data: userDoc.data() };
+        const userData = userDoc.data();
+
+        // Verify user is a seller
+        if (userData.role !== "seller") {
+          return { success: false, error: "User is not a seller" };
+        }
+
+        return { success: true, data: userData };
       } else {
-        return { success: false, error: "User not found" };
+        return { success: false, error: "Seller not found" };
       }
     } catch (error) {
       console.error("Get seller profile error:", error);
@@ -263,19 +363,19 @@ export const productService = {
   // Create product
   async createProduct(productData) {
     try {
-      const productRef = await addDoc(collection(db, 'products'), {
+      const productRef = await addDoc(collection(db, "products"), {
         ...productData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         isActive: true,
         totalSales: 0,
         rating: 0,
-        reviewCount: 0
+        reviewCount: 0,
       });
 
       return { success: true, id: productRef.id };
     } catch (error) {
-      console.error('Create product error:', error);
+      console.error("Create product error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -283,28 +383,28 @@ export const productService = {
   // Get products with pagination
   async getProducts(filters = {}, lastDoc = null) {
     try {
-      let q = collection(db, 'products');
-      const constraints = [where('isActive', '==', true)];
+      let q = collection(db, "products");
+      const constraints = [where("isActive", "==", true)];
 
       // Apply filters
       if (filters.sellerId) {
-        constraints.push(where('sellerId', '==', filters.sellerId));
+        constraints.push(where("sellerId", "==", filters.sellerId));
       }
 
       if (filters.tags && filters.tags.length > 0) {
-        constraints.push(where('tags', 'array-contains-any', filters.tags));
+        constraints.push(where("tags", "array-contains-any", filters.tags));
       }
 
       if (filters.minPrice) {
-        constraints.push(where('price', '>=', filters.minPrice));
+        constraints.push(where("price", ">=", filters.minPrice));
       }
 
       if (filters.maxPrice) {
-        constraints.push(where('price', '<=', filters.maxPrice));
+        constraints.push(where("price", "<=", filters.maxPrice));
       }
 
       // Add ordering
-      constraints.push(orderBy('createdAt', 'desc'));
+      constraints.push(orderBy("createdAt", "desc"));
       constraints.push(limit(filters.limit || 20));
 
       if (lastDoc) {
@@ -319,13 +419,13 @@ export const productService = {
         products.push({ id: doc.id, ...doc.data() });
       });
 
-      return { 
-        success: true, 
-        data: products, 
-        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null
+      return {
+        success: true,
+        data: products,
+        lastDoc: snapshot.docs[snapshot.docs.length - 1] || null,
       };
     } catch (error) {
-      console.error('Get products error:', error);
+      console.error("Get products error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -333,14 +433,17 @@ export const productService = {
   // Get single product
   async getProduct(id) {
     try {
-      const productDoc = await getDoc(doc(db, 'products', id));
+      const productDoc = await getDoc(doc(db, "products", id));
       if (productDoc.exists()) {
-        return { success: true, data: { id: productDoc.id, ...productDoc.data() } };
+        return {
+          success: true,
+          data: { id: productDoc.id, ...productDoc.data() },
+        };
       } else {
-        return { success: false, error: 'Product not found' };
+        return { success: false, error: "Product not found" };
       }
     } catch (error) {
-      console.error('Get product error:', error);
+      console.error("Get product error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -348,13 +451,13 @@ export const productService = {
   // Update product
   async updateProduct(id, updates) {
     try {
-      await updateDoc(doc(db, 'products', id), {
+      await updateDoc(doc(db, "products", id), {
         ...updates,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
       return { success: true };
     } catch (error) {
-      console.error('Update product error:', error);
+      console.error("Update product error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -362,13 +465,13 @@ export const productService = {
   // Delete product
   async deleteProduct(id) {
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await deleteDoc(doc(db, "products", id));
       return { success: true };
     } catch (error) {
-      console.error('Delete product error:', error);
+      console.error("Delete product error:", error);
       return { success: false, error: error.message };
     }
-  }
+  },
 };
 
 // Order Services
@@ -376,21 +479,23 @@ export const orderService = {
   // Create order
   async createOrder(orderData) {
     try {
-      const orderRef = await addDoc(collection(db, 'orders'), {
+      const orderRef = await addDoc(collection(db, "orders"), {
         ...orderData,
-        status: 'pending',
+        status: "pending",
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        statusHistory: [{
-          status: 'pending',
-          timestamp: serverTimestamp(),
-          note: 'Order placed'
-        }]
+        statusHistory: [
+          {
+            status: "pending",
+            timestamp: serverTimestamp(),
+            note: "Order placed",
+          },
+        ],
       });
 
       return { success: true, id: orderRef.id };
     } catch (error) {
-      console.error('Create order error:', error);
+      console.error("Create order error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -398,22 +503,22 @@ export const orderService = {
   // Get orders
   async getOrders(filters = {}) {
     try {
-      let q = collection(db, 'orders');
+      let q = collection(db, "orders");
       const constraints = [];
 
       if (filters.buyerId) {
-        constraints.push(where('buyerId', '==', filters.buyerId));
+        constraints.push(where("buyerId", "==", filters.buyerId));
       }
 
       if (filters.sellerId) {
-        constraints.push(where('sellerId', '==', filters.sellerId));
+        constraints.push(where("sellerId", "==", filters.sellerId));
       }
 
       if (filters.status) {
-        constraints.push(where('status', '==', filters.status));
+        constraints.push(where("status", "==", filters.status));
       }
 
-      constraints.push(orderBy('createdAt', 'desc'));
+      constraints.push(orderBy("createdAt", "desc"));
       constraints.push(limit(filters.limit || 50));
 
       q = query(q, ...constraints);
@@ -426,15 +531,15 @@ export const orderService = {
 
       return { success: true, data: orders };
     } catch (error) {
-      console.error('Get orders error:', error);
+      console.error("Get orders error:", error);
       return { success: false, error: error.message };
     }
   },
 
   // Update order status
-  async updateOrderStatus(orderId, status, notes = '', tracking = '') {
+  async updateOrderStatus(orderId, status, notes = "", tracking = "") {
     try {
-      const orderRef = doc(db, 'orders', orderId);
+      const orderRef = doc(db, "orders", orderId);
       const orderDoc = await getDoc(orderRef);
 
       if (orderDoc.exists()) {
@@ -444,13 +549,13 @@ export const orderService = {
         statusHistory.push({
           status,
           timestamp: serverTimestamp(),
-          note: notes
+          note: notes,
         });
 
         const updates = {
           status,
           updatedAt: serverTimestamp(),
-          statusHistory
+          statusHistory,
         };
 
         if (tracking) {
@@ -460,13 +565,13 @@ export const orderService = {
         await updateDoc(orderRef, updates);
         return { success: true };
       } else {
-        return { success: false, error: 'Order not found' };
+        return { success: false, error: "Order not found" };
       }
     } catch (error) {
-      console.error('Update order status error:', error);
+      console.error("Update order status error:", error);
       return { success: false, error: error.message };
     }
-  }
+  },
 };
 
 // File Upload Services
@@ -480,7 +585,7 @@ export const uploadService = {
 
       return { success: true, url: downloadURL, ref: snapshot.ref };
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       return { success: false, error: error.message };
     }
   },
@@ -492,10 +597,10 @@ export const uploadService = {
       await deleteObject(fileRef);
       return { success: true };
     } catch (error) {
-      console.error('Delete file error:', error);
+      console.error("Delete file error:", error);
       return { success: false, error: error.message };
     }
-  }
+  },
 };
 
 export default {
@@ -503,5 +608,5 @@ export default {
   user: userService,
   product: productService,
   order: orderService,
-  upload: uploadService
+  upload: uploadService,
 };

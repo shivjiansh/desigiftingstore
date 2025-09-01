@@ -27,8 +27,13 @@ const nextConfig = {
       },
     ];
   },
+  images: {
+    domains: [
+      "lh3.googleusercontent.com", // for Google profile images
+      "res.cloudinary.com", // for your Cloudinary uploads
+    ],
+  },
   compiler: {
-  
     removeConsole: false,
   },
   experimental: {

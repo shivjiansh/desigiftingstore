@@ -58,6 +58,7 @@ export default function SellerLayout({ children }) {
     { name: "Orders", href: "/seller/orders", icon: "📋" },
     { name: "Analytics", href: "/seller/analytics", icon: "📊" },
     { name: "Profile", href: "/seller/profile", icon: "👨‍💼" },
+    { name: "Payout", href: "/seller/payout", icon: "💰" },
   ];
 
   if (loading) {

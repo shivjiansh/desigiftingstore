@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import firebaseServices from '../lib/firebaseServices';
-import { notify } from '../lib/notifications';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import firebaseServices from "../lib/firebaseServices";
+import { notify } from "../lib/notifications";
 
 export const useAuthStore = create(
   persist(
@@ -17,24 +17,38 @@ export const useAuthStore = create(
         set({ isLoading: true });
 
         // Listen for auth state changes
-        const unsubscribe = firebaseServices.auth.onAuthStateChange(async (firebaseUser) => {
-          if (firebaseUser) {
-            // Get user profile from Firestore
-            const result = await firebaseServices.user.getProfile(firebaseUser.uid);
-            if (result.success) {
-              set({ 
-                user: result.data, 
-                isAuthenticated: true, 
-                role: result.data.role,
-                isLoading: false 
-              });
+        const unsubscribe = firebaseServices.auth.onAuthStateChange(
+          async (firebaseUser) => {
+            if (firebaseUser) {
+              // Get user profile from Firestore
+              const result = await firebaseServices.user.getProfile(
+                firebaseUser.uid
+              );
+              if (result.success) {
+                set({
+                  user: result.data,
+                  isAuthenticated: true,
+                  role: result.data.role,
+                  isLoading: false,
+                });
+              } else {
+                set({
+                  user: null,
+                  isAuthenticated: false,
+                  role: null,
+                  isLoading: false,
+                });
+              }
             } else {
-              set({ user: null, isAuthenticated: false, role: null, isLoading: false });
+              set({
+                user: null,
+                isAuthenticated: false,
+                role: null,
+                isLoading: false,
+              });
             }
-          } else {
-            set({ user: null, isAuthenticated: false, role: null, isLoading: false });
           }
-        });
+        );
 
         return unsubscribe;
       },
@@ -45,16 +59,18 @@ export const useAuthStore = create(
         const result = await firebaseServices.auth.register(userData, role);
 
         if (result.success) {
-          set({ 
-            user: result.user, 
-            isAuthenticated: true, 
+          set({
+            user: result.user,
+            isAuthenticated: true,
             role: result.user.role,
-            isLoading: false 
+            isLoading: false,
           });
-          notify.success('Registration successful! Please check your email for verification.');
+          notify.success(
+            "Registration successful! Please check your email for verification."
+          );
         } else {
           set({ isLoading: false });
-          notify.error(result.error || 'Registration failed');
+          notify.error(result.error || "Registration failed");
         }
 
         return result;
@@ -70,23 +86,94 @@ export const useAuthStore = create(
           if (expectedRole && result.user.role !== expectedRole) {
             await firebaseServices.auth.logout();
             set({ isLoading: false });
-            notify.error(`This login is for ${expectedRole}s only. Please use the correct login page.`);
-            return { success: false, error: 'Invalid role for this login page' };
+            notify.error(
+              `This login is for ${expectedRole}s only. Please use the correct login page.`
+            );
+            return {
+              success: false,
+              error: "Invalid role for this login page",
+            };
           }
 
-          set({ 
-            user: result.user, 
-            isAuthenticated: true, 
+          set({
+            user: result.user,
+            isAuthenticated: true,
             role: result.user.role,
-            isLoading: false 
+            isLoading: false,
           });
           notify.success(`Welcome back, ${result.user.name}!`);
         } else {
           set({ isLoading: false });
-          notify.error(result.error || 'Login failed');
+          notify.error(result.error || "Login failed");
         }
 
         return result;
+      },
+
+      // ✅ NEW: Google Sign-In function
+      signInWithGoogle: async (expectedRole = "buyer") => {
+        set({ isLoading: true });
+
+        try {
+          console.log("Starting Google sign-in...");
+
+          const result = await firebaseServices.auth.signInWithGoogle();
+
+          if (result.success) {
+            // Check if user has the expected role (if they exist)
+            if (
+              result.user.role &&
+              expectedRole &&
+              result.user.role !== expectedRole
+            ) {
+              await firebaseServices.auth.logout();
+              set({ isLoading: false });
+              notify.error(
+                `This login is for ${expectedRole}s only. Please use the correct login page.`
+              );
+              return {
+                success: false,
+                error: "Invalid role for this login page",
+              };
+            }
+
+            // If new user, set their role
+            let userData = result.user;
+            if (!userData.role) {
+              userData = { ...userData, role: expectedRole };
+              // Update user profile with role
+              await firebaseServices.user.updateProfile(userData.uid, {
+                role: expectedRole,
+              });
+            }
+
+            set({
+              user: userData,
+              isAuthenticated: true,
+              role: userData.role,
+              isLoading: false,
+            });
+            notify.success(
+              `Welcome back, ${userData.name || userData.displayName}!`
+            );
+
+            return { success: true, user: userData };
+          } else {
+            set({ isLoading: false });
+            notify.error(result.error || "Google sign-in failed");
+            return result;
+          }
+        } catch (error) {
+          console.error("Google sign-in error:", error);
+          set({ isLoading: false });
+          notify.error("Google sign-in failed. Please try again.");
+          return { success: false, error: error.message };
+        }
+      },
+
+      // Separate seller login for convenience
+      sellerLogin: async (email, password) => {
+        return get().login(email, password, "seller");
       },
 
       logout: async () => {
@@ -94,9 +181,9 @@ export const useAuthStore = create(
 
         if (result.success) {
           set({ user: null, isAuthenticated: false, role: null });
-          notify.success('Logged out successfully');
+          notify.success("Logged out successfully");
         } else {
-          notify.error(result.error || 'Logout failed');
+          notify.error(result.error || "Logout failed");
         }
 
         return result;
@@ -104,15 +191,18 @@ export const useAuthStore = create(
 
       updateUser: async (updates) => {
         const { user } = get();
-        if (!user) return { success: false, error: 'No user logged in' };
+        if (!user) return { success: false, error: "No user logged in" };
 
-        const result = await firebaseServices.user.updateProfile(user.uid, updates);
+        const result = await firebaseServices.user.updateProfile(
+          user.uid,
+          updates
+        );
 
         if (result.success) {
           set({ user: { ...user, ...updates } });
-          notify.success('Profile updated successfully');
+          notify.success("Profile updated successfully");
         } else {
-          notify.error(result.error || 'Failed to update profile');
+          notify.error(result.error || "Failed to update profile");
         }
 
         return result;
@@ -120,9 +210,12 @@ export const useAuthStore = create(
 
       addAddress: async (address) => {
         const { user } = get();
-        if (!user) return { success: false, error: 'No user logged in' };
+        if (!user) return { success: false, error: "No user logged in" };
 
-        const result = await firebaseServices.user.addAddress(user.uid, address);
+        const result = await firebaseServices.user.addAddress(
+          user.uid,
+          address
+        );
 
         if (result.success) {
           const updatedUser = { ...user };
@@ -130,9 +223,9 @@ export const useAuthStore = create(
           updatedUser.addresses.push(result.address);
 
           set({ user: updatedUser });
-          notify.success('Address added successfully');
+          notify.success("Address added successfully");
         } else {
-          notify.error(result.error || 'Failed to add address');
+          notify.error(result.error || "Failed to add address");
         }
 
         return result;
@@ -140,21 +233,30 @@ export const useAuthStore = create(
 
       updateAddress: async (addressId, updates) => {
         const { user } = get();
-        if (!user || !user.addresses) return { success: false, error: 'No addresses found' };
+        if (!user || !user.addresses)
+          return { success: false, error: "No addresses found" };
 
-        const addressIndex = user.addresses.findIndex(addr => addr.id === addressId);
-        if (addressIndex === -1) return { success: false, error: 'Address not found' };
+        const addressIndex = user.addresses.findIndex(
+          (addr) => addr.id === addressId
+        );
+        if (addressIndex === -1)
+          return { success: false, error: "Address not found" };
 
         const updatedAddresses = [...user.addresses];
-        updatedAddresses[addressIndex] = { ...updatedAddresses[addressIndex], ...updates };
+        updatedAddresses[addressIndex] = {
+          ...updatedAddresses[addressIndex],
+          ...updates,
+        };
 
-        const result = await firebaseServices.user.updateProfile(user.uid, { addresses: updatedAddresses });
+        const result = await firebaseServices.user.updateProfile(user.uid, {
+          addresses: updatedAddresses,
+        });
 
         if (result.success) {
           set({ user: { ...user, addresses: updatedAddresses } });
-          notify.success('Address updated successfully');
+          notify.success("Address updated successfully");
         } else {
-          notify.error(result.error || 'Failed to update address');
+          notify.error(result.error || "Failed to update address");
         }
 
         return result;
@@ -162,16 +264,21 @@ export const useAuthStore = create(
 
       deleteAddress: async (addressId) => {
         const { user } = get();
-        if (!user || !user.addresses) return { success: false, error: 'No addresses found' };
+        if (!user || !user.addresses)
+          return { success: false, error: "No addresses found" };
 
-        const updatedAddresses = user.addresses.filter(addr => addr.id !== addressId);
-        const result = await firebaseServices.user.updateProfile(user.uid, { addresses: updatedAddresses });
+        const updatedAddresses = user.addresses.filter(
+          (addr) => addr.id !== addressId
+        );
+        const result = await firebaseServices.user.updateProfile(user.uid, {
+          addresses: updatedAddresses,
+        });
 
         if (result.success) {
           set({ user: { ...user, addresses: updatedAddresses } });
-          notify.success('Address deleted successfully');
+          notify.success("Address deleted successfully");
         } else {
-          notify.error(result.error || 'Failed to delete address');
+          notify.error(result.error || "Failed to delete address");
         }
 
         return result;
@@ -179,20 +286,23 @@ export const useAuthStore = create(
 
       setDefaultAddress: async (addressId) => {
         const { user } = get();
-        if (!user || !user.addresses) return { success: false, error: 'No addresses found' };
+        if (!user || !user.addresses)
+          return { success: false, error: "No addresses found" };
 
-        const updatedAddresses = user.addresses.map(addr => ({
+        const updatedAddresses = user.addresses.map((addr) => ({
           ...addr,
-          isDefault: addr.id === addressId
+          isDefault: addr.id === addressId,
         }));
 
-        const result = await firebaseServices.user.updateProfile(user.uid, { addresses: updatedAddresses });
+        const result = await firebaseServices.user.updateProfile(user.uid, {
+          addresses: updatedAddresses,
+        });
 
         if (result.success) {
           set({ user: { ...user, addresses: updatedAddresses } });
-          notify.success('Default address updated');
+          notify.success("Default address updated");
         } else {
-          notify.error(result.error || 'Failed to set default address');
+          notify.error(result.error || "Failed to set default address");
         }
 
         return result;
@@ -203,22 +313,22 @@ export const useAuthStore = create(
         const result = await firebaseServices.auth.resetPassword(email);
 
         if (result.success) {
-          notify.success('Password reset email sent! Check your inbox.');
+          notify.success("Password reset email sent! Check your inbox.");
         } else {
-          notify.error(result.error || 'Failed to send reset email');
+          notify.error(result.error || "Failed to send reset email");
         }
 
         return result;
-      }
+      },
     }),
     {
-      name: 'desigifting-auth',
+      name: "desigifting-auth",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ 
-        user: state.user, 
+      partialize: (state) => ({
+        user: state.user,
         isAuthenticated: state.isAuthenticated,
-        role: state.role 
-      })
+        role: state.role,
+      }),
     }
   )
 );

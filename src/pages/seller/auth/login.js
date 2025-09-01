@@ -8,6 +8,8 @@ import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { notify } from "../../../lib/notifications";
+import { signInWithGoogle } from "../../../lib/firebaseServices"; // import your Google sign-in service
+import Image from "next/image";
 
 export default function SellerLogin() {
   const [formData, setFormData] = useState({
@@ -17,81 +19,78 @@ export default function SellerLogin() {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.email) newErrors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       newErrors.email = "Please enter a valid email address";
-    }
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    }
+    if (!formData.password) newErrors.password = "Password is required";
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return !Object.keys(newErrors).length;
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setErrors({});
+    try {
+      const result = await signInWithGoogle("seller");
+      if (result.success) {
+        notify.success(
+          `Welcome back, ${result.user.name || result.user.displayName}!`
+        );
+        router.push("/seller/dashboard");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      notify.error(err.message || "Google sign-in failed");
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
-
     try {
-      // 1. Sign in with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(
         auth,
         formData.email.trim().toLowerCase(),
         formData.password
       );
       const user = userCredential.user;
-
-      // 2. Fetch seller profile directly from Firestore
-      const sellerDocRef = doc(db, "seller", user.uid);
-      const sellerDocSnap = await getDoc(sellerDocRef);
-
-      if (!sellerDocSnap.exists()) {
+      const sellerDoc = await getDoc(doc(db, "users", user.uid));
+      if (!sellerDoc.exists() || sellerDoc.data().role !== "seller") {
         throw new Error("Seller profile not found. Contact support.");
       }
-      const sellerData = sellerDocSnap.data();
-
-      // 4. Success: redirect
+      const sellerData = sellerDoc.data();
       notify.success(
         `Welcome back, ${sellerData.name || sellerData.businessName}!`
       );
       router.push("/seller/dashboard");
     } catch (error) {
       console.error("Seller login error:", error);
-      let errorMessage = "Login failed. Please try again.";
-
-      switch (error.code) {
-        case "auth/user-not-found":
-        case "auth/wrong-password":
-          errorMessage = "Invalid email or password.";
-          break;
-        case "auth/invalid-email":
-          errorMessage = "Invalid email format.";
-          break;
-        case "auth/user-disabled":
-          errorMessage = "Account has been disabled.";
-          break;
-        case "auth/too-many-requests":
-          errorMessage = "Too many attempts. Try later.";
-          break;
-        default:
-          errorMessage = error.message || errorMessage;
-      }
-
-      setErrors({ general: errorMessage });
-      notify.error(errorMessage);
+      const code = error.code;
+      let message = "Login failed. Please try again.";
+      if (code === "auth/user-not-found" || code === "auth/wrong-password")
+        message = "Invalid email or password.";
+      else if (code === "auth/invalid-email") message = "Invalid email format.";
+      else if (code === "auth/user-disabled")
+        message = "Account has been disabled.";
+      else if (code === "auth/too-many-requests")
+        message = "Too many attempts. Try again later.";
+      else if (error.message) message = error.message;
+      setErrors({ general: message });
+      notify.error(message);
     } finally {
       setIsLoading(false);
     }
@@ -100,34 +99,44 @@ export default function SellerLogin() {
   return (
     <>
       <Head>
-        <title>Seller Login - Desigifting</title>
+        <title>Seller Login - DesiGifting</title>
         <meta
           name="description"
-          content="Login to your Desigifting seller account"
+          content="Login to your DesiGifting seller account"
         />
       </Head>
 
       <div className="min-h-screen flex">
-        {/* Branding side */}
-        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-accent-500 to-accent-700 flex-col justify-center px-12">
+        {/* Left branding side */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 to-purple-800 flex-col justify-center px-12">
           <div className="text-white">
             <div className="flex items-center space-x-3 mb-8">
               <span className="text-4xl">🎁</span>
-              <h1 className="text-3xl font-bold">Desigifting</h1>
+              <h1 className="text-3xl font-bold">DesiGifting</h1>
             </div>
             <h2 className="text-2xl font-semibold mb-4">
               Welcome back, Creator!
             </h2>
-            <p className="text-accent-100 text-lg leading-relaxed">
+            <p className="text-purple-200 text-lg leading-relaxed">
               Manage your store, track orders, and grow your custom gifts
               business.
             </p>
           </div>
         </div>
 
-        {/* Login form side */}
+        {/* Right form side */}
         <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-12 lg:px-12 bg-white">
           <div className="mx-auto w-full max-w-sm">
+            {/* Mobile branding */}
+            <div className="lg:hidden text-center mb-8">
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <span className="text-3xl">🎁</span>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  DesiGifting
+                </h1>
+              </div>
+            </div>
+
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               Seller Login
             </h2>
@@ -135,11 +144,12 @@ export default function SellerLogin() {
               Don't have a seller account?{" "}
               <Link
                 href="/seller/auth/register"
-                className="text-accent-600 hover:text-accent-700 font-medium"
+                className="text-purple-600 hover:text-purple-700 font-medium"
               >
                 Register here
               </Link>
             </p>
+
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {errors.general && (
@@ -164,7 +174,6 @@ export default function SellerLogin() {
                   placeholder="you@example.com"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  required
                 />
                 {errors.email && <p className="form-error">{errors.email}</p>}
               </div>
@@ -184,7 +193,6 @@ export default function SellerLogin() {
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
-                  required
                 />
                 {errors.password && (
                   <p className="form-error">{errors.password}</p>
@@ -194,7 +202,7 @@ export default function SellerLogin() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="btn bg-accent-600 hover:bg-accent-700 text-white w-full disabled:opacity-50"
+                className="btn bg-purple-600 hover:bg-purple-700 text-white w-full disabled:opacity-50"
               >
                 {isLoading ? (
                   <LoadingSpinner size="sm" color="white" />
@@ -208,7 +216,7 @@ export default function SellerLogin() {
               Want to buy gifts?{" "}
               <Link
                 href="/buyer/auth/login"
-                className="text-primary-600 hover:text-primary-700"
+                className="text-indigo-600 hover:text-indigo-700"
               >
                 Buyer Login
               </Link>

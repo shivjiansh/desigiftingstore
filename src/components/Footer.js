@@ -128,14 +128,14 @@ export default function Footer() {
               <div className="mb-6">
                 <Link href="/" className="flex items-center gap-2 mb-4">
                   <div className="w-10 h-10 relative overflow-hidden rounded-lg">
-                                <Image
-                                  src="/images/logo1.png"
-                                  alt="DesiGifting Logo"
-                                  width={100}
-                                  height={100}
-                                  style={{ objectFit: "contain" }}
-                                />
-                              </div>
+                    <Image
+                      src="/images/logo1.png"
+                      alt="DesiGifting Logo"
+                      width={100}
+                      height={100}
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
                   <span className="text-xl font-bold text-gray-900">
                     Desi Gifting
                   </span>
@@ -165,95 +165,17 @@ export default function Footer() {
             </div>
 
             {/* Quick Links */}
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Shop</h3>
-              <ul className="space-y-2">
-                {footerLinks.shop.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
-              <ul className="space-y-2">
-                {footerLinks.company.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Support</h3>
-              <ul className="space-y-2">
-                {footerLinks.support.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-4">Sellers</h3>
-              <ul className="space-y-2">
-                {footerLinks.seller.map((link) => (
-                  <li key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-600 hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
           </div>
         </div>
       </div>
 
       {/* Bottom Footer */}
-      <div className="border-t border-gray-200 py-6 sm:py-8">
+      <div className=" border-gray-200 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Copyright */}
             <div className="text-sm text-gray-600">
               <p>© 2024 Desi Gifting. All rights reserved.</p>
-              <div className="flex flex-wrap gap-4 mt-2">
-                {footerLinks.legal.map((link, index) => (
-                  <span key={link.name}>
-                    <Link
-                      href={link.href}
-                      className="hover:text-blue-600 transition-colors duration-200"
-                    >
-                      {link.name}
-                    </Link>
-                    {index < footerLinks.legal.length - 1 && (
-                      <span className="ml-4 text-gray-400">•</span>
-                    )}
-                  </span>
-                ))}
-              </div>
             </div>
 
             {/* Social Links & Back to Top */}
@@ -304,18 +226,16 @@ export default function Footer() {
               {/* Back to Top */}
               <button
                 onClick={scrollToTop}
-                className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors duration-200"
+                className="fixed bottom-24 right-4 w-8 h-8 bg-blue-400/30 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors duration-200"
                 aria-label="Back to top"
               >
                 <ArrowUpIcon className="h-4 w-4" />
               </button>
             </div>
           </div>
-
-          
         </div>
       </div>
-      <br/>
+      <br />
     </footer>
   );
 }

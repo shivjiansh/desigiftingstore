@@ -408,6 +408,7 @@ import { toast } from "react-hot-toast";
 import { ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function MyOrders() {
   const [user, loading] = useAuthState(auth);
@@ -531,17 +532,25 @@ export default function MyOrders() {
           content="View your order history and track deliveries"
         />
       </Head>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 ">
         <Header />
-        <main className="flex-grow max-w-4xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">My Orders</h1>
+        <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center text-gray-700 hover:text-gray-900 mb-6"
+          >
+            <ArrowLeftIcon className="w-5 h-5 mr-1" /> Back
+          </button>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-8">My Orders</h1>
+
           {orders.length === 0 ? (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">📦</div>
               <h2 className="text-2xl font-semibold text-gray-900 mb-2">
                 No orders yet
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 Your orders will appear here. Start shopping to place your first
                 order!
               </p>
@@ -560,21 +569,21 @@ export default function MyOrders() {
                   className="bg-white border rounded-lg shadow-sm"
                 >
                   <div className="p-6 flex flex-col md:flex-row md:justify-between md:items-center">
-                    <div>
-                      <p className="text-lg font-medium text-gray-900">
+                    <div className="md:flex-1">
+                      <p className="text-lg font-medium text-gray-900 break-words">
                         Order #{order.orderNumber || order.id.slice(0, 8)}
                       </p>
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-gray-600 mt-1 md:mt-2">
                         {formatDate(order.orderDate)} &bull;{" "}
                         {order.items[0].quantity} item
                         {order.items[0].quantity > 1 ? "s" : ""}
                       </p>
                     </div>
-                    <div className="mt-4 md:mt-0 flex items-center space-x-4">
+                    <div className="mt-4 md:mt-0 flex items-center space-x-4 flex-shrink-0">
                       {getStatusBadge(order.status)}
                       <button
                         onClick={() => viewOrderDetails(order)}
-                        className="text-blue-600 hover:underline text-sm"
+                        className="text-blue-600 hover:underline text-sm whitespace-nowrap"
                       >
                         View Details →
                       </button>
@@ -585,6 +594,7 @@ export default function MyOrders() {
             </ul>
           )}
         </main>
+
         <Footer />
 
         {/* Order Details Modal */}

@@ -1,144 +1,174 @@
-import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
-import SellerLayout from '../../components/seller/SellerLayout';
-import { useSellerAnalytics } from '../../hooks/useSeller';
+// pages/seller/analytics.js
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
+import Link from "next/link";
+import { useAuth } from "../../hooks/useAuth";
+import SellerLayout from "../../components/seller/SellerLayout";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+
+const timeRanges = [
+  { label: "This Month", value: "month" },
+  { label: "This Year", value: "year" },
+];
 
 export default function SellerAnalytics() {
-  const [user, setUser] = useState(null);
-  const [selectedPeriod, setSelectedPeriod] = useState('month');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
-  const [isExporting, setIsExporting] = useState(false);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [selectedRange, setSelectedRange] = useState("month");
+  const [data, setData] = useState(null);
   const router = useRouter();
 
-  const {
-    analytics,
-    isLoading,
-    loadAnalytics,
-    getRevenueByPeriod,
-    getTopProducts,
-    exportAnalytics
-  } = useSellerAnalytics(user?.uid);
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (!currentUser) {
-        router.push('/seller/auth/login');
+    if (!authLoading) {
+      if (!isAuthenticated || user?.role !== "seller") {
+        router.push("/seller/auth/login");
         return;
       }
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, [router]);
-
-  useEffect(() => {
-    if (user?.uid) {
-      loadAnalytics(selectedPeriod);
+      fetchData();
     }
-  }, [user?.uid, selectedPeriod]);
+  }, [authLoading, isAuthenticated, user, selectedRange]);
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount || 0);
+  const fetchData = async () => {
+    setLoading(true);
+    // Mock data
+    const now = new Date();
+    if (selectedRange === "month") {
+      setData({
+        totalSales: 32450.75,
+        totalOrders: 180,
+        netEarnings: 29205.68,
+        avgOrderValue: 162.25,
+        chart: Array.from({ length: 4 }, (_, i) => ({
+          label: `Wk ${i + 1}`,
+          value: Math.floor(Math.random() * 7000) + 3000,
+        })),
+      });
+    } else {
+      setData({
+        totalSales: 185450.75,
+        totalOrders: 1240,
+        netEarnings: 166905.68,
+        avgOrderValue: 134.62,
+        chart: Array.from({ length: 12 }, (_, i) => ({
+          label: now.toLocaleDateString("en-US", {
+            month: "short",
+            year: "2-digit",
+            day: undefined,
+          }),
+          value: Math.floor(Math.random() * 20000) + 10000,
+        })),
+      });
+    }
+    setLoading(false);
   };
 
-  const formatPercentage = (value) => {
-    if (typeof value !== 'number') return '+0%';
-    const sign = value >= 0 ? '+' : '';
-    return `${sign}${value.toFixed(1)}%`;
-  };
-
+  const format = (amt) => `₹${amt.toLocaleString()}`;
+  if (authLoading || loading) {
+    return (
+      <SellerLayout>
+        <LoadingSpinner size="lg" />
+      </SellerLayout>
+    );
+  }
+  if (!data) {
+    return (
+      <SellerLayout>
+        <div className="p-6">No data</div>
+      </SellerLayout>
+    );
+  }
   return (
     <>
       <Head>
-        <title>Analytics - Seller Dashboard</title>
-        <meta name="description" content="Analyze your store performance and sales data" />
+        <title>Analytics</title>
       </Head>
-
       <SellerLayout>
-        <div className="min-h-screen bg-gray-50">
-          {/* Header with period selector and export */}
-          <div className="bg-white shadow-sm border-b">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between items-center py-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Analytics & Insights</h1>
-                  <p className="text-gray-600">Comprehensive business intelligence</p>
-                </div>
-                <div className="flex space-x-3">
-                  <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg"
-                  >
-                    <option value="week">Last 7 Days</option>
-                    <option value="month">Last 30 Days</option>
-                    <option value="quarter">Last 3 Months</option>
-                    <option value="year">Last 12 Months</option>
-                  </select>
-                  <button
-                    onClick={() => exportAnalytics('csv')}
-                    disabled={isExporting}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                  >
-                    {isExporting ? 'Exporting...' : 'Export Data'}
-                  </button>
-                </div>
-              </div>
+        <div className="space-y-6 p-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">Analytics</h1>
+            <select
+              value={selectedRange}
+              onChange={(e) => setSelectedRange(e.target.value)}
+              className="border px-3 py-1 rounded"
+            >
+              {timeRanges.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-4 rounded shadow">
+              <h3 className="text-sm text-gray-600">Total Sales</h3>
+              <p className="text-2xl font-bold">{format(data.totalSales)}</p>
+            </div>
+            <div className="bg-white p-4 rounded shadow">
+              <h3 className="text-sm text-gray-600">Total Orders</h3>
+              <p className="text-2xl font-bold">{data.totalOrders}</p>
+            </div>
+            <div className="bg-white p-4 rounded shadow">
+              <h3 className="text-sm text-gray-600">Net Earnings</h3>
+              <p className="text-2xl font-bold">{format(data.netEarnings)}</p>
+            </div>
+            <div className="bg-white p-4 rounded shadow">
+              <h3 className="text-sm text-gray-600">Avg Order Value</h3>
+              <p className="text-2xl font-bold">{format(data.avgOrderValue)}</p>
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Key Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Revenue</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {formatCurrency(analytics?.revenue?.current || 0)}
-                    </p>
+          {/* Chart */}
+          <div className="bg-white p-4 rounded shadow">
+            <h3 className="text-lg font-semibold mb-4">
+              {selectedRange === "month" ? "Weekly" : "Monthly"} Trend
+            </h3>
+            <div className="flex items-end space-x-2 h-40">
+              {data.chart.map((pt, i) => {
+                const max = Math.max(...data.chart.map((p) => p.value));
+                const h = max ? (pt.value / max) * 100 : 0;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center">
+                    <div
+                      className="w-full bg-blue-500 rounded-t"
+                      style={{ height: `${h}%` }}
+                      title={`${pt.label}: ${format(pt.value)}`}
+                    />
+                    <span className="text-xs mt-2">{pt.label}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center text-sm font-semibold text-green-600">
-                      <span className="mr-1">📈</span>
-                      {formatPercentage(analytics?.revenue?.growth)}
-                    </div>
-                    <p className="text-xs text-gray-500">vs last period</p>
-                  </div>
-                </div>
-              </div>
-              {/* Similar cards for Orders, Customers, AOV */}
+                );
+              })}
             </div>
+          </div>
 
-            {/* Charts and detailed analytics */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Revenue Chart */}
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Revenue Trends</h2>
-                <div className="h-80 flex items-end justify-between space-x-2">
-                  {/* Interactive chart bars */}
-                </div>
-              </div>
-
-              {/* Top Products */}
-              <div className="bg-white rounded-xl shadow-sm border p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-6">Top Selling Products</h2>
-                <div className="space-y-4">
-                  {/* Product performance list */}
-                </div>
-              </div>
-            </div>
-
-            {/* Customer segments, traffic sources, performance insights */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Customer Segments, Traffic Sources, Performance Insights */}
-            </div>
+          {/* Quick Links */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Link
+              href="/seller/products"
+              className="p-3 border rounded text-center hover:bg-gray-50"
+            >
+              Add Product
+            </Link>
+            <Link
+              href="/seller/orders"
+              className="p-3 border rounded text-center hover:bg-gray-50"
+            >
+              View Orders
+            </Link>
+            <Link
+              href="/seller/payout"
+              className="p-3 border rounded text-center hover:bg-gray-50"
+            >
+              Payouts
+            </Link>
+            <Link
+              href="/seller/profile"
+              className="p-3 border rounded text-center hover:bg-gray-50"
+            >
+              Edit Profile
+            </Link>
           </div>
         </div>
       </SellerLayout>
