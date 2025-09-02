@@ -90,7 +90,7 @@ export default function Footer() {
                 Free Shipping
               </h3>
               <p className="text-xs sm:text-sm text-gray-600">
-                On orders over 200 Rs
+                On orders over 500 Rs
               </p>
             </div>
 
@@ -112,7 +112,7 @@ export default function Footer() {
                 4.9★ Rating
               </h3>
               <p className="text-xs sm:text-sm text-gray-600">
-                50K+ happy customers
+                53K+ happy customers
               </p>
             </div>
           </div>
@@ -141,9 +141,9 @@ export default function Footer() {
                   </span>
                 </Link>
                 <p className="text-gray-600 text-sm leading-relaxed mb-6">
-                  Creating personalized gifts that tell your story. From custom
-                  mugs to handcrafted jewelry, we help you celebrate life's
-                  special moments with unique, meaningful gifts.
+                  Heartcrafted with love, personalized with care. Creating
+                  meaningful gifts that celebrate your story and touch the
+                  hearts of those who matter most.
                 </p>
               </div>
 
@@ -151,7 +151,7 @@ export default function Footer() {
               <div className="space-y-3">
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <PhoneIcon className="h-4 w-4" />
-                  <span>+1 (555) 123-4567</span>
+                  <span>+91 81781 00330</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <EnvelopeIcon className="h-4 w-4" />
@@ -159,7 +159,7 @@ export default function Footer() {
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <MapPinIcon className="h-4 w-4" />
-                  <span>New York, NY 10001</span>
+                  <span>Ghaziabad, U.P, 201002</span>
                 </div>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function Footer() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Copyright */}
             <div className="text-sm text-gray-600">
-              <p>© 2024 Desi Gifting. All rights reserved.</p>
+              <p>© 2023 DesiGifting. All rights reserved.</p>
             </div>
 
             {/* Social Links & Back to Top */}

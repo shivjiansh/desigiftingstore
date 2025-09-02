@@ -393,7 +393,7 @@ export default function Profile() {
             <ArrowLeftIcon className="w-5 h-5 mr-1" /> Back
           </button>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8">
-            My Account
+            My Profile
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -412,8 +412,12 @@ export default function Profile() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <UserIcon className="w-8 h-8 text-gray-400" />
+                        <div className="w-full h-full flex bg-blue-300 items-center justify-center">
+                          <span className="text-white text-3xl font-medium">
+                            {user?.displayName?.charAt(0)?.toUpperCase() ||
+                              user?.email?.charAt(0)?.toUpperCase() ||
+                              "U"}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -444,8 +448,7 @@ export default function Profile() {
                       icon: UserIcon,
                     },
                     { id: "addresses", label: "Addresses", icon: MapPinIcon },
-                    { id: "orders", label: "My Orders", icon: ShoppingBagIcon },
-                    { id: "wishlist", label: "Wishlist", icon: HeartIcon },
+
                     { id: "settings", label: "Settings", icon: CogIcon },
                   ].map((tab) => (
                     <button
@@ -1071,80 +1074,137 @@ export default function Profile() {
 
               {/* Settings */}
               {activeTab === "settings" && (
-                <div className="bg-white rounded-lg shadow-sm border p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                    Account Settings
-                  </h2>
-
-                  <div className="space-y-6">
-                    <div className="border-b border-gray-200 pb-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Privacy & Security
-                      </h3>
-                      <div className="space-y-3">
-                        <button className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
-                          <span className="font-medium text-gray-700">
-                            Change Password
-                          </span>
-                          <span className="text-gray-400">→</span>
-                        </button>
-                        <button className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
-                          <span className="font-medium text-gray-700">
-                            Two-Factor Authentication
-                          </span>
-                          <span className="text-gray-400">→</span>
-                        </button>
+                <div className="bg-white rounded-lg shadow-sm border p-6 relative">
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-white/1 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
+                    <div className="text-center p-8 max-w-md">
+                      <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8 text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
                       </div>
-                    </div>
 
-                    <div className="border-b border-gray-200 pb-6">
-                      <h3 className="text-lg font-medium text-gray-900 mb-4">
-                        Notifications
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        Coming Soon!
                       </h3>
-                      <div className="space-y-3">
-                        <label className="flex items-center justify-between">
-                          <span className="font-medium text-gray-700">
-                            Email Notifications
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            defaultChecked
-                          />
-                        </label>
-                        <label className="flex items-center justify-between">
-                          <span className="font-medium text-gray-700">
-                            SMS Notifications
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                        </label>
-                        <label className="flex items-center justify-between">
-                          <span className="font-medium text-gray-700">
-                            Order Updates
-                          </span>
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            defaultChecked
-                          />
-                        </label>
-                      </div>
-                    </div>
 
-                    <div>
-                      <h3 className="text-lg font-medium text-red-600 mb-4">
-                        Danger Zone
-                      </h3>
-                      <button className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100">
-                        Delete Account
-                      </button>
-                      <p className="text-sm text-gray-600 mt-2">
-                        This action cannot be undone. All your data will be
-                        permanently deleted.
+                      <p className="text-gray-600 mb-4 text-sm leading-relaxed">
+                        Our development team is working hard to bring you these
+                        settings. This feature will be available very soon.
+                        Thanks for your patience!
                       </p>
+
+                      <div className="space-y-3">
+                        <button
+                          onClick={() =>
+                            (window.location.href =
+                              "mailto:shivansh.jauhari@gmail.com?subject=Settings Feature Question")
+                          }
+                          className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                        >
+                          Contact Developer Team
+                        </button>
+
+                        <p className="text-xs text-gray-500">
+                          Have questions or suggestions? We'd love to hear from
+                          you!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Original Settings Content (dimmed/disabled) */}
+                  <div className="opacity-30 pointer-events-none">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                      Account Settings
+                    </h2>
+
+                    <div className="space-y-6">
+                      <div className="border-b border-gray-200 pb-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Privacy & Security
+                        </h3>
+                        <div className="space-y-3">
+                          <button className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <span className="font-medium text-gray-700">
+                              Change Password
+                            </span>
+                            <span className="text-gray-400">→</span>
+                          </button>
+                          <button className="flex items-center justify-between w-full p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-50">
+                            <span className="font-medium text-gray-700">
+                              Two-Factor Authentication
+                            </span>
+                            <span className="text-gray-400">→</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="border-b border-gray-200 pb-6">
+                        <h3 className="text-lg font-medium text-gray-900 mb-4">
+                          Notifications
+                        </h3>
+                        <div className="space-y-3">
+                          <label className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              Email Notifications
+                            </span>
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              defaultChecked
+                            />
+                          </label>
+                          <label className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              SMS Notifications
+                            </span>
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </label>
+                          <label className="flex items-center justify-between">
+                            <span className="font-medium text-gray-700">
+                              Order Updates
+                            </span>
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              defaultChecked
+                            />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-lg font-medium text-red-600 mb-4">
+                          Danger Zone
+                        </h3>
+                        <button className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100">
+                          Delete Account
+                        </button>
+                        <p className="text-sm text-gray-600 mt-2">
+                          This action cannot be undone. All your data will be
+                          permanently deleted.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
