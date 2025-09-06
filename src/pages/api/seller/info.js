@@ -31,7 +31,7 @@ async function handleGetSellers(req, res) {
     // Build base query for active sellers
     let query = adminDb
       .collection("seller")
-        .where("isActive", "==", true);
+        ;
 
     // Apply filters
     if (location && location !== "all") {
@@ -40,6 +40,7 @@ async function handleGetSellers(req, res) {
 
     // Execute query
     const sellersSnapshot = await query.get();
+    console.log(sellersSnapshot);
     let sellers = [];
 
     for (const doc of sellersSnapshot.docs) {
@@ -69,7 +70,7 @@ async function handleGetSellers(req, res) {
 
       // Get reviews and ratings
       const reviewsSnapshot = await adminDb
-        .collection("reviews")
+        .collection("ratings")
         .where("sellerId", "==", doc.id)
         .get();
 
@@ -115,6 +116,7 @@ async function handleGetSellers(req, res) {
       sellerData.joinedAt = sellerData.createdAt;
 
       sellers.push(sellerData);
+      console.log("hahahahah",sellers);
     }
 
     // Apply search filter

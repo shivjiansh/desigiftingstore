@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -75,7 +73,10 @@ export default function ProductDetails() {
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log('Auth state changed:', currentUser ? 'User logged in' : 'User logged out');
+      console.log(
+        "Auth state changed:",
+        currentUser ? "User logged in" : "User logged out"
+      );
       setUser(currentUser);
       setAuthLoading(false);
     });
@@ -211,19 +212,22 @@ export default function ProductDetails() {
         }
 
         const formData = new FormData();
-        formData.append('file', file);
-        formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
+        formData.append("file", file);
+        formData.append(
+          "upload_preset",
+          process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+        );
 
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
           {
-            method: 'POST',
+            method: "POST",
             body: formData,
           }
         );
 
         if (!response.ok) {
-          throw new Error('Failed to upload image');
+          throw new Error("Failed to upload image");
         }
 
         const data = await response.json();
@@ -235,18 +239,18 @@ export default function ProductDetails() {
       });
 
       const uploadedImages = await Promise.all(uploadPromises);
-      setCustomImages(prev => [...prev, ...uploadedImages]);
+      setCustomImages((prev) => [...prev, ...uploadedImages]);
       notify.success(`${uploadedImages.length} image(s) uploaded successfully`);
     } catch (error) {
-      console.error('Error uploading images:', error);
-      notify.error(error.message || 'Failed to upload images');
+      console.error("Error uploading images:", error);
+      notify.error(error.message || "Failed to upload images");
     } finally {
       setUploadingImages(false);
     }
   };
 
   const removeCustomImage = (imageId) => {
-    setCustomImages(prev => prev.filter(img => img.id !== imageId));
+    setCustomImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
   const validateCustomizations = () => {
@@ -262,9 +266,7 @@ export default function ProductDetails() {
   };
 
   const calculateTotalPrice = () => {
-    const basePrice = isOfferLive
-      ? product.offerPrice
-      : product?.price || 0;
+    const basePrice = isOfferLive ? product.offerPrice : product?.price || 0;
     return (basePrice * quantity).toFixed(2);
   };
 
@@ -360,7 +362,9 @@ export default function ProductDetails() {
     }
 
     try {
-      console.log(isWishlisted ? "Removing from wishlist" : "Adding to wishlist");
+      console.log(
+        isWishlisted ? "Removing from wishlist" : "Adding to wishlist"
+      );
       const idToken = await user.getIdToken();
       const response = await fetch("/api/user/wishlist", {
         method: isWishlisted ? "DELETE" : "POST",
@@ -432,7 +436,7 @@ export default function ProductDetails() {
             Product Not Found
           </h1>
           <Link href="/products" className="text-blue-600 hover:text-blue-700">
-             Back to Products
+            Back to Products
           </Link>
         </div>
       </div>
@@ -499,7 +503,7 @@ export default function ProductDetails() {
           </div>
 
           {/* Back Button */}
-          <div className="absolute top-6 left-20 z-10">
+          <div className="absolute top-6 left-6 z-10">
             <button
               onClick={() => router.back()}
               className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-colors flex items-center space-x-2"
@@ -611,6 +615,11 @@ export default function ProductDetails() {
                       ⚠️ Only {product.stock} left in stock!
                     </p>
                   )}
+                  {product.stock > 0 && (
+                    <p className="text-green-600 text-sm font-medium">
+                      ✔️ In stock
+                    </p>
+                  )}
                   {product.stock === 0 && (
                     <p className="text-red-600 text-sm font-medium">
                       ❌ Out of Stock
@@ -620,12 +629,6 @@ export default function ProductDetails() {
 
                 {/* Quantity */}
                 <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="font-medium text-gray-700">Quantity:</span>
-                    <span className="text-sm text-gray-600">
-                      {product.stock} available
-                    </span>
-                  </div>
                   <div className="flex items-center justify-center border border-gray-300 rounded-lg">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -835,9 +838,19 @@ export default function ProductDetails() {
           {/* Related Products */}
           {relatedProducts.length > 0 && (
             <div className="mt-16">
-              <h2 className="text-2xl font-bold text-gray-900 mb-8">
-                More from {product.businessName}
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  More from {product.businessName}
+                </h2>
+                <Link
+                  href={`/store/${product.sellerId}`}
+                  className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+                  aria-label={`Visit ${product.businessName} Store`}
+                >
+                  Visit Store
+                  
+                </Link>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
                 {relatedProducts.map((relatedProduct) => (
                   <ProductCard

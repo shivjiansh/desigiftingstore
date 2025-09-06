@@ -28,7 +28,7 @@ export default async function handler(req, res) {
 async function handleGetSeller(req, res, sellerId) {
   try {
     // Get seller document
-    const sellerDoc = await adminDb.collection("users").doc(sellerId).get();
+    const sellerDoc = await adminDb.collection("seller").doc(sellerId).get();
 
     if (!sellerDoc.exists) {
       return res.status(404).json({
@@ -40,18 +40,11 @@ async function handleGetSeller(req, res, sellerId) {
     const sellerData = { id: sellerDoc.id, ...sellerDoc.data() };
 
     // Only return public seller data if not authenticated or not the seller themselves
-    if (sellerData.role !== "seller") {
-      return res.status(404).json({
-        success: false,
-        error: "Seller not found",
-      });
-    }
 
     // Get seller's products
     const productsSnapshot = await adminDb
       .collection("products")
       .where("sellerId", "==", sellerId)
-      .where("status", "==", "active")
       .get();
 
     sellerData.productCount = productsSnapshot.size;

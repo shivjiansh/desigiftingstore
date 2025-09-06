@@ -55,8 +55,8 @@ export default function SellersPage() {
       const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(
         (s) =>
-          s.businessName?.toLowerCase().includes(lower) ||
-          s.description?.toLowerCase().includes(lower) ||
+          s.businessInfo.businessName?.toLowerCase().includes(lower) ||
+          s.businessInfo.description?.toLowerCase().includes(lower) ||
           s.name?.toLowerCase().includes(lower) ||
           s.categories?.some((c) => c.toLowerCase().includes(lower))
       );
@@ -153,7 +153,7 @@ export default function SellersPage() {
         </div>
 
         {/* Search Section */}
-        <div className="bg-white shadow-sm border-b sticky top-16 z-40">
+        <div className="bg-white shadow-sm border-b  top-16 z-40">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <div className="max-w-md mx-auto">
               <div className="relative">
@@ -257,7 +257,7 @@ export default function SellersPage() {
                   <div className="pt-10">
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
-                        {seller.businessName}
+                        {seller.businessInfo.businessName}
                       </h3>
                       <div className="flex items-center space-x-1">
                         {renderStars(seller.rating || 3)}
@@ -269,12 +269,18 @@ export default function SellersPage() {
 
                     <p className="text-sm text-gray-600 mb-1">{seller.name}</p>
 
-                    {seller.location && (
-                      <div className="flex items-center text-sm text-gray-500 mb-3">
-                        <MapPinIcon className="w-4 h-4 mr-1" />
-                        {seller.location}
-                      </div>
-                    )}
+                    {seller.businessInfo?.address?.state ||
+                      ("dsg" && (
+                        <div className="flex items-center text-sm text-gray-500 mb-3 space-x-1">
+                          <MapPinIcon className="w-4 h-4" />
+                          <span>
+                            {seller.businessInfo?.address?.city || "gzb"},
+                          </span>
+                          <span>
+                            {seller.businessInfo?.address?.state || "gzb"}
+                          </span>
+                        </div>
+                      ))}
 
                     <p className="text-gray-700 text-sm mb-4 line-clamp-3">
                       {seller.businessInfo.description ||
@@ -304,23 +310,7 @@ export default function SellersPage() {
                     </div>
 
                     {/* Categories */}
-                    {seller.categories && seller.categories.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {seller.categories.slice(0, 3).map((category, i) => (
-                          <span
-                            key={i}
-                            className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full text-xs font-medium"
-                          >
-                            {category}
-                          </span>
-                        ))}
-                        {seller.categories.length > 3 && (
-                          <span className="text-gray-500 text-xs px-2 py-1">
-                            +{seller.categories.length - 3} more
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    
 
                     {/* Contact Info */}
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
