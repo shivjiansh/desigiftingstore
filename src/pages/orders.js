@@ -319,9 +319,9 @@ export default function MyOrders() {
                   </ul>
                 </div>
                 <CustomizationsView
-                  customImages={selectedOrder.customImages}
-                  customText={selectedOrder.customText}
-                  specialMessage={selectedOrder.specialMessage}
+                  customImages={selectedOrder.customizations.customImages}
+                  customText={selectedOrder.customizations.customText}
+                  specialMessage={selectedOrder.customizations.specialMessage}
                 />
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-2">

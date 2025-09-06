@@ -214,9 +214,9 @@ export default function SellersPage() {
               >
                 {/* Banner Image */}
                 <div className="relative h-32 bg-gradient-to-r from-emerald-600 to-teal-600">
-                  {seller.bannerImage ? (
+                  {seller.banner ? (
                     <Image
-                      src={seller.bannerImage}
+                      src={seller.banner}
                       alt={`${seller.businessName} banner`}
                       fill
                       className="object-cover"
@@ -260,7 +260,7 @@ export default function SellersPage() {
                         {seller.businessName}
                       </h3>
                       <div className="flex items-center space-x-1">
-                        {renderStars(seller.rating || 0)}
+                        {renderStars(seller.rating || 3)}
                         <span className="text-sm text-gray-600 ml-1">
                           ({seller.reviewCount || 0})
                         </span>
@@ -277,7 +277,7 @@ export default function SellersPage() {
                     )}
 
                     <p className="text-gray-700 text-sm mb-4 line-clamp-3">
-                      {seller.description ||
+                      {seller.businessInfo.description ||
                         "Creating unique custom gifts with love and attention to detail."}
                     </p>
 
