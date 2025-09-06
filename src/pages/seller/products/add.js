@@ -1,156 +1,213 @@
-import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../../lib/firebase';
-import SellerLayout from '../../../components/seller/SellerLayout';
-import { notify } from '../../../lib/notifications';
-import { useSellerDashboard } from '../../../hooks/useSeller';
+import { useState, useEffect } from "react";
+import Head from "next/head";
+import Link from "next/link";
+import { useRouter } from "next/router";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../../lib/firebase";
+import SellerLayout from "../../../components/seller/SellerLayout";
+import { notify } from "../../../lib/notifications";
+import { useSellerDashboard } from "../../../hooks/useSeller";
 
 export default function AddProduct() {
   const [user, setUser] = useState(null);
-    const {
-      profile,
-      metrics,
-      isLoading: sellerDataLoading,
-      loadData,
-    } = useSellerDashboard(user?.uid);
+  const {
+    profile,
+    metrics,
+    isLoading: sellerDataLoading,
+    loadData,
+  } = useSellerDashboard(user?.uid);
+  console.log("seller profile ===> ", profile);
+
   const [product, setProduct] = useState({
-    name: '',
-    description: '',
-    price: '',
-    originalPrice: '',
-    category: '',
-    stock: '',
+    name: "",
+    description: "",
+    price: "",
+    category: "",
+    stock: "",
     tags: [],
     images: [],
-    status: 'draft',
+    status: "active", //active, fewleft, inactive
     hasOffer: false,
-    offerPercentage: '',
-    offerStartDate: '',
-    offerEndDate: '',
-    customizationOptions: [],
+    offerPrice: "",
+    offerStartDate: "",
+    offerEndDate: "",
+    codAvailable: true,
+    processingTime: "",
+    businessName: "",
+    salesMetrics: {
+      totalSales: 0, // units all time
+      totalRevenue: 0, // money all time
+      monthlySales: {
+        current: 0, // units this month
+        previous: 0, // units last month
+        byMonth: {
+          "2025-01": 0, // generate dynamically
+          "2025-02": 0,
+        },
+      },
+      monthlyRevenue: {
+        current: 0, // revenue this month
+        previous: 0, // revenue last month
+        byMonth: {
+          "2025-01": 0, // generate dynamically
+          "2025-02": 0,
+        },
+      },
+    },
     specifications: {
-      dimensions: '',
-      weight: '',
-      material: '',
-      color: '',
-      size: ''
-    }
+      dimensions: "",
+      weight: "",
+      material: "",
+      color: "",
+      size: "",
+    },
+    badges: {
+      isHotselling: false,
+      isTrending: false,
+      isToprated: false,
+    },
+    ratings: {
+      average: 0, // Average rating (1-5)
+      total: 0, // Total number of reviews
+      breakdown: {
+        // Rating distribution
+        5: 0, // Number of 5-star reviews
+        4: 0, // Number of 4-star reviews
+        3: 0, // Number of 3-star reviews
+        2: 0, // Number of 2-star reviews
+        1: 0, // Number of 1-star reviews
+      },
+    },
   });
-  const [newTag, setNewTag] = useState('');
-  const [newCustomization, setNewCustomization] = useState({
-    name: '',
-    type: 'text',
-    required: false,
-    options: []
-  });
+
+  const [newTag, setNewTag] = useState("");
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const router = useRouter();
 
   const categories = [
-    'Home Decor',
-    'Clothing & Apparel',
-    'Accessories',
-    'Drinkware',
-    'Stationery & Office',
-    'Electronics & Tech',
-    'Jewelry & Watches',
-    'Toys & Games',
-    'Sports & Fitness',
-    'Beauty & Personal Care',
-    'Kitchen & Dining',
-    'Art & Collectibles',
-    'Custom Gifts',
-    'Other'
+    "Home Decor",
+    "Clothing & Apparel",
+    "Accessories",
+    "Drinkware",
+    "Stationery & Office",
+    "Electronics & Tech",
+    "Jewelry & Watches",
+    "Toys & Games",
+    "Sports & Fitness",
+    "Beauty & Personal Care",
+    "Kitchen & Dining",
+    "Art & Collectibles",
+    "Custom Gifts",
+    "Other",
   ];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        router.push('/seller/auth/login');
+        router.push("/seller/auth/login");
         return;
       }
       setUser(currentUser);
+      console.log("seller mafter assignment$$$$$$$", profile);
     });
 
     return () => unsubscribe();
   }, [router]);
 
   const handleInputChange = (field, value) => {
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setProduct(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value
-        }
-      }));
+    if (field.includes(".")) {
+      const fieldParts = field.split(".");
+
+      if (fieldParts.length === 2) {
+        const [parent, child] = fieldParts;
+        setProduct((prev) => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: value,
+          },
+        }));
+      } else if (fieldParts.length === 3) {
+        const [parent, child, grandchild] = fieldParts;
+        setProduct((prev) => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: {
+              ...prev[parent][child],
+              [grandchild]: value,
+            },
+          },
+        }));
+      }
     } else {
-      setProduct(prev => ({
+      setProduct((prev) => ({
         ...prev,
-        [field]: value
+        [field]: value,
       }));
     }
 
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+      setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
   const handleOfferToggle = () => {
-    setProduct(prev => ({
+    setProduct((prev) => ({
       ...prev,
       hasOffer: !prev.hasOffer,
-      offerPercentage: '',
-      offerStartDate: '',
-      offerEndDate: ''
+      offerPercentage: "",
+      offerStartDate: "",
+      offerEndDate: "",
     }));
   };
 
   const calculateOfferPrice = () => {
-    if (!product.hasOffer || !product.price || !product.offerPercentage) return 0;
-    const discount = (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
+    if (!product.hasOffer || !product.price || !product.offerPercentage)
+      return 0;
+    const discount =
+      (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
     return (parseFloat(product.price) - discount).toFixed(2);
   };
 
   const addTag = () => {
     if (newTag.trim() && !product.tags.includes(newTag.trim().toLowerCase())) {
-      setProduct(prev => ({
+      setProduct((prev) => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim().toLowerCase()]
+        tags: [...prev.tags, newTag.trim().toLowerCase()],
       }));
-      setNewTag('');
+      setNewTag("");
     }
   };
 
   const removeTag = (tagToRemove) => {
-    setProduct(prev => ({
+    setProduct((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
   const uploadToCloudinary = async (file) => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET);
-    formData.append('folder', 'desigifting/products');
+    formData.append("file", file);
+    formData.append(
+      "upload_preset",
+      process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+    );
+    formData.append("folder", "desigifting/products");
 
     const response = await fetch(
       `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
       {
-        method: 'POST',
-        body: formData
+        method: "POST",
+        body: formData,
       }
     );
 
     if (!response.ok) {
-      throw new Error('Failed to upload image');
+      throw new Error("Failed to upload image");
     }
 
     const data = await response.json();
@@ -158,7 +215,7 @@ export default function AddProduct() {
       url: data.secure_url,
       publicId: data.public_id,
       width: data.width,
-      height: data.height
+      height: data.height,
     };
   };
 
@@ -168,25 +225,25 @@ export default function AddProduct() {
       const uploadPromises = Array.from(files).map(async (file) => {
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`File ${file.name} is too large. Maximum size is 5MB.`);
+          throw new Error(
+            `File ${file.name} is too large. Maximum size is 5MB.`
+          );
         }
-
         // Validate file type
-        if (!file.type.startsWith('image/')) {
+        if (!file.type.startsWith("image/")) {
           throw new Error(`File ${file.name} is not an image.`);
         }
-
         return uploadToCloudinary(file);
       });
 
       const uploadedImages = await Promise.all(uploadPromises);
-      setProduct(prev => ({
+      setProduct((prev) => ({
         ...prev,
-        images: [...prev.images, ...uploadedImages]
+        images: [...prev.images, ...uploadedImages],
       }));
       notify.success(`${uploadedImages.length} image(s) uploaded successfully`);
     } catch (error) {
-      console.error('Error uploading images:', error);
+      console.error("Error uploading images:", error);
       setErrors({ images: error.message });
       notify.error(error.message);
     } finally {
@@ -195,34 +252,9 @@ export default function AddProduct() {
   };
 
   const removeImage = (imageIndex) => {
-    setProduct(prev => ({
+    setProduct((prev) => ({
       ...prev,
-      images: prev.images.filter((_, index) => index !== imageIndex)
-    }));
-  };
-
-  const addCustomizationOption = () => {
-    if (newCustomization.name.trim()) {
-      setProduct(prev => ({
-        ...prev,
-        customizationOptions: [...prev.customizationOptions, { 
-          ...newCustomization, 
-          id: Date.now().toString()
-        }]
-      }));
-      setNewCustomization({
-        name: '',
-        type: 'text',
-        required: false,
-        options: []
-      });
-    }
-  };
-
-  const removeCustomizationOption = (optionId) => {
-    setProduct(prev => ({
-      ...prev,
-      customizationOptions: prev.customizationOptions.filter(option => option.id !== optionId)
+      images: prev.images.filter((_, index) => index !== imageIndex),
     }));
   };
 
@@ -230,41 +262,50 @@ export default function AddProduct() {
     const newErrors = {};
 
     if (!product.name.trim()) {
-      newErrors.name = 'Product name is required';
+      newErrors.name = "Product name is required";
     }
 
     if (!product.description.trim()) {
-      newErrors.description = 'Product description is required';
+      newErrors.description = "Product description is required";
     }
 
     if (!product.price || parseFloat(product.price) <= 0) {
-      newErrors.price = 'Valid price is required';
+      newErrors.price = "Valid price is required";
     }
 
     if (!product.category) {
-      newErrors.category = 'Category is required';
+      newErrors.category = "Category is required";
     }
 
     if (!product.stock || parseInt(product.stock) < 0) {
-      newErrors.stock = 'Valid stock quantity is required';
+      newErrors.stock = "Valid stock quantity is required";
     }
 
     if (product.images.length === 0) {
-      newErrors.images = 'At least one product image is required';
+      newErrors.images = "At least one product image is required";
     }
 
     if (product.hasOffer) {
-      if (!product.offerPercentage || parseFloat(product.offerPercentage) <= 0 || parseFloat(product.offerPercentage) >= 100) {
-        newErrors.offerPercentage = 'Valid offer percentage (1-99%) is required';
+      if (
+        !product.offerPrice ||
+        parseFloat(product.offerPercentage) <= 0 ||
+        parseFloat(product.offerPercentage) >= 100
+      ) {
+        newErrors.offerPercentage =
+          "Valid offer percentage (1-99%) is required";
       }
       if (!product.offerStartDate) {
-        newErrors.offerStartDate = 'Offer start date is required';
+        newErrors.offerStartDate = "Offer start date is required";
       }
       if (!product.offerEndDate) {
-        newErrors.offerEndDate = 'Offer end date is required';
+        newErrors.offerEndDate = "Offer end date is required";
       }
-      if (product.offerStartDate && product.offerEndDate && new Date(product.offerStartDate) >= new Date(product.offerEndDate)) {
-        newErrors.offerEndDate = 'Offer end date must be after start date';
+      if (
+        product.offerStartDate &&
+        product.offerEndDate &&
+        new Date(product.offerStartDate) >= new Date(product.offerEndDate)
+      ) {
+        newErrors.offerEndDate = "Offer end date must be after start date";
       }
     }
 
@@ -272,57 +313,60 @@ export default function AddProduct() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const saveProduct = async (status = 'draft') => {
-    if (!validateProduct()) return;
+  const saveProduct = async (status = "active") => {
+    console.log("saved button clicked.....");
+    //if (!validateProduct()) return;
 
     try {
       setIsLoading(true);
-
       const user = auth.currentUser;
-      if (!user) throw new Error('Authentication required');
+      console.log("ye wala user pta nhi konsa hai dekhte hai   ++++++", user);
+      if (!user) throw new Error("Authentication required");
 
       const idToken = await user.getIdToken();
 
       const productData = {
         ...product,
-        status,
+        status: '',
         sellerId: user.uid,
-        businessName: profile?.businessName || 'business_name',
-        sellerName: profile?.name || 'seller_name',
-        price: parseFloat(product.price),
-        originalPrice: product.originalPrice ? parseFloat(product.originalPrice) : parseFloat(product.price),
-        stock: parseInt(product.stock),
-        offerPercentage: product.hasOffer ? parseFloat(product.offerPercentage) : 0,
-        offerPrice: product.hasOffer ? parseFloat(calculateOfferPrice()) : 0,
+        businessName: profile.businessInfo.businessName || "frictional",
+        
+       
+  
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
-      console.log('ssending product with data:', productData);
 
-      const response = await fetch('/api/products', {
-        method: 'POST',
+      console.log("sending product with data:", productData);
+
+      const response = await fetch("/api/products", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${idToken}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(productData)
+        body: JSON.stringify(productData),
       });
-      
+
       const result = await response.json();
-      console.log('Response status:', result);
+      console.log("Response status:", result);
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to save product');
+        throw new Error(result.error || "Failed to save product");
       }
 
       if (result.success) {
-        notify.success(`Product ${status === 'active' ? 'published' : 'saved as draft'} successfully!`);
-        router.push('/seller/products');
+        notify.success(
+          `Product ${
+            status === "active" ? "published" : "saved as draft"
+          } successfully!`
+        );
+        router.push("/seller/products");
       } else {
-        throw new Error(result.error || 'Failed to save product');
+        throw new Error(result.error || "Failed to save product");
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error("Error saving product:", error);
       setErrors({ general: error.message });
       notify.error(error.message);
     } finally {
@@ -466,24 +510,7 @@ export default function AddProduct() {
                           </p>
                         )}
                       </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Original Price (₹)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          value={product.originalPrice}
-                          onChange={(e) =>
-                            handleInputChange("originalPrice", e.target.value)
-                          }
-                          placeholder="Optional"
-                        />
-                      </div>
-
+                      
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Stock Quantity *
@@ -510,29 +537,122 @@ export default function AddProduct() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
+                        Processing Time
                       </label>
+                     
                       <select
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          errors.category ? "border-red-300" : "border-gray-300"
-                        }`}
-                        value={product.category}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.processingTime}
                         onChange={(e) =>
-                          handleInputChange("category", e.target.value)
+                          handleInputChange("processingTime", e.target.value)
                         }
                       >
-                        <option value="">Select a category</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
+                        <option value="1-2 business days">
+                          1-2 business days
+                        </option>
+                        <option value="3-4 business days">
+                          3-4 business days
+                        </option>
+                        <option value="5-7 business days">
+                          5-7 business days
+                        </option>
+
+                        <option value="2-3 weeks">2-3 weeks</option>
                       </select>
-                      {errors.category && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.category}
-                        </p>
-                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Specifications */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Product Specifications
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dimensions
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications.dimensions}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.dimensions",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., 10cm x 15cm x 5cm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Weight
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications.weight}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.weight",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., 250g"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Material
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications.material}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.material",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Cotton, Wood, Metal"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Color
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications.color}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.color",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Red, Blue, Multi-color"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Size
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications.size}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.size",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., XS, S, M, L, XL, One Size"
+                      />
                     </div>
                   </div>
                 </div>
@@ -587,7 +707,6 @@ export default function AddProduct() {
                             </p>
                           )}
                         </div>
-
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Start Date
@@ -613,7 +732,6 @@ export default function AddProduct() {
                             </p>
                           )}
                         </div>
-
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             End Date
@@ -651,10 +769,10 @@ export default function AddProduct() {
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-green-800">
-                                ${calculateOfferPrice()}
+                                ₹{calculateOfferPrice()}
                               </p>
                               <p className="text-sm text-gray-500 line-through">
-                                ${product.price}
+                                ₹{product.price}
                               </p>
                             </div>
                           </div>
@@ -669,7 +787,6 @@ export default function AddProduct() {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     Product Images *
                   </h2>
-
                   <div className="mb-4">
                     <label className="block w-full">
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors cursor-pointer">
@@ -817,6 +934,115 @@ export default function AddProduct() {
                           Visible to customers
                         </span>
                       </span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="status"
+                        value="fewleft"
+                        checked={product.status === "fewleft"}
+                        onChange={(e) =>
+                          handleInputChange("status", e.target.value)
+                        }
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">
+                        <span className="font-medium">Few Left</span>
+                        <span className="block text-sm text-gray-600">
+                          Shows urgency to customers
+                        </span>
+                      </span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="status"
+                        value="inactive"
+                        checked={product.status === "inactive"}
+                        onChange={(e) =>
+                          handleInputChange("status", e.target.value)
+                        }
+                        className="text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2">
+                        <span className="font-medium">Inactive</span>
+                        <span className="block text-sm text-gray-600">
+                          Hidden from customers
+                        </span>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Product Badges */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Product Badges
+                  </h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={product.badges.isHotselling}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "badges.isHotselling",
+                            e.target.checked
+                          )
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm">Hot Selling</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={product.badges.isTrending}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "badges.isTrending",
+                            e.target.checked
+                          )
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm">Trending</span>
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={product.badges.isToprated}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "badges.isToprated",
+                            e.target.checked
+                          )
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="ml-2 text-sm">Top Rated</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Additional Settings */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Additional Settings
+                  </h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Cash on Delivery
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={product.codAvailable}
+                        onChange={(e) =>
+                          handleInputChange("codAvailable", e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
                     </label>
                   </div>
                 </div>

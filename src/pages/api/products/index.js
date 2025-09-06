@@ -1,4 +1,5 @@
 import { adminDb } from '../../../lib/firebaseAdmin';
+import admin from 'firebase-admin';
 import { 
   verifyAuthToken, 
   getUserRole,
@@ -187,69 +188,53 @@ async function handleGetProducts(req, res) {
 // POST /api/products - Create new product
 async function handleCreateProduct(req, res) {
   try {
-    // Verify user is authenticated
-    console.log("Verifying auth token");
-    const decodedToken = await verifyAuthToken(req);
+    const decoded = await verifyAuthToken(req);
+    const body = req.body;
 
-    const productData = sanitizeInput(req.body);
-    console.log("Creating product:", productData);
-
-    // Basic required field validation
-    if (!productData.name || !productData.price || !productData.category) {
-      return res.status(400).json({
-        success: false,
-        error: "Name, price, and category are required",
-      });
+    if (!body.name || !body.price) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Name and price are required" });
+    }
+    if (isNaN(body.price) || body.price <= 0) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Price must be a positive number" });
     }
 
-    // Validate price is a positive number
-    if (isNaN(productData.price) || productData.price <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Price must be a positive number",
-      });
-    }
-
-    // Prepare product document
+    const now = new Date().toISOString();
     const newProduct = {
-      ...productData,
-      sellerId: decodedToken.uid,
-      price: parseFloat(productData.price),
-      stock: parseInt(productData.stock) || 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isActive: productData.status === "active",
-      rating: 0,
-      reviewCount: 0,
-      totalSales: 0,
-      viewCount: 0,
+      ...body,
+      sellerId: decoded.uid,
+      price: parseFloat(body.price),
+      stock: parseInt(body.stock) || 0,
+      isActive: ["active", "fewleft"].includes(body.status),
+      createdAt: now,
+      updatedAt: now,
     };
-    console.log("New product data:", newProduct);
-    // Save product to Firestore
-    const productRef = await adminDb.collection("products").add(newProduct);
-    console.log("Product created with ID:", productRef.id);
+
+    const ref = await adminDb.collection("products").add(newProduct);
 
     // Update seller stats
     try {
-      const sellerRef = adminDb.collection("seller").doc(decodedToken.uid);
-      await sellerRef.update({
-        "sellerStats.totalProducts": adminDb.FieldValue.increment(1),
-        updatedAt: new Date().toISOString(),
-      });
+      await adminDb
+        .collection("seller")
+        .doc(decoded.uid)
+        .update({
+          "sellerStats.totalProducts": admin.firestore.FieldValue.increment(1),
+          updatedAt: now,
+        });
       console.log("Seller stats updated");
-    } catch (error) {
-      console.log("Error updating seller stats:", error.message);
-      // Continue even if stats update fails
+    } catch (err) {
+      console.log("Error updating seller stats:", err.message);
     }
 
-    // Return success response
-    const createdProduct = { id: productRef.id, ...newProduct };
-    sendSuccess(res, createdProduct, "Product created successfully", 201);
-  } catch (error) {
-    console.error("Error creating product:", error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to create product",
-    });
+    const created = { id: ref.id, ...newProduct };
+    return sendSuccess(res, created, "Product created successfully", 201);
+  } catch (err) {
+    console.error("Error creating product:", err);
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to create product" });
   }
 }

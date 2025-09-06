@@ -10,7 +10,6 @@ import {
   Bars3Icon as MenuIcon,
   XMarkIcon as XIcon,
   ShoppingCartIcon,
-  // Remove UserIcon import
 } from "@heroicons/react/24/outline";
 
 export default function Header() {
@@ -44,11 +43,12 @@ export default function Header() {
                 style={{ objectFit: "contain" }}
               />
             </div>
-            <span className="text-xl font-bold text-grey-400">DesiGifting</span>
+            <span className="text-2xl font-bold text-gray-700 tracking-tight leading-none">
+              DesiGifting
+            </span>
           </Link>
 
           {/* Desktop nav */}
-
           <nav className="hidden md:flex space-x-8">
             {/* ... nav links ... */}
           </nav>
@@ -58,8 +58,8 @@ export default function Header() {
             {user ? (
               <div className="relative">
                 <button
-                  // onClick={() => setUserMenuOpen((open) => !open)}
-                  className="flex items-center space-x-3 text-gray-600 hover:text-indigo-600 justify-between"
+                  onClick={() => setUserMenuOpen((open) => !open)}
+                  className="flex items-center space-x-3 text-gray-600 hover:text-emerald-600 justify-between"
                 >
                   {user.photoURL ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden">
@@ -72,7 +72,7 @@ export default function Header() {
                       />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 bg-blue-300 rounded-full flex items-center justify-center">
+                    <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center">
                       <span className="text-white text-sm font-medium">
                         {user?.displayName?.charAt(0)?.toUpperCase() ||
                           user?.email?.charAt(0)?.toUpperCase() ||
@@ -91,26 +91,26 @@ export default function Header() {
                   <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg py-1">
                     <Link
                       href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       My Account
                     </Link>
                     <Link
                       href="/orders"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       My Orders
                     </Link>
                     <Link
                       href="/wishlist"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       Wishlist
                     </Link>
                     <hr className="my-1" />
                     <button
                       onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
                     >
                       Sign Out
                     </button>
@@ -121,13 +121,13 @@ export default function Header() {
               <div className="hidden md:flex space-x-4">
                 <Link
                   href="/buyer/auth/login"
-                  className="text-gray-600 hover:text-indigo-600 font-medium"
+                  className="text-gray-600 hover:text-emerald-600 font-medium"
                 >
                   Login
                 </Link>
                 <Link
                   href="/buyer/auth/register"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 font-medium"
+                  className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 font-medium transition-all duration-200"
                 >
                   Sign Up
                 </Link>
@@ -137,7 +137,7 @@ export default function Header() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen((open) => !open)}
-              className="md:hidden text-gray-600 hover:text-indigo-600"
+              className="md:hidden text-gray-600 hover:text-emerald-600"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? (
@@ -156,7 +156,7 @@ export default function Header() {
           <div className="px-10 py-2 space-y-1">
             <Link
               href="/products"
-              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
             >
               <svg
                 className="w-5 h-5"
@@ -176,7 +176,7 @@ export default function Header() {
 
             <Link
               href="/sellers"
-              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+              className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
             >
               <svg
                 className="w-5 h-5"
@@ -198,7 +198,7 @@ export default function Header() {
               <>
                 <Link
                   href="/profile"
-                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
                 >
                   <svg
                     className="w-5 h-5"
@@ -218,7 +218,7 @@ export default function Header() {
 
                 <Link
                   href="/orders"
-                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
                 >
                   <svg
                     className="w-5 h-5"
@@ -238,7 +238,7 @@ export default function Header() {
 
                 <Link
                   href="/wishlist"
-                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
                 >
                   <svg
                     className="w-5 h-5"
@@ -258,7 +258,7 @@ export default function Header() {
 
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center space-x-3 w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  className="flex items-center space-x-3 w-full text-left px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
                 >
                   <svg
                     className="w-5 h-5"
@@ -280,7 +280,7 @@ export default function Header() {
               <>
                 <Link
                   href="/buyer/auth/login"
-                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded"
+                  className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
                 >
                   <svg
                     className="w-5 h-5"
@@ -300,7 +300,7 @@ export default function Header() {
 
                 <Link
                   href="/buyer/auth/register"
-                  className="flex items-center justify-center space-x-3 px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                  className="flex items-center justify-center space-x-3 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded hover:from-emerald-700 hover:to-teal-700 transition-all duration-200"
                 >
                   <svg
                     className="w-5 h-5"

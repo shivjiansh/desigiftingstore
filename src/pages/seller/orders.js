@@ -12,8 +12,177 @@ import {
   EyeIcon,
   XMarkIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
+
+// CustomizationsView Component
+function CustomizationsView({
+  customImages = [],
+  customText = "",
+  specialMessage = "",
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Download function for images
+  const downloadImage = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = filename || "image";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the object URL
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback: open in new tab
+      window.open(url, "_blank");
+    }
+  };
+
+  // Don't render if no customizations
+  if (!customImages.length && !customText && !specialMessage) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white border rounded-lg shadow-sm p-4 mb-4">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex justify-between items-center text-gray-800 font-medium hover:text-gray-600 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <span>📝</span>
+          <span>View Customizations</span>
+          {(customImages.length > 0 || customText || specialMessage) && (
+            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+              {[
+                customImages.length > 0 &&
+                  `${customImages.length} image${
+                    customImages.length > 1 ? "s" : ""
+                  }`,
+                customText && "text",
+                specialMessage && "message",
+              ]
+                .filter(Boolean)
+                .join(", ")}
+            </span>
+          )}
+        </span>
+        {open ? (
+          <ChevronUpIcon className="w-5 h-5 text-gray-500" />
+        ) : (
+          <ChevronDownIcon className="w-5 h-5 text-gray-500" />
+        )}
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-4 border-t pt-4">
+          {/* Custom Text */}
+          {customText && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <span>✏️</span>
+                Custom Text:
+              </p>
+              <p className="text-gray-800 break-words bg-white p-2 rounded border">
+                {customText}
+              </p>
+            </div>
+          )}
+
+          {/* Special Message */}
+          {specialMessage && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <span>💬</span>
+                Special Message:
+              </p>
+              <p className="text-gray-800 break-words bg-white p-2 rounded border">
+                {specialMessage}
+              </p>
+            </div>
+          )}
+
+          {/* Custom Images with Download */}
+          {customImages.length > 0 && (
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <span>📷</span>
+                Uploaded Images ({customImages.length}):
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {customImages.map((img, index) => (
+                  <div key={img.id || index} className="relative group">
+                    {/* Image Display */}
+                    <div className="w-full h-20 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-100 relative">
+                      <img
+                        src={img.url}
+                        alt={img.name || `Custom image ${index + 1}`}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform cursor-pointer"
+                        onClick={() => window.open(img.url, "_blank")}
+                      />
+
+                      {/* Download Button Overlay */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          downloadImage(
+                            img.url,
+                            img.name || `image-${index + 1}.jpg`
+                          );
+                        }}
+                        className="absolute top-1 right-1 bg-black bg-opacity-60 hover:bg-opacity-80 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Download image"
+                      >
+                        <svg
+                          className="w-3 h-3"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+
+                    {/* Image Info & Download Button */}
+                    <div className="mt-2 flex items-center justify-between">
+                      
+                      <button
+                        onClick={() =>
+                          downloadImage(
+                            img.url,
+                            img.name || `image-${index + 1}.jpg`
+                          )
+                        }
+                        className="text-blue-600 hover:text-blue-800 text-xs font-medium px-2 py-1 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                        title="Download image"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
 export default function SellerOrders() {
   const [user, setUser] = useState(null);
@@ -219,7 +388,7 @@ export default function SellerOrders() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    #{order.id.slice(-8)}
+                    #{order.id.slice(8)}
                   </h3>
                   <p className="text-sm text-gray-500">
                     {new Date(order.createdAt).toLocaleDateString()}
@@ -443,38 +612,34 @@ export default function SellerOrders() {
                     {selected.items?.map((item, index) => (
                       <div
                         key={index}
-                        className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                        className="p-3 bg-gray-50 rounded-lg space-y-3"
                       >
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">
-                            {item.name}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Quantity: {item.quantity}
-                          </p>
-                          {item.customizations &&
-                            Object.keys(item.customizations).length > 0 && (
-                              <div className="mt-2">
-                                <p className="text-xs font-medium text-gray-700">
-                                  Customizations:
-                                </p>
-                                <div className="text-xs text-gray-600">
-                                  {Object.entries(item.customizations).map(
-                                    ([key, value]) => (
-                                      <p key={key}>
-                                        {key}: {value}
-                                      </p>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                        <div className="flex justify-between items-center">
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-900">
+                              {item.name}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              Quantity: {item.quantity}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-semibold text-gray-900">
+                              ₹{(item.price * item.quantity).toFixed(2)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold text-gray-900">
-                            ₹{(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
+
+                        {/* Customizations View */}
+                        <CustomizationsView
+                          customImages={
+                            selected.customizations?.customImages || []
+                          }
+                          customText={selected.customizations?.customText || ""}
+                          specialMessage={
+                            selected.customizations?.specialMessage || ""
+                          }
+                        />
                       </div>
                     ))}
                   </div>

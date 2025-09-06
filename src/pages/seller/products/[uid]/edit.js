@@ -85,6 +85,26 @@ export default function EditProduct() {
       if (result.success) {
         const productData = {
           ...result.data,
+          salesMetrics: result.data.salesMetrics || {
+            totalSales: 0,
+            totalRevenue: 0,
+            monthlySales: {
+              current: 0,
+              previous: 0,
+              byMonth: {
+                "2025-01": 0,
+                "2025-02": 0,
+              },
+            },
+            monthlyRevenue: {
+              current: 0,
+              previous: 0,
+              byMonth: {
+                "2025-01": 0,
+                "2025-02": 0,
+              },
+            },
+          },
           specifications: result.data.specifications || {
             dimensions: "",
             weight: "",
@@ -92,7 +112,22 @@ export default function EditProduct() {
             color: "",
             size: "",
           },
-          customizationOptions: result.data.customizationOptions || [],
+          badges: result.data.badges || {
+            isHotselling: false,
+            isTrending: false,
+            isToprated: false,
+          },
+          ratings: result.data.ratings || {
+            average: 0,
+            total: 0,
+            breakdown: {
+              5: 0,
+              4: 0,
+              3: 0,
+              2: 0,
+              1: 0,
+            },
+          },
           tags: result.data.tags || [],
           images: result.data.images || [],
           hasOffer: result.data.hasOffer || result.data.offerPercentage > 0,
@@ -118,14 +153,30 @@ export default function EditProduct() {
 
   const handleInputChange = (field, value) => {
     if (field.includes(".")) {
-      const [parent, child] = field.split(".");
-      setProduct((prev) => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: value,
-        },
-      }));
+      const fieldParts = field.split(".");
+
+      if (fieldParts.length === 2) {
+        const [parent, child] = fieldParts;
+        setProduct((prev) => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: value,
+          },
+        }));
+      } else if (fieldParts.length === 3) {
+        const [parent, child, grandchild] = fieldParts;
+        setProduct((prev) => ({
+          ...prev,
+          [parent]: {
+            ...prev[parent],
+            [child]: {
+              ...prev[parent][child],
+              [grandchild]: value,
+            },
+          },
+        }));
+      }
     } else {
       setProduct((prev) => ({
         ...prev,
@@ -257,9 +308,6 @@ export default function EditProduct() {
       newErrors.price = "Valid price is required";
     }
 
-    if (!product.category) {
-      newErrors.category = "Category is required";
-    }
 
     if (!product.stock || parseInt(product.stock) < 0) {
       newErrors.stock = "Valid stock quantity is required";
@@ -297,12 +345,12 @@ export default function EditProduct() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const saveProduct = async (status = null) => {
+  const saveProduct = async () => {
+
     if (!validateProduct()) return;
 
     try {
       setIsSaving(true);
-
       const user = auth.currentUser;
       if (!user) throw new Error("Authentication required");
 
@@ -310,7 +358,7 @@ export default function EditProduct() {
 
       const productData = {
         ...product,
-        status: status || product.status,
+        
         price: parseFloat(product.price),
         originalPrice: product.originalPrice
           ? parseFloat(product.originalPrice)
@@ -515,15 +563,16 @@ export default function EditProduct() {
                     <div className="flex items-center space-x-2">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          product.status === "active" || product.isActive
+                          product.status === "active"
                             ? "bg-green-100 text-green-800"
+                            : product.status === "fewleft"
+                            ? "bg-orange-100 text-orange-800"
                             : product.status === "draft"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-gray-100 text-gray-800"
                         }`}
                       >
-                        {product.status ||
-                          (product.isActive ? "active" : "inactive")}
+                        {product.status || "inactive"}
                       </span>
                     </div>
                   </div>
@@ -574,10 +623,12 @@ export default function EditProduct() {
                       )}
                     </div>
 
+                  
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Price * ($)
+                          Price * (₹)
                         </label>
                         <input
                           type="number"
@@ -601,7 +652,7 @@ export default function EditProduct() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Original Price ($)
+                          Original Price (₹)
                         </label>
                         <input
                           type="number"
@@ -642,29 +693,111 @@ export default function EditProduct() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Category *
+                        Processing Time
                       </label>
-                      <select
-                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          errors.category ? "border-red-300" : "border-gray-300"
-                        }`}
-                        value={product.category || ""}
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.processingTime || ""}
                         onChange={(e) =>
-                          handleInputChange("category", e.target.value)
+                          handleInputChange("processingTime", e.target.value)
                         }
-                      >
-                        <option value="">Select a category</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>
-                            {category}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.category && (
-                        <p className="text-red-600 text-sm mt-1">
-                          {errors.category}
-                        </p>
-                      )}
+                        placeholder="e.g., 2-3 business days"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Specifications */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Product Specifications
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Dimensions
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications?.dimensions || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.dimensions",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., 10cm x 15cm x 5cm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Weight
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications?.weight || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.weight",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., 250g"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Material
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications?.material || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.material",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Cotton, Wood, Metal"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Color
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications?.color || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.color",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., Red, Blue, Multi-color"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Size
+                      </label>
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={product.specifications?.size || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "specifications.size",
+                            e.target.value
+                          )
+                        }
+                        placeholder="e.g., XS, S, M, L, XL, One Size"
+                      />
                     </div>
                   </div>
                 </div>
@@ -783,10 +916,10 @@ export default function EditProduct() {
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-green-800">
-                                ${calculateOfferPrice()}
+                                ₹{calculateOfferPrice()}
                               </p>
                               <p className="text-sm text-gray-500 line-through">
-                                ${product.price}
+                                ₹{product.price}
                               </p>
                             </div>
                           </div>
@@ -905,151 +1038,81 @@ export default function EditProduct() {
                     </button>
                   </div>
                 </div>
-
-                {/* Specifications */}
-                <div className="bg-white rounded-xl shadow-sm border p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                    Product Specifications
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Dimensions
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={product.specifications?.dimensions || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "specifications.dimensions",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., 10 x 8 x 2 inches"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Weight
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={product.specifications?.weight || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "specifications.weight",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., 0.5 lbs"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Material
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={product.specifications?.material || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "specifications.material",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., Wood, Ceramic, Cotton"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Available Sizes
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={product.specifications?.size || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "specifications.size",
-                            e.target.value
-                          )
-                        }
-                        placeholder="e.g., S, M, L, XL"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* Sidebar */}
               <div className="space-y-6">
-                {/* Product Status */}
+                
+
+                {/* Product Badges */}
                 <div className="bg-white rounded-xl shadow-sm border p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Product Status
+                    Product Badges
                   </h3>
                   <div className="space-y-3">
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="status"
-                        value="draft"
-                        checked={
-                          product.status === "draft" ||
-                          (!product.status && !product.isActive)
-                        }
+                        type="checkbox"
+                        checked={product.badges?.isHotselling || false}
                         onChange={(e) =>
-                          handleInputChange("status", e.target.value)
+                          handleInputChange(
+                            "badges.isHotselling",
+                            e.target.checked
+                          )
                         }
-                        className="text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-2">
-                        <span className="font-medium">Draft</span>
-                        <span className="block text-sm text-gray-600">
-                          Hidden from customers
-                        </span>
-                      </span>
+                      <span className="ml-2 text-sm">Hot Selling</span>
                     </label>
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="status"
-                        value="active"
-                        checked={
-                          product.status === "active" || product.isActive
-                        }
+                        type="checkbox"
+                        checked={product.badges?.isTrending || false}
                         onChange={(e) =>
-                          handleInputChange("status", e.target.value)
+                          handleInputChange(
+                            "badges.isTrending",
+                            e.target.checked
+                          )
                         }
-                        className="text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-2">
-                        <span className="font-medium">Active</span>
-                        <span className="block text-sm text-gray-600">
-                          Visible to customers
-                        </span>
-                      </span>
+                      <span className="ml-2 text-sm">Trending</span>
                     </label>
                     <label className="flex items-center">
                       <input
-                        type="radio"
-                        name="status"
-                        value="inactive"
-                        checked={product.status === "inactive"}
+                        type="checkbox"
+                        checked={product.badges?.isToprated || false}
                         onChange={(e) =>
-                          handleInputChange("status", e.target.value)
+                          handleInputChange(
+                            "badges.isToprated",
+                            e.target.checked
+                          )
                         }
-                        className="text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
-                      <span className="ml-2">
-                        <span className="font-medium">Inactive</span>
-                        <span className="block text-sm text-gray-600">
-                          Temporarily hidden
-                        </span>
+                      <span className="ml-2 text-sm">Top Rated</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Additional Settings */}
+                <div className="bg-white rounded-xl shadow-sm border p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Additional Settings
+                  </h3>
+                  <div className="space-y-3">
+                    <label className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700">
+                        Cash on Delivery
                       </span>
+                      <input
+                        type="checkbox"
+                        checked={product.codAvailable || false}
+                        onChange={(e) =>
+                          handleInputChange("codAvailable", e.target.checked)
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
                     </label>
                   </div>
                 </div>
@@ -1063,26 +1126,28 @@ export default function EditProduct() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Sales:</span>
                       <span className="font-semibold">
-                        {product.totalSales || 0}
+                        {product.salesMetrics?.totalSales || 0}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Revenue:</span>
                       <span className="font-semibold">
-                        ${(product.totalRevenue || 0).toFixed(2)}
+                        ₹{(product.salesMetrics?.totalRevenue || 0).toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Views:</span>
+                      <span className="text-gray-600">
+                        Current Month Sales:
+                      </span>
                       <span className="font-semibold">
-                        {product.viewCount || 0}
+                        {product.salesMetrics?.monthlySales?.current || 0}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Rating:</span>
                       <span className="font-semibold">
-                        {product.rating || 0}/5 ({product.reviewCount || 0}{" "}
-                        reviews)
+                        {product.ratings?.average || 0}/5 (
+                        {product.ratings?.total || 0} reviews)
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -1109,43 +1174,7 @@ export default function EditProduct() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Quick Actions
                   </h3>
-                  <div className="space-y-2">
-                    <Link
-                      href={`/products/${productId}`}
-                      target="_blank"
-                      className="block w-full bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-lg text-center transition-colors"
-                    >
-                      View Public Page
-                    </Link>
-                    <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(
-                          `${window.location.origin}/products/${productId}`
-                        )
-                      }
-                      className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-colors"
-                    >
-                      Copy Product Link
-                    </button>
-                    <button
-                      onClick={() =>
-                        saveProduct(
-                          product.status === "active" || product.isActive
-                            ? "inactive"
-                            : "active"
-                        )
-                      }
-                      className={`w-full px-4 py-2 rounded-lg transition-colors ${
-                        product.status === "active" || product.isActive
-                          ? "bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
-                          : "bg-green-100 hover:bg-green-200 text-green-700"
-                      }`}
-                    >
-                      {product.status === "active" || product.isActive
-                        ? "Deactivate Product"
-                        : "Activate Product"}
-                    </button>
-                  </div>
+                  
                 </div>
               </div>
             </div>

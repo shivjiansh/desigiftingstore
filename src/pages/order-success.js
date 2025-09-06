@@ -62,7 +62,7 @@ export default function OrderSuccess() {
         <Header />
         <main className="flex-grow flex items-center justify-center px-4 py-16">
           {loading ? (
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"></div>
           ) : order ? (
             <div className="bg-white rounded-xl shadow-lg p-8 max-w-md text-center">
               <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
@@ -70,7 +70,8 @@ export default function OrderSuccess() {
                 Thank you for your order!
               </h1>
               <p className="text-gray-600 mb-4">
-                Your order <span className="font-medium">#{orderId.slice(0,8)}</span> is
+                Your order{" "}
+                <span className="font-medium">#{orderId.slice(0, 8)}</span> is
                 now <span className="font-medium">{order.status}</span>.
               </p>
               <div className="space-y-3 text-left mb-6">
@@ -89,7 +90,7 @@ export default function OrderSuccess() {
               </div>
               <Link
                 href="/"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                className="inline-block bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-colors"
               >
                 Continue Shopping
               </Link>

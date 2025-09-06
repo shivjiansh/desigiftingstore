@@ -7,6 +7,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { useSellerDashboard } from "../../hooks/useSeller";
+import Image from "next/image";
 
 export default function SellerDashboard() {
   const [user, setUser] = useState(null);

@@ -5,49 +5,78 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import { signOut } from "firebase/auth";
 import { toast } from "react-hot-toast";
-
+import { useSellerStore } from "../../stores/sellerStore";
+import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
+import Image from "next/image";
 
 export default function SellerLayout({ children }) {
-  const [user, loading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sellerData, setSellerData] = useState(null);
+  const [localSellerData, setLocalSellerData] = useState(null);
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false); // Prevent duplicate calls
   const router = useRouter();
 
+  const {
+    profile,
+    loadProfile,
+    getDashboardStats,
+    isLoading: storeLoading,
+  } = useSellerStore();
+
+  // Only fetch once per user session
   useEffect(() => {
-    if (user) {
+    if (user?.uid && !hasLoadedProfile && !profile) {
       fetchSellerData();
     }
-  }, [user]);
+  }, [user?.uid, hasLoadedProfile, profile]);
 
   const fetchSellerData = async () => {
-    try {
-        console.log("Fetching seller data for user:", user);
-        // console.log("User Token:", await user.getIdToken());
-      const response = await fetch(`/api/seller?uid=${user.uid}`,{
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-            Authorization: `Bearer ${await user.getIdToken()}`,
-        },
-      });
+    if (loading || hasLoadedProfile) return;
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch seller data: ${response.statusText}`);
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [apiResponse] = await Promise.all([
+        fetch(`/api/seller?uid=${user.uid}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${await user.getIdToken()}`,
+          },
+        }),
+        // Only load profile if not already loaded
+        !profile ? loadProfile(user.uid) : Promise.resolve(),
+      ]);
+
+      if (!apiResponse.ok) {
+        throw new Error(
+          `HTTP ${apiResponse.status}: ${apiResponse.statusText}`
+        );
       }
-      const data = await response.json();
-      setSellerData(data);
-      console.log("Fetched seller data:", data);
-    } catch (error) {
-      console.error("Error fetching seller data:", error);
+
+      const data = await apiResponse.json();
+      setLocalSellerData(data);
+      setHasLoadedProfile(true);
+    } catch (err) {
+      console.error("Error fetching seller data:", err);
+      setError(err.message);
+      toast.error("Failed to fetch seller data");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      setLocalSellerData(null);
+      setHasLoadedProfile(false); // Reset on signout
       toast.success("Signed out successfully");
       router.push("/");
-    } catch (error) {
+    } catch {
       toast.error("Error signing out");
     }
   };
@@ -61,9 +90,11 @@ export default function SellerLayout({ children }) {
     { name: "Payout", href: "/seller/payout", icon: "💰" },
   ];
 
-  if (loading) {
+  const sellerData = profile || localSellerData;
+
+  if (loading || storeLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
           <p className="mt-2 text-gray-600">Loading...</p>
@@ -72,14 +103,30 @@ export default function SellerLayout({ children }) {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <p className="mb-4 text-red-600 font-bold">Error: {error}</p>
+        <button
+          onClick={() => {
+            setHasLoadedProfile(false);
+            fetchSellerData();
+          }}
+          className="px-4 py-2 bg-emerald-600 text-white rounded"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!user) {
-    router.push("/auth/seller/login");
+    // router.push("/auth/seller/login");
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden"
@@ -87,19 +134,17 @@ export default function SellerLayout({ children }) {
         />
       )}
 
-      {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
             <Link href="/seller/dashboard" className="flex items-center">
               <span className="text-2xl">🏪</span>
               <span className="ml-2 text-xl font-bold text-emerald-600">
-                Seller Hub
+                Store Hub
               </span>
             </Link>
             <button
@@ -110,7 +155,6 @@ export default function SellerLayout({ children }) {
             </button>
           </div>
 
-          {/* Seller Info */}
           {sellerData && (
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center">
@@ -123,37 +167,44 @@ export default function SellerLayout({ children }) {
                     />
                   ) : (
                     <span className="text-emerald-600 font-medium">
-                      {sellerData.name.charAt(0)}
+                      {sellerData.businessName?.charAt(0) ||
+                        sellerData.businessInfo?.businessName?.charAt(0)}
                     </span>
                   )}
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900">
-                    {sellerData.businessInfo.businessName}
+                    {sellerData.businessInfo?.businessName ||
+                      sellerData.name ||
+                      "Business Name"}
                   </p>
                   <div className="flex items-center">
-                    <span
-                      className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                        sellerData.status === "verified"
-                          ? "bg-green-400"
-                          : "bg-yellow-400"
-                      }`}
-                    ></span>
+                    <span className="inline-flex items-center mr-2">
+                      {sellerData.status === "verified" ||
+                      sellerData.isVerified ? (
+                        <CheckCircleIcon className="w-4 h-4 text-green-400" />
+                      ) : (
+                        <ClockIcon className="w-4 h-4 text-yellow-400" />
+                      )}
+                    </span>
                     <span className="text-xs text-gray-600 capitalize">
-                      {sellerData.status}
+                      {sellerData.status ||
+                        (sellerData.isVerified ? "verified" : "pending")}
                     </span>
                   </div>
                 </div>
               </div>
               <div className="mt-3 flex items-center text-sm text-gray-600">
-                <span>⭐ {sellerData.rating}</span>
+                ⭐ {sellerData.rating || sellerData.sellerStats?.rating || 0}
                 <span className="mx-2">•</span>
-                <span>{sellerData.totalProducts} products</span>
+                {sellerData.totalProducts ||
+                  sellerData.sellerStats?.totalProducts ||
+                  0}{" "}
+                products
               </div>
             </div>
           )}
 
-          {/* Navigation */}
           <nav className="flex-1 px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const isActive =
@@ -177,61 +228,53 @@ export default function SellerLayout({ children }) {
             })}
           </nav>
 
-          {/* Footer */}
           <div className="p-4 border-t border-gray-200">
-            <div className="space-y-2">
-              <Link
-                href="/store/${user.uid}"
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50"
-              >
-                <span className="mr-3 text-lg">🛍️</span>
-                View Store
-              </Link>
-              <button
-                onClick={handleSignOut}
-                className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50"
-              >
-                <span className="mr-3 text-lg">🚪</span>
-                Sign Out
-              </button>
-            </div>
+            <Link
+              href={`/store/${user.uid}`}
+              className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50"
+            >
+              <span className="mr-3 text-lg">🛍️</span>
+              View Store
+            </Link>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center w-full px-3 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-50"
+            >
+              <span className="mr-3 text-lg">🚪</span>
+              Sign Out
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Main content */}
       <div className="lg:pl-64 flex flex-col min-h-screen">
-        {/* Top bar */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="flex items-center justify-between h-16 px-4">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden text-gray-500 hover:text-gray-700"
             >
-              <span className="text-xl">☰</span>
+              ☰
             </button>
-
-            <div className="flex items-center space-x-4">
-              {/* Notifications */}
-              <button className="text-gray-500 hover:text-gray-700 relative">
-                <span className="text-xl">🔔</span>
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                  3
-                </span>
-              </button>
-
-              {/* Help */}
-              <Link
-                href="/seller/help"
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <span className="text-xl">❓</span>
-              </Link>
+            <div className="flex items-center gap-2 my-4">
+              <div className="w-10 h-10 relative overflow-hidden rounded-lg">
+                <Image
+                  src="/images/logo1.png"
+                  alt="DesiGifting Logo"
+                  width={100}
+                  height={100}
+                  style={{ objectFit: "contain" }}
+                />
+              </div>
+              <div className="text-left">
+                <h1 className="text-2xl font-bold text-gray-800 tracking-tight leading-none">
+                  DesiGifting
+                </h1>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* Page content */}
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>

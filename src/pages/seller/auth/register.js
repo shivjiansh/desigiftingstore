@@ -1,24 +1,33 @@
-import { useState } from 'react';
-import { useRouter } from 'next/router';
-import Link from 'next/link';
-import Head from 'next/head';
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../../../lib/firebase';
-import LoadingSpinner from '../../../components/common/LoadingSpinner';
-import { notify } from '../../../lib/notifications';
+import { useState } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
+import Head from "next/head";
+import Image from "next/image";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "../../../lib/firebase";
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import { notify } from "../../../lib/notifications";
 
 export default function SellerRegister() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    businessName: '',
-    businessAddress: '',
-    businessPhone: '',
-    password: '',
-    confirmPassword: '',
-    agreeToTerms: false
+    name: "",
+    email: "",
+    phone: "",
+    businessName: "",
+    businessPhone: "",
+    street: "",
+    city: "",
+    state: "",
+    pincode: "",
+    country: "India",
+    gstNumber: "",
+    password: "",
+    confirmPassword: "",
+    agreeToTerms: false,
   });
   const [errors, setErrors] = useState({});
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
@@ -38,25 +47,29 @@ export default function SellerRegister() {
     const hasNumbers = /\d/.test(password);
 
     return {
-      isValid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers,
+      isValid:
+        password.length >= minLength &&
+        hasUpperCase &&
+        hasLowerCase &&
+        hasNumbers,
       minLength: password.length >= minLength,
       hasUpperCase,
       hasLowerCase,
-      hasNumbers
+      hasNumbers,
     };
   };
 
   const validatePhone = (phone) => {
     const phoneRegex = /^[+]?[1-9]?[0-9]{7,15}$/;
-    return phoneRegex.test(phone.replace(/\s+/g, ''));
+    return phoneRegex.test(phone.replace(/\s+/g, ""));
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+      setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
 
@@ -65,50 +78,63 @@ export default function SellerRegister() {
 
     // Required field validation
     if (!formData.name.trim()) {
-      newErrors.name = 'Full name is required';
+      newErrors.name = "Full name is required";
     } else if (formData.name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = "Name must be at least 2 characters";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = "Please enter a valid email address";
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = "Phone number is required";
     } else if (!validatePhone(formData.phone)) {
-      newErrors.phone = 'Please enter a valid phone number';
+      newErrors.phone = "Please enter a valid phone number";
     }
 
     if (!formData.businessName.trim()) {
-      newErrors.businessName = 'Business name is required';
+      newErrors.businessName = "Business name is required";
     } else if (formData.businessName.trim().length < 2) {
-      newErrors.businessName = 'Business name must be at least 2 characters';
+      newErrors.businessName = "Business name must be at least 2 characters";
     }
 
-    if (!formData.businessAddress.trim()) {
-      newErrors.businessAddress = 'Business address is required';
-    } else if (formData.businessAddress.trim().length < 10) {
-      newErrors.businessAddress = 'Please provide a complete address';
+    if (!formData.street.trim()) {
+      newErrors.street = "Street address is required";
+    }
+
+    if (!formData.city.trim()) {
+      newErrors.city = "City is required";
+    }
+
+    if (!formData.state.trim()) {
+      newErrors.state = "State is required";
+    }
+
+    if (!formData.pincode.trim()) {
+      newErrors.pincode = "PIN code is required";
+    } else if (!/^\d{6}$/.test(formData.pincode.trim())) {
+      newErrors.pincode = "Please enter a valid 6-digit PIN code";
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else {
       const passwordValidation = validatePassword(formData.password);
       if (!passwordValidation.isValid) {
-        newErrors.password = 'Password must meet all requirements';
+        newErrors.password = "Password must meet all requirements";
       }
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = "Passwords do not match";
     }
 
     if (!formData.agreeToTerms) {
-      newErrors.agreeToTerms = 'You must agree to the seller terms and conditions';
+      newErrors.agreeToTerms =
+        "You must agree to the seller terms and conditions";
     }
 
     setErrors(newErrors);
@@ -125,30 +151,57 @@ export default function SellerRegister() {
     try {
       // Create user account with Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
-        auth, 
-        formData.email.trim().toLowerCase(), 
+        auth,
+        formData.email.trim().toLowerCase(),
         formData.password
       );
       const user = userCredential.user;
-      
+
       // Prepare seller data for Firestore
       const sellerData = {
         uid: user.uid,
         email: user.email,
+        isEmailVerified: false,
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        businessName: formData.businessName.trim(),
-        businessAddress: formData.businessAddress.trim(),
-        businessPhone: formData.businessPhone.trim() || formData.phone.trim(),
+        isPhoneVerified: false,
+        role: "seller",
 
         // Seller-specific fields
         businessInfo: {
           businessName: formData.businessName.trim(),
-          businessAddress: formData.businessAddress.trim(),
+          tagline: "",
+          description: "",
           businessPhone: formData.businessPhone.trim() || formData.phone.trim(),
-          taxId: '',
-          businessType: 'individual',
-          isVerified: false
+          address: {
+            street: formData.street.trim(),
+            city: formData.city.trim(),
+            state: formData.state.trim(),
+            pincode: formData.pincode.trim(),
+            country: formData.country?.trim() || "India",
+          },
+          businessType: "individual",
+          badge: {
+            isVerified: false,
+            isToprated: false,
+            isShipper: false,
+            isAged: false,
+            isTrusted: false,
+            isPowerSeller: false,
+            isBestSeller: false,
+            isCustomerFav: false,
+          },
+          logo: "",
+          banner: "",
+          gstNumber: formData.gstNumber.trim(),
+        },
+
+        // Seller bankInfo
+        bankInfo: {
+          accountHolderName: "",
+          accountNumber: "",
+          bankName: "",
+          ifscCode: "",
         },
 
         // Seller statistics
@@ -157,42 +210,45 @@ export default function SellerRegister() {
           totalOrders: 0,
           totalRevenue: 0,
           totalSales: 0,
-          rating: 0,
-          reviewCount: 0,
-          averageOrderValue: 0
+          maxSalesInMonth: 0,
+          ratings: {
+            average: 0,
+            total: 0,
+            breakdown: {
+              5: 0,
+              4: 0,
+              3: 0,
+              2: 0,
+              1: 0,
+            },
+          },
+          averageOrderValue: 0,
         },
-
-        // Status fields
-        isActive: true,
-        isVerified: false,
-        emailVerified: user.emailVerified,
 
         // Timestamps
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
 
         // Additional seller fields
-        description: '',
-        logo: '',
-        banner: '',
         socialLinks: {
-          website: '',
-          facebook: '',
-          instagram: '',
-          twitter: ''
+          website: "",
+          facebook: "",
+          instagram: "",
+          twitter: "",
         },
 
         // Store settings
         storeSettings: {
-          processingTime: '3-5 business days',
-          shippingPolicies: '',
-          returnPolicy: '',
+          processingTime: "3-5 business days",
+          shippingPolicies: "",
+          returnPolicy: "",
           customOrdersEnabled: true,
-          minimumOrderValue: 0
-        }
+          minimumOrderValue: 0,
+          isActive: true,
+        },
       };
 
-      // Save seller data to Firestore
+      // Save seller data to Firestore via API
       const response = await fetch("/api/seller", {
         method: "POST",
         headers: {
@@ -205,11 +261,10 @@ export default function SellerRegister() {
       const result = await response.json();
 
       if (result.success) {
-        // Step 5: Send email verification
-        //later
-        //await sendEmailVerification(user);
+        // Send email verification (optional)
+        // await sendEmailVerification(user);
 
-        // Step 6: Success feedback and redirect
+        // Success feedback and redirect
         notify.success(
           "Seller account created successfully! Verification will take around 24 hrs"
         );
@@ -217,28 +272,30 @@ export default function SellerRegister() {
       } else {
         throw new Error(result.error || "API registration failed");
       }
-
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error("Registration error:", error);
 
-      let errorMessage = 'Registration failed. Please try again.';
+      let errorMessage = "Registration failed. Please try again.";
 
       // Handle specific Firebase errors
       switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'An account with this email already exists.';
+        case "auth/email-already-in-use":
+          errorMessage = "An account with this email already exists.";
           break;
-        case 'auth/weak-password':
-          errorMessage = 'Password is too weak. Please choose a stronger password.';
+        case "auth/weak-password":
+          errorMessage =
+            "Password is too weak. Please choose a stronger password.";
           break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address format.';
+        case "auth/invalid-email":
+          errorMessage = "Invalid email address format.";
           break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Email/password accounts are not enabled. Please contact support.';
+        case "auth/operation-not-allowed":
+          errorMessage =
+            "Email/password accounts are not enabled. Please contact support.";
           break;
         default:
-          errorMessage = error.message || 'Registration failed. Please try again.';
+          errorMessage =
+            error.message || "Registration failed. Please try again.";
       }
 
       setErrors({ general: errorMessage });
@@ -250,26 +307,85 @@ export default function SellerRegister() {
 
   const passwordValidation = validatePassword(formData.password);
 
+  // Indian states for dropdown
+  const indianStates = [
+    "Andhra Pradesh",
+    "Arunachal Pradesh",
+    "Assam",
+    "Bihar",
+    "Chhattisgarh",
+    "Goa",
+    "Gujarat",
+    "Haryana",
+    "Himachal Pradesh",
+    "Jharkhand",
+    "Karnataka",
+    "Kerala",
+    "Madhya Pradesh",
+    "Maharashtra",
+    "Manipur",
+    "Meghalaya",
+    "Mizoram",
+    "Nagaland",
+    "Odisha",
+    "Punjab",
+    "Rajasthan",
+    "Sikkim",
+    "Tamil Nadu",
+    "Telangana",
+    "Tripura",
+    "Uttar Pradesh",
+    "Uttarakhand",
+    "West Bengal",
+    "Delhi",
+    "Jammu & Kashmir",
+    "Ladakh",
+  ];
+
   return (
     <>
       <Head>
         <title>Become a Seller - Desigifting</title>
-        <meta name="description" content="Join Desigifting as a seller and start your custom gifts business" />
+        <meta
+          name="description"
+          content="Join Desigifting as a seller and start your custom gifts business"
+        />
       </Head>
 
       <div className="min-h-screen bg-gray-50 py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center space-x-2 mb-4">
-              <span className="text-3xl">🎁</span>
-              <h1 className="text-2xl font-bold text-gray-900">Desigifting</h1>
+            <div className="flex items-center justify-center space-x-3 mb-4 group px-4">
+              <div className="relative">
+                <Image
+                  src="/images/logo1.png"
+                  alt="DesiGifting Logo"
+                  width={54}
+                  height={54}
+                  className="rounded-2xl shadow-lg object-contain transition-all duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/8 to-purple-600/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="text-left">
+                <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">
+                  DesiGifting
+                </h1>
+                <div className="flex items-center space-x-2 mt-0.5">
+                  <div className="w-4 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
+                  <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
+                    Store Onboarding
+                  </span>
+                </div>
+              </div>
             </div>
+
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Start Your Seller Journey
+              Your Art. Your Business. Your Success.
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Join thousands of talented sellers and turn your creativity into a thriving business
+              Transform your creative talents into a thriving income stream with
+              India's fastest-growing custom gifts marketplace.
             </p>
           </div>
 
@@ -299,15 +415,17 @@ export default function SellerRegister() {
                       id="name"
                       type="text"
                       autoComplete="name"
-                      className={`form-input ${errors.name ? 'form-input-error' : ''}`}
+                      className={`form-input ${
+                        errors.name ? "form-input-error" : ""
+                      }`}
                       placeholder="Enter your full name"
                       value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("name", e.target.value)
+                      }
                       required
                     />
-                    {errors.name && (
-                      <p className="form-error">{errors.name}</p>
-                    )}
+                    {errors.name && <p className="form-error">{errors.name}</p>}
                   </div>
 
                   <div>
@@ -318,10 +436,14 @@ export default function SellerRegister() {
                       id="email"
                       type="email"
                       autoComplete="email"
-                      className={`form-input ${errors.email ? 'form-input-error' : ''}`}
+                      className={`form-input ${
+                        errors.email ? "form-input-error" : ""
+                      }`}
                       placeholder="Enter your email"
                       value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
                       required
                     />
                     {errors.email && (
@@ -329,7 +451,7 @@ export default function SellerRegister() {
                     )}
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label htmlFor="phone" className="form-label">
                       Phone Number *
                     </label>
@@ -337,10 +459,14 @@ export default function SellerRegister() {
                       id="phone"
                       type="tel"
                       autoComplete="tel"
-                      className={`form-input ${errors.phone ? 'form-input-error' : ''}`}
+                      className={`form-input ${
+                        errors.phone ? "form-input-error" : ""
+                      }`}
                       placeholder="Enter your phone number"
                       value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
                       required
                     />
                     {errors.phone && (
@@ -356,55 +482,159 @@ export default function SellerRegister() {
                   Business Information
                 </h3>
                 <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="businessName" className="form-label">
+                        Business Name *
+                      </label>
+                      <input
+                        id="businessName"
+                        type="text"
+                        className={`form-input ${
+                          errors.businessName ? "form-input-error" : ""
+                        }`}
+                        placeholder="Enter your business name"
+                        value={formData.businessName}
+                        onChange={(e) =>
+                          handleInputChange("businessName", e.target.value)
+                        }
+                        required
+                      />
+                      {errors.businessName && (
+                        <p className="form-error">{errors.businessName}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="businessPhone" className="form-label">
+                        Business Phone (Optional)
+                      </label>
+                      <input
+                        id="businessPhone"
+                        type="tel"
+                        className="form-input"
+                        placeholder="Business phone (if different)"
+                        value={formData.businessPhone}
+                        onChange={(e) =>
+                          handleInputChange("businessPhone", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label htmlFor="businessName" className="form-label">
-                      Business Name *
+                    <label htmlFor="street" className="form-label">
+                      Street Address *
                     </label>
                     <input
-                      id="businessName"
+                      id="street"
                       type="text"
-                      className={`form-input ${errors.businessName ? 'form-input-error' : ''}`}
-                      placeholder="Enter your business name"
-                      value={formData.businessName}
-                      onChange={(e) => handleInputChange('businessName', e.target.value)}
+                      className={`form-input ${
+                        errors.street ? "form-input-error" : ""
+                      }`}
+                      placeholder="House/Flat No., Building, Street, Area"
+                      value={formData.street}
+                      onChange={(e) =>
+                        handleInputChange("street", e.target.value)
+                      }
                       required
                     />
-                    {errors.businessName && (
-                      <p className="form-error">{errors.businessName}</p>
+                    {errors.street && (
+                      <p className="form-error">{errors.street}</p>
                     )}
                   </div>
 
-                  <div>
-                    <label htmlFor="businessAddress" className="form-label">
-                      Business Address *
-                    </label>
-                    <textarea
-                      id="businessAddress"
-                      rows={3}
-                      className={`form-input ${errors.businessAddress ? 'form-input-error' : ''}`}
-                      placeholder="Enter your complete business address"
-                      value={formData.businessAddress}
-                      onChange={(e) => handleInputChange('businessAddress', e.target.value)}
-                      required
-                    />
-                    {errors.businessAddress && (
-                      <p className="form-error">{errors.businessAddress}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label htmlFor="city" className="form-label">
+                        City *
+                      </label>
+                      <input
+                        id="city"
+                        type="text"
+                        className={`form-input ${
+                          errors.city ? "form-input-error" : ""
+                        }`}
+                        placeholder="Enter city"
+                        value={formData.city}
+                        onChange={(e) =>
+                          handleInputChange("city", e.target.value)
+                        }
+                        required
+                      />
+                      {errors.city && (
+                        <p className="form-error">{errors.city}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="state" className="form-label">
+                        State *
+                      </label>
+                      <select
+                        id="state"
+                        className={`form-input ${
+                          errors.state ? "form-input-error" : ""
+                        }`}
+                        value={formData.state}
+                        onChange={(e) =>
+                          handleInputChange("state", e.target.value)
+                        }
+                        required
+                      >
+                        <option value="">Select State</option>
+                        {indianStates.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                      {errors.state && (
+                        <p className="form-error">{errors.state}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label htmlFor="pincode" className="form-label">
+                        PIN Code *
+                      </label>
+                      <input
+                        id="pincode"
+                        type="text"
+                        className={`form-input ${
+                          errors.pincode ? "form-input-error" : ""
+                        }`}
+                        placeholder="6-digit PIN code"
+                        value={formData.pincode}
+                        onChange={(e) =>
+                          handleInputChange("pincode", e.target.value)
+                        }
+                        maxLength={6}
+                        required
+                      />
+                      {errors.pincode && (
+                        <p className="form-error">{errors.pincode}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div>
-                    <label htmlFor="businessPhone" className="form-label">
-                      Business Phone (Optional)
+                    <label htmlFor="gstNumber" className="form-label">
+                      GST Number (Optional)
                     </label>
                     <input
-                      id="businessPhone"
-                      type="tel"
+                      id="gstNumber"
+                      type="text"
                       className="form-input"
-                      placeholder="Enter business phone (if different from personal)"
-                      value={formData.businessPhone}
-                      onChange={(e) => handleInputChange('businessPhone', e.target.value)}
+                      placeholder="Enter GST number if registered"
+                      value={formData.gstNumber}
+                      onChange={(e) =>
+                        handleInputChange("gstNumber", e.target.value)
+                      }
                     />
-                    <p className="form-help">Leave blank to use your personal phone number</p>
+                    <p className="form-help text-xs text-gray-500 mt-1">
+                      Required if your annual turnover exceeds ₹20 lakhs
+                    </p>
                   </div>
                 </div>
               </div>
@@ -423,10 +653,14 @@ export default function SellerRegister() {
                       id="password"
                       type="password"
                       autoComplete="new-password"
-                      className={`form-input ${errors.password ? 'form-input-error' : ''}`}
+                      className={`form-input ${
+                        errors.password ? "form-input-error" : ""
+                      }`}
                       placeholder="Create a strong password"
                       value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("password", e.target.value)
+                      }
                       onFocus={() => setShowPasswordHelp(true)}
                       onBlur={() => setShowPasswordHelp(false)}
                       required
@@ -444,10 +678,14 @@ export default function SellerRegister() {
                       id="confirmPassword"
                       type="password"
                       autoComplete="new-password"
-                      className={`form-input ${errors.confirmPassword ? 'form-input-error' : ''}`}
+                      className={`form-input ${
+                        errors.confirmPassword ? "form-input-error" : ""
+                      }`}
                       placeholder="Confirm your password"
                       value={formData.confirmPassword}
-                      onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("confirmPassword", e.target.value)
+                      }
                       required
                     />
                     {errors.confirmPassword && (
@@ -458,22 +696,56 @@ export default function SellerRegister() {
 
                 {showPasswordHelp && formData.password && (
                   <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                    <p className="text-xs text-gray-600 mb-2">Password requirements:</p>
+                    <p className="text-xs text-gray-600 mb-2">
+                      Password requirements:
+                    </p>
                     <div className="grid grid-cols-2 gap-4 text-xs">
-                      <div className={`flex items-center ${passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}`}>
-                        <span className="mr-2">{passwordValidation.minLength ? '✓' : '○'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordValidation.minLength
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        <span className="mr-2">
+                          {passwordValidation.minLength ? "✓" : "○"}
+                        </span>
                         At least 8 characters
                       </div>
-                      <div className={`flex items-center ${passwordValidation.hasUpperCase ? 'text-green-600' : 'text-gray-500'}`}>
-                        <span className="mr-2">{passwordValidation.hasUpperCase ? '✓' : '○'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordValidation.hasUpperCase
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        <span className="mr-2">
+                          {passwordValidation.hasUpperCase ? "✓" : "○"}
+                        </span>
                         One uppercase letter
                       </div>
-                      <div className={`flex items-center ${passwordValidation.hasLowerCase ? 'text-green-600' : 'text-gray-500'}`}>
-                        <span className="mr-2">{passwordValidation.hasLowerCase ? '✓' : '○'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordValidation.hasLowerCase
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        <span className="mr-2">
+                          {passwordValidation.hasLowerCase ? "✓" : "○"}
+                        </span>
                         One lowercase letter
                       </div>
-                      <div className={`flex items-center ${passwordValidation.hasNumbers ? 'text-green-600' : 'text-gray-500'}`}>
-                        <span className="mr-2">{passwordValidation.hasNumbers ? '✓' : '○'}</span>
+                      <div
+                        className={`flex items-center ${
+                          passwordValidation.hasNumbers
+                            ? "text-green-600"
+                            : "text-gray-500"
+                        }`}
+                      >
+                        <span className="mr-2">
+                          {passwordValidation.hasNumbers ? "✓" : "○"}
+                        </span>
                         One number
                       </div>
                     </div>
@@ -487,20 +759,38 @@ export default function SellerRegister() {
                   <input
                     id="agreeToTerms"
                     type="checkbox"
-                    className={`w-4 h-4 text-accent-600 border-gray-300 rounded focus:ring-accent-500 mt-1 ${errors.agreeToTerms ? 'border-red-300' : ''}`}
+                    className={`w-4 h-4 text-accent-600 border-gray-300 rounded focus:ring-accent-500 mt-1 ${
+                      errors.agreeToTerms ? "border-red-300" : ""
+                    }`}
                     checked={formData.agreeToTerms}
-                    onChange={(e) => handleInputChange('agreeToTerms', e.target.checked)}
+                    onChange={(e) =>
+                      handleInputChange("agreeToTerms", e.target.checked)
+                    }
                     required
                   />
-                  <label htmlFor="agreeToTerms" className="ml-2 text-sm text-gray-700">
-                    I agree to the{' '}
-                    <Link href="/seller-terms" className="text-accent-600 hover:text-accent-700">
+                  <label
+                    htmlFor="agreeToTerms"
+                    className="ml-2 text-sm text-gray-700"
+                  >
+                    I agree to the{" "}
+                    <Link
+                      href="/seller-terms"
+                      className="text-accent-600 hover:text-accent-700"
+                    >
                       Seller Terms of Service
-                    </Link>,{' '}
-                    <Link href="/privacy" className="text-accent-600 hover:text-accent-700">
+                    </Link>
+                    ,{" "}
+                    <Link
+                      href="/privacy"
+                      className="text-accent-600 hover:text-accent-700"
+                    >
                       Privacy Policy
-                    </Link>, and understand the{' '}
-                    <Link href="/seller-fees" className="text-accent-600 hover:text-accent-700">
+                    </Link>
+                    , and understand the{" "}
+                    <Link
+                      href="/seller-fees"
+                      className="text-accent-600 hover:text-accent-700"
+                    >
                       Fee Structure
                     </Link>
                   </label>
@@ -521,15 +811,18 @@ export default function SellerRegister() {
                     <span>Creating seller account...</span>
                   </div>
                 ) : (
-                  'Start Selling on Desigifting'
+                  "Start Selling on Desigifting"
                 )}
               </button>
             </form>
 
             <div className="mt-8 text-center">
               <p className="text-sm text-gray-600">
-                Already have an account?{' '}
-                <Link href="/seller/auth/login" className="text-accent-600 hover:text-accent-700 font-medium">
+                Already have an account?{" "}
+                <Link
+                  href="/seller/auth/login"
+                  className="text-accent-600 hover:text-accent-700 font-medium"
+                >
                   Sign in to your seller account
                 </Link>
               </p>
@@ -542,27 +835,38 @@ export default function SellerRegister() {
               <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎨</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Creative Freedom</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Your Art, Your Rules
+              </h3>
               <p className="text-sm text-gray-600">
-                Design and sell your unique custom products with complete creative control
+                Zero restrictions. Design anything. Sell everything. Complete
+                creative ownership of your custom product empire.
               </p>
             </div>
+
             <div className="text-center">
               <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💰</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Profitable Pricing</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Keep More, Earn More
+              </h3>
               <p className="text-sm text-gray-600">
-                Set your own prices and keep 85% of every sale with transparent fees
+                upto 99% profit share. Set premium prices. No hidden fees. Your
+                creativity = Your income.
               </p>
             </div>
+
             <div className="text-center">
               <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚀</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Built-in Marketing</h3>
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Instant Customer Access
+              </h3>
               <p className="text-sm text-gray-600">
-                Reach thousands of buyers through our marketplace and marketing tools
+                50,000+ ready buyers. Built-in SEO. Social media tools. Your
+                products, amplified 10x.
               </p>
             </div>
           </div>

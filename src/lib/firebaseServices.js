@@ -288,14 +288,12 @@ export const userService = {
   // Fetch seller profile
   async getSellerProfile(uid) {
     try {
-      const userDoc = await getDoc(doc(db, "users", uid)); // Changed from "seller" to "users"
+      const userDoc = await getDoc(doc(db, "seller", uid)); // Changed from "seller" to "users"
       if (userDoc.exists()) {
         const userData = userDoc.data();
 
         // Verify user is a seller
-        if (userData.role !== "seller") {
-          return { success: false, error: "User is not a seller" };
-        }
+        
 
         return { success: true, data: userData };
       } else {

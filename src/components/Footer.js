@@ -12,13 +12,6 @@ import {
   MapPinIcon,
   ArrowUpIcon,
 } from "@heroicons/react/24/outline";
-import {
-  FacebookIcon,
-  TwitterIcon,
-  InstagramIcon,
-  YoutubeIcon,
-  LinkedinIcon,
-} from "@heroicons/react/24/solid";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
@@ -38,22 +31,14 @@ export default function Footer() {
   };
 
   const footerLinks = {
-    shop: [
-      { name: "All Products", href: "/products" },
-     
-    ],
+    shop: [{ name: "All Products", href: "/products" }],
     company: [
       { name: "About Us", href: "/about" },
       { name: "Our Story", href: "/story" },
       { name: "Contact", href: "/contact" },
     ],
-    support: [
-      { name: "Help Center", href: "/help" },
-    ],
-    seller: [
-      { name: "Become a Seller", href: "/seller/register" },
-
-    ],
+    support: [{ name: "Help Center", href: "/help" }],
+    seller: [{ name: "Become a Seller", href: "/seller/register" }],
     legal: [
       { name: "Privacy Policy", href: "/privacy" },
       { name: "Terms of Service", href: "/terms" },
@@ -67,51 +52,53 @@ export default function Footer() {
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* Trust Badges */}
-      <div className="bg-gray-50 py-8 sm:py-12">
+      <div className="bg-emerald-50 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
             <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                <ShieldCheckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
+                <ShieldCheckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">
+              <h3 className="font-semibold text-emerald-900 text-sm sm:text-base mb-1 sm:mb-2">
                 Secure Payments
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-emerald-700">
                 256-bit SSL encryption
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <TruckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-teal-100 rounded-full flex items-center justify-center">
+                <TruckIcon className="h-6 w-6 sm:h-8 sm:w-8 text-teal-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">
+              <h3 className="font-semibold text-teal-900 text-sm sm:text-base mb-1 sm:mb-2">
                 Free Shipping
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-teal-700">
                 On orders over 500 Rs
               </p>
             </div>
 
             <div className="text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-purple-100 rounded-full flex items-center justify-center">
-                <HeartIcon className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
+                <HeartIcon className="h-6 w-6 sm:h-8 sm:w-8 text-emerald-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">
+              <h3 className="font-semibold text-emerald-900 text-sm sm:text-base mb-1 sm:mb-2">
                 Heartcrafted
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600">Made with love</p>
+              <p className="text-xs sm:text-sm text-emerald-700">
+                Made with love
+              </p>
             </div>
 
             <div className="text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
                 <StarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-600" />
               </div>
-              <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-1 sm:mb-2">
+              <h3 className="font-semibold text-yellow-900 text-sm sm:text-base mb-1 sm:mb-2">
                 4.9★ Rating
               </h3>
-              <p className="text-xs sm:text-sm text-gray-600">
+              <p className="text-xs sm:text-sm text-yellow-700">
                 53K+ happy customers
               </p>
             </div>
@@ -136,11 +123,11 @@ export default function Footer() {
                       style={{ objectFit: "contain" }}
                     />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">
-                    Desi Gifting
+                  <span className="text-2xl font-bold text-emerald-800 tracking-tight leading-none">
+                    DesiGifting
                   </span>
                 </Link>
-                <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                <p className="text-emerald-700 text-sm leading-relaxed mb-6">
                   Heartcrafted with love, personalized with care. Creating
                   meaningful gifts that celebrate your story and touch the
                   hearts of those who matter most.
@@ -149,15 +136,15 @@ export default function Footer() {
 
               {/* Contact Info */}
               <div className="space-y-3">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-emerald-600">
                   <PhoneIcon className="h-4 w-4" />
                   <span>+91 81781 00330</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-emerald-600">
                   <EnvelopeIcon className="h-4 w-4" />
                   <span>support@desigifting.com</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
+                <div className="flex items-center gap-3 text-sm text-emerald-600">
                   <MapPinIcon className="h-4 w-4" />
                   <span>Ghaziabad, U.P, 201002</span>
                 </div>
@@ -170,11 +157,11 @@ export default function Footer() {
       </div>
 
       {/* Bottom Footer */}
-      <div className=" border-gray-200 py-6 sm:py-8">
+      <div className="border-t border-gray-200 py-6 sm:py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Copyright */}
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-emerald-700">
               <p>© 2023 DesiGifting. All rights reserved.</p>
             </div>
 
@@ -184,7 +171,7 @@ export default function Footer() {
               <div className="flex items-center gap-3">
                 <a
                   href="#"
-                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 hover:text-blue-600 transition-colors duration-200"
+                  className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 transition-colors duration-200 text-emerald-600"
                   aria-label="Facebook"
                 >
                   <svg
@@ -197,7 +184,7 @@ export default function Footer() {
                 </a>
                 <a
                   href="#"
-                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 hover:text-blue-600 transition-colors duration-200"
+                  className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 transition-colors duration-200 text-emerald-600"
                   aria-label="Twitter"
                 >
                   <svg
@@ -210,7 +197,7 @@ export default function Footer() {
                 </a>
                 <a
                   href="#"
-                  className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-blue-100 hover:text-blue-600 transition-colors duration-200"
+                  className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center hover:bg-emerald-100 hover:text-emerald-700 transition-colors duration-200 text-emerald-600"
                   aria-label="Instagram"
                 >
                   <svg
@@ -226,10 +213,10 @@ export default function Footer() {
               {/* Back to Top */}
               <button
                 onClick={scrollToTop}
-                className="fixed bottom-24 right-4 w-8 h-8 bg-blue-400/30 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors duration-200"
+                className="fixed bottom-24 right-4 w-10 h-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
                 aria-label="Back to top"
               >
-                <ArrowUpIcon className="h-4 w-4" />
+                <ArrowUpIcon className="h-5 w-5" />
               </button>
             </div>
           </div>

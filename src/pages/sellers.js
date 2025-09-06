@@ -14,6 +14,8 @@ import {
   PhoneIcon,
   GlobeAltIcon,
   CheckBadgeIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
@@ -49,43 +51,34 @@ export default function SellersPage() {
 
   const filterSellers = () => {
     let filtered = sellers;
-
-    // Search filter only
     if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (seller) =>
-          seller.businessName
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          seller.description
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          seller.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          seller.categories?.some((category) =>
-            category.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+        (s) =>
+          s.businessName?.toLowerCase().includes(lower) ||
+          s.description?.toLowerCase().includes(lower) ||
+          s.name?.toLowerCase().includes(lower) ||
+          s.categories?.some((c) => c.toLowerCase().includes(lower))
       );
     }
-
     setFilteredSellers(filtered);
   };
 
   const renderStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
+    const hasHalf = rating % 1 !== 0;
     for (let i = 0; i < 5; i++) {
       if (i < fullStars) {
         stars.push(
-          <StarIconSolid key={i} className="w-4 h-4 text-yellow-400" />
+          <StarIconSolid key={i} className="w-4 h-4 text-emerald-600" />
         );
-      } else if (i === fullStars && hasHalfStar) {
+      } else if (i === fullStars && hasHalf) {
         stars.push(
           <div key={i} className="relative w-4 h-4">
             <StarIcon className="w-4 h-4 text-gray-300 absolute" />
             <div className="w-2 h-4 overflow-hidden">
-              <StarIconSolid className="w-4 h-4 text-yellow-400" />
+              <StarIconSolid className="w-4 h-4 text-emerald-600" />
             </div>
           </div>
         );
@@ -110,6 +103,7 @@ export default function SellersPage() {
             </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -128,20 +122,20 @@ export default function SellersPage() {
         <Header />
 
         {/* Hero Section */}
-        <div className="bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 text-white">
+        <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 text-white">
           <div className="max-w-7xl mx-auto px-4 py-16 text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Discover Amazing Sellers
             </h1>
-            <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-emerald-200 mb-8 max-w-2xl mx-auto">
               Connect with talented creators and artisans who craft unique,
               personalized gifts just for you
             </p>
             <div className="flex justify-center">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-2">
+              <div className="bg-white/20 backdrop-blur-sm rounded-lg p-2">
                 <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center">
-                    <CheckBadgeIcon className="w-5 h-5 mr-2 text-green-300" />
+                    <CheckBadgeIcon className="w-5 h-5 mr-2 text-emerald-300" />
                     Verified Sellers
                   </div>
                   <div className="flex items-center">
@@ -149,7 +143,7 @@ export default function SellersPage() {
                     Quality Products
                   </div>
                   <div className="flex items-center">
-                    <BuildingOfficeIcon className="w-5 h-5 mr-2 text-blue-300" />
+                    <BuildingOfficeIcon className="w-5 h-5 mr-2 text-teal-300" />
                     Professional Service
                   </div>
                 </div>
@@ -167,7 +161,7 @@ export default function SellersPage() {
                 <input
                   type="text"
                   placeholder="Search sellers, businesses, or categories..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-lg"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -219,7 +213,7 @@ export default function SellersPage() {
                 className="bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group"
               >
                 {/* Banner Image */}
-                <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600">
+                <div className="relative h-32 bg-gradient-to-r from-emerald-600 to-teal-600">
                   {seller.bannerImage ? (
                     <Image
                       src={seller.bannerImage}
@@ -228,13 +222,11 @@ export default function SellersPage() {
                       className="object-cover"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-600" />
                   )}
-
-                  {/* Verified Badge */}
                   {seller.isVerified && (
                     <div className="absolute top-3 right-3">
-                      <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
+                      <div className="bg-emerald-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
                         <CheckBadgeIcon className="w-3 h-3 mr-1" />
                         Verified
                       </div>
@@ -244,7 +236,6 @@ export default function SellersPage() {
 
                 {/* Profile Section */}
                 <div className="relative px-6 pb-6">
-                  {/* Logo */}
                   <div className="absolute -top-8 left-6">
                     <div className="w-16 h-16 bg-white rounded-full border-4 border-white overflow-hidden shadow-lg">
                       {seller.logo ? (
@@ -253,7 +244,7 @@ export default function SellersPage() {
                           alt={`${seller.businessName} logo`}
                           width={64}
                           height={64}
-                          className="w-full h-full object-cover"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -263,10 +254,9 @@ export default function SellersPage() {
                     </div>
                   </div>
 
-                  {/* Content */}
                   <div className="pt-10">
                     <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
                         {seller.businessName}
                       </h3>
                       <div className="flex items-center space-x-1">
@@ -316,16 +306,14 @@ export default function SellersPage() {
                     {/* Categories */}
                     {seller.categories && seller.categories.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-4">
-                        {seller.categories
-                          .slice(0, 3)
-                          .map((category, index) => (
-                            <span
-                              key={index}
-                              className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium"
-                            >
-                              {category}
-                            </span>
-                          ))}
+                        {seller.categories.slice(0, 3).map((category, i) => (
+                          <span
+                            key={i}
+                            className="bg-emerald-50 text-emerald-700 px-2 py-1 rounded-full text-xs font-medium"
+                          >
+                            {category}
+                          </span>
+                        ))}
                         {seller.categories.length > 3 && (
                           <span className="text-gray-500 text-xs px-2 py-1">
                             +{seller.categories.length - 3} more
@@ -338,13 +326,13 @@ export default function SellersPage() {
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
                       {seller.phone && (
                         <div className="flex items-center">
-                          <PhoneIcon className="w-3 h-3 mr-1" />
+                          <PhoneIcon className="w-3 h-3 mr-1 text-emerald-600" />
                           Contact Available
                         </div>
                       )}
                       {seller.website && (
                         <div className="flex items-center">
-                          <GlobeAltIcon className="w-3 h-3 mr-1" />
+                          <GlobeAltIcon className="w-3 h-3 mr-1 text-teal-600" />
                           Website
                         </div>
                       )}
@@ -352,7 +340,7 @@ export default function SellersPage() {
 
                     {/* Visit Store Button */}
                     <Link href={`/store/${seller.id}`}>
-                      <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 group-hover:shadow-lg">
+                      <button className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 group-hover:shadow-lg">
                         <EyeIcon className="w-4 h-4" />
                         <span>Visit Store</span>
                       </button>
@@ -363,7 +351,6 @@ export default function SellersPage() {
             ))}
           </div>
 
-          {/* Empty State */}
           {filteredSellers.length === 0 && !loading && (
             <div className="text-center py-16">
               <BuildingOfficeIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -375,14 +362,12 @@ export default function SellersPage() {
                   ? `No sellers match "${searchTerm}". Try a different search term.`
                   : "No sellers are currently available."}
               </p>
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
-                >
-                  Clear Search
-                </button>
-              )}
+              <button
+                onClick={() => setSearchTerm("")}
+                className="inline-block bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-colors"
+              >
+                Clear Search
+              </button>
             </div>
           )}
         </div>
