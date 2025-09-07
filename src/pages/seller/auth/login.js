@@ -242,7 +242,7 @@ export default function SellerLogin() {
                   href="/seller/auth/register"
                   className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
                 >
-                  Start selling today →
+                  Start selling today 
                 </Link>
               </p>
             </div>

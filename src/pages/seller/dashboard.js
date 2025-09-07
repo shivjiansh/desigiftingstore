@@ -12,6 +12,8 @@ import Image from "next/image";
 export default function SellerDashboard() {
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   const router = useRouter();
 
   // Use the seller dashboard hook with user ID
@@ -35,7 +37,64 @@ export default function SellerDashboard() {
     });
 
     return () => unsubscribe();
-  }, [router]); // Only depend on router
+  }, [router]);
+
+  // Fetch recent orders
+  const fetchRecentOrders = async () => {
+    if (!user) return;
+
+    setOrdersLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch("/api/orders/recent", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        console.log(result);
+        setRecentOrders(result.data);
+      } else {
+        console.error("Failed to fetch recent orders:", result.error);
+        // Set fallback data if API fails
+        setRecentOrders([
+          {
+            id: "ORD-1234",
+            customerName: "John Doe",
+            amount: 299.99,
+            status: "pending",
+            createdAt: new Date(),
+            items: 1,
+          },
+          {
+            id: "ORD-1233",
+            customerName: "Jane Smith",
+            amount: 156.5,
+            status: "completed",
+            createdAt: new Date(),
+            items: 2,
+          },
+          {
+            id: "ORD-1232",
+            customerName: "Mike Johnson",
+            amount: 89.99,
+            status: "processing",
+            createdAt: new Date(),
+            items: 1,
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching recent orders:", error);
+      // Set fallback data on error
+      setRecentOrders([]);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
 
   // Load seller data when user changes - PREVENT INFINITE LOOP
   useEffect(() => {
@@ -43,17 +102,26 @@ export default function SellerDashboard() {
       console.log("Loading seller data for:", user.uid);
       loadData();
     }
-  }, [user?.uid, authLoading]); // Remove loadData from dependencies
+  }, [user?.uid, authLoading]);
 
-  // Rest of your component logic stays the same...
+  // Load recent orders when user is available
+  useEffect(() => {
+    if (user) {
+      fetchRecentOrders();
+    }
+  }, [user]);
+
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "processing":
         return "bg-blue-100 text-blue-800";
       case "completed":
+      case "delivered":
         return "bg-green-100 text-green-800";
+      case "shipped":
+        return "bg-purple-100 text-purple-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
       default:
@@ -62,7 +130,7 @@ export default function SellerDashboard() {
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
     }).format(amount || 0);
@@ -118,11 +186,11 @@ export default function SellerDashboard() {
       </SellerLayout>
     );
   }
+
   console.log("Seller profile data:", profile);
 
-
   // Get stats with fallback values
-  const stats =  {
+  const stats = {
     totalRevenue: profile?.sellerStats?.totalRevenue || 1,
     totalOrders: profile?.sellerStats?.totalOrders || 1,
     totalProducts: profile?.sellerStats?.totalProducts || 1,
@@ -130,26 +198,6 @@ export default function SellerDashboard() {
     monthlyRevenue: profile?.sellerStats?.monthlyRevenue || 1,
     completedOrders: profile?.sellerStats?.completedOrders || 1,
     averageOrderValue: profile?.sellerStats?.averageOrderValue || 1,
-    recentOrders: [
-      {
-        id: "ORD-1234",
-        customerName: "John Doe",
-        amount: 299.99,
-        status: "pending",
-      },
-      {
-        id: "ORD-1233",
-        customerName: "Jane Smith",
-        amount: 156.5,
-        status: "completed",
-      },
-      {
-        id: "ORD-1232",
-        customerName: "Mike Johnson",
-        amount: 89.99,
-        status: "processing",
-      },
-    ],
   };
 
   // Get performance metrics with fallback
@@ -179,14 +227,14 @@ export default function SellerDashboard() {
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">
                     Welcome back,{" "}
-                    {profile?.businessName ||
+                    {profile?.businessInfo?.businessName ||
                       profile?.name ||
                       user?.displayName ||
                       user?.email?.split("@")[0]}
                     ! 👋
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    {profile?.description ||
+                    {profile?.businessInfo?.description ||
                       "Here's how your store is performing today"}
                   </p>
                 </div>
@@ -237,7 +285,6 @@ export default function SellerDashboard() {
                   </div>
                 </div>
               </div>
-
               {/* Total Orders */}
               <div className="bg-white rounded-xl shadow-sm p-6 border">
                 <div className="flex items-center justify-between">
@@ -269,7 +316,6 @@ export default function SellerDashboard() {
                   </div>
                 </div>
               </div>
-
               {/* Products */}
               <div className="bg-white rounded-xl shadow-sm p-6 border">
                 <div className="flex items-center justify-between">
@@ -301,7 +347,34 @@ export default function SellerDashboard() {
                   </div>
                 </div>
               </div>
-
+              
+              <Link href="/seller/milestones" className="group">
+                <div className="bg-white rounded-xl shadow-sm p-6 border group-hover:shadow-md transition-shadow cursor-pointer">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 bg-yellow-100 rounded-lg">
+                      <span className="text-2xl">🎯</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">
+                        Milestone Progress
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {stats.totalOrders % 150}/150 orders to bonus
+                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                        <div
+                          className="bg-yellow-500 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${
+                              ((stats.totalOrders % 150) / 150) * 100
+                            }%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Link>
               {/* Average Order Value */}
               <div className="bg-white rounded-xl shadow-sm p-6 border">
                 <div className="flex items-center justify-between">
@@ -407,25 +480,53 @@ export default function SellerDashboard() {
                   </Link>
                 </div>
               </div>
+
               <div className="p-6">
-                {stats.recentOrders && stats.recentOrders.length > 0 ? (
+                {ordersLoading ? (
                   <div className="space-y-4">
-                    {stats.recentOrders.slice(0, 3).map((order, index) => (
+                    {Array(3)
+                      .fill(0)
+                      .map((_, i) => (
+                        <div key={i} className="animate-pulse">
+                          <div className="flex justify-between p-4 bg-gray-100 rounded-lg">
+                            <div className="space-y-2">
+                              <div className="h-4 bg-gray-300 rounded w-24"></div>
+                              <div className="h-3 bg-gray-300 rounded w-32"></div>
+                              <div className="h-3 bg-gray-300 rounded w-20"></div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="h-4 bg-gray-300 rounded w-16"></div>
+                              <div className="h-3 bg-gray-300 rounded w-20"></div>
+                              <div className="h-3 bg-gray-300 rounded w-16"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                ) : recentOrders && recentOrders.length > 0 ? (
+                  <div className="space-y-4">
+                    {console.log("Recent Orders Data:", recentOrders)}
+                    {recentOrders.slice(0, 3).map((order, index) => (
                       <div
                         key={order.id || index}
-                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/seller/orders`)}
                       >
                         <div>
                           <p className="font-medium text-gray-900">
-                            {order.id}
+                            #{order.id.slice(8)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Customer: {order.customerName}
+                            Customer: {order.buyerName}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {order.items} item{order.items > 1 ? "s" : ""} •{" "}
+                            {new Date(order.createdAt).toLocaleDateString()}
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">
-                            {formatCurrency(order.amount)}
+                            {formatCurrency(order.totalAmount)}
                           </p>
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
@@ -449,7 +550,7 @@ export default function SellerDashboard() {
                     </p>
                     <Link
                       href="/seller/products/add"
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors inline-flex items-center"
                     >
                       Add Your First Product
                     </Link>

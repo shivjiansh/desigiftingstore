@@ -526,7 +526,7 @@ export default function SellerStorePage() {
                         href={`https://wa.me/${seller.phone?.replace(
                           /\D/g,
                           ""
-                        )}?text=Hi, I'm interested in your products on Desi Gifting`}
+                        )}?text=Hi, I'm interested in your products on DesiGifting`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors"

@@ -385,7 +385,18 @@ export default function SellerRegister() {
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Transform your creative talents into a thriving income stream with
-              India's fastest-growing custom gifts marketplace.
+              India's fastest-growing personalized gifts marketplace.
+            </p>
+          </div>
+          <div className="mt-8 text-center mb-4">
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link
+                href="/seller/auth/login"
+                className="text-accent-600 hover:text-accent-700 font-medium"
+              >
+                Sign in to your seller account
+              </Link>
             </p>
           </div>
 
@@ -815,18 +826,6 @@ export default function SellerRegister() {
                 )}
               </button>
             </form>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-gray-600">
-                Already have an account?{" "}
-                <Link
-                  href="/seller/auth/login"
-                  className="text-accent-600 hover:text-accent-700 font-medium"
-                >
-                  Sign in to your seller account
-                </Link>
-              </p>
-            </div>
           </div>
 
           {/* Benefits Section */}

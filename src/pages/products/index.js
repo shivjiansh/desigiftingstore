@@ -326,7 +326,7 @@ export default function Products() {
                 onClick={() => router.push("/seller/auth/register")}
                 className="w-full sm:w-auto border-2 border-emerald-600 text-emerald-600 px-8 py-3 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-all duration-200"
               >
-                Become a Seller
+                Store Dashboard
               </button>
             </div>
 

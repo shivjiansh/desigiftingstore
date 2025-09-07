@@ -21,6 +21,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/",
+        destination: "/products", // your new home page path
+        permanent: true,
+      },
+      {
         source: "/register",
         destination: "/buyer/auth/register",
         permanent: true,
