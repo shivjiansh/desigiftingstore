@@ -55,8 +55,8 @@ export default function SellerDashboard() {
       const result = await response.json();
 
       if (result.success) {
-        console.log(result);
-        setRecentOrders(result.data);
+        console.log("result kaha hai?",result);
+        setRecentOrders(result.data.recentOrders);
       } else {
         console.error("Failed to fetch recent orders:", result.error);
         // Set fallback data if API fails
@@ -376,36 +376,7 @@ export default function SellerDashboard() {
                 </div>
               </Link>
               {/* Average Order Value */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <span className="text-2xl">💎</span>
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">
-                        Avg Order Value
-                      </p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {formatCurrency(stats.averageOrderValue)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div
-                      className={`flex items-center text-sm font-semibold ${getGrowthColor(
-                        performanceMetrics.avgOrderGrowth
-                      )}`}
-                    >
-                      <span className="mr-1">
-                        {getGrowthIcon(performanceMetrics.avgOrderGrowth)}
-                      </span>
-                      {formatPercentage(performanceMetrics.avgOrderGrowth)}
-                    </div>
-                    <p className="text-xs text-gray-500">vs last month</p>
-                  </div>
-                </div>
-              </div>
+              
             </div>
 
             {/* Quick Actions */}
@@ -517,7 +488,7 @@ export default function SellerDashboard() {
                             #{order.id.slice(8)}
                           </p>
                           <p className="text-sm text-gray-600">
-                            Customer: {order.buyerName}
+                            Customer: {order.customerName}
                           </p>
                           <p className="text-xs text-gray-500">
                             {order.items} item{order.items > 1 ? "s" : ""} •{" "}
@@ -526,7 +497,7 @@ export default function SellerDashboard() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-gray-900">
-                            {formatCurrency(order.totalAmount)}
+                            {formatCurrency(order.amount)}
                           </p>
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(

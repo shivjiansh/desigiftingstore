@@ -68,6 +68,7 @@ export default async function handler(req, res) {
       .limit(10); // Get last 10 orders
 
     const ordersSnapshot = await ordersQuery.get();
+    console.log("wfw1");
    
 
     if (ordersSnapshot.empty) {
@@ -77,6 +78,7 @@ export default async function handler(req, res) {
           recentOrders: [],
         },
       });
+      console.log("@");
     }
 
     // Process orders and enrich with customer data
@@ -86,9 +88,7 @@ export default async function handler(req, res) {
       const orderData = doc.data();
 
       // Get customer information
-      const customerInfo = await getCustomerInfo(
-        orderData.buyerId || orderData.customerId
-      );
+      
 
       // Calculate total items
       let totalItems = 1;
@@ -105,8 +105,8 @@ export default async function handler(req, res) {
       const order = {
         id: doc.id,
         
-        customerName: customerInfo.name,
-        customerEmail: customerInfo.email,
+        customerName: orderData.buyerName,
+        
         amount: orderData.totalAmount || orderData.amount || 0,
         status: orderData.status || "pending",
         createdAt:
@@ -118,13 +118,14 @@ export default async function handler(req, res) {
           orderData.items?.[0]?.name ||
           "Custom Product",
         // Additional useful fields
-        orderId: orderData.orderId || doc.id,
-        paymentStatus: orderData.paymentStatus || "pending",
-        shippingAddress: orderData.shippingAddress || null,
+        orderId: doc.id,
+        paymentMethod: orderData.paymentMethod || "pending",
+        shippingAddress: orderData.deliveryAddress || null,
       };
 
       recentOrders.push(order);
     }
+    console.log("recento order in backend",recentOrders);
 
     // Return successful response
     return res.status(200).json({
@@ -156,8 +157,8 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       error: "Internal server error",
-      message:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+     
+        
     });
   }
 }
