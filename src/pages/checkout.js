@@ -162,7 +162,7 @@ export default function Checkout() {
       (sum, i) => sum + i.price * i.quantity,
       0
     );
-    const shipping = subtotal > 500 ? 0 : 50;
+    const shipping = subtotal > 500 ? 0 : 100;
     const tax = subtotal * 0.18;
     return { subtotal, shipping, tax, total: subtotal + shipping + tax };
   }
