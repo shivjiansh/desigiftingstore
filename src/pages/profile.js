@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import Image from "next/image";
@@ -7,6 +7,9 @@ import { auth } from "../lib/firebase";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { notify } from "../lib/notifications";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+
 import {
   UserIcon,
   MapPinIcon,
@@ -22,6 +25,7 @@ import {
   StarIcon,
   PhotoIcon,
   ArrowLeftIcon,
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Profile() {
@@ -36,6 +40,13 @@ export default function Profile() {
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  // Image cropping states
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [crop, setCrop] = useState({ aspect: 1, width: 200, height: 200 });
+  const fileInputRef = useRef(null);
+  const imgRef = useRef(null);
 
   const [profileForm, setProfileForm] = useState({
     displayName: "",
@@ -139,6 +150,97 @@ export default function Profile() {
       setLoading(false);
     }
   };
+
+  // Handle file selection - NEW
+  const handleFileSelect = useCallback((e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (file.size > 5 * 1024 * 1024) {
+      notify.error("Image size should be less than 5MB");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      notify.error("Please select a valid image file");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSelectedImage(event.target.result);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input for reselection
+    e.target.value = "";
+  }, []);
+
+  // Generate cropped image blob - NEW
+  const getCroppedImg = useCallback((image, crop) => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    if (!crop || !ctx) return null;
+
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return;
+          blob.name = "cropped-profile.jpg";
+          resolve(blob);
+        },
+        "image/jpeg",
+        0.9
+      );
+    });
+  }, []);
+
+  // Handle crop confirmation - NEW
+  const handleCropConfirm = useCallback(async () => {
+    if (!imgRef.current || !crop) return;
+
+    try {
+      const croppedImageBlob = await getCroppedImg(imgRef.current, crop);
+      if (croppedImageBlob) {
+        await handleProfileImageUpload(croppedImageBlob);
+        setShowCropModal(false);
+        setSelectedImage(null);
+      }
+    } catch (error) {
+      console.error("Error cropping image:", error);
+      notify.error("Failed to crop image");
+    }
+  }, [crop, getCroppedImg]);
+
+  // Handle crop cancel - NEW
+  const handleCropCancel = useCallback(() => {
+    setShowCropModal(false);
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
 
   const handleUpdateProfile = async () => {
     try {
@@ -265,26 +367,16 @@ export default function Profile() {
     }
   };
 
-  const handleProfileImageUpload = async (file) => {
-    if (!file) return;
-
-    // Validate file
-    if (file.size > 5 * 1024 * 1024) {
-      notify.error("Image size should be less than 5MB");
-      return;
-    }
-
-    if (!file.type.startsWith("image/")) {
-      notify.error("Please select a valid image file");
-      return;
-    }
+  // UPDATED: Now handles cropped blob instead of raw file
+  const handleProfileImageUpload = async (imageFile) => {
+    if (!imageFile) return;
 
     try {
       setUploading(true);
 
       // Upload to Cloudinary
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", imageFile);
       formData.append(
         "upload_preset",
         process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
@@ -421,15 +513,15 @@ export default function Profile() {
                         </div>
                       )}
                     </div>
+                    {/* UPDATED: File input now triggers crop modal */}
                     <label className="absolute bottom-0 right-0 bg-blue-600 text-white p-1 rounded-full cursor-pointer hover:bg-blue-700">
                       <PhotoIcon className="w-4 h-4" />
                       <input
+                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
                         className="hidden"
-                        onChange={(e) =>
-                          handleProfileImageUpload(e.target.files[0])
-                        }
+                        onChange={handleFileSelect}
                         disabled={uploading}
                       />
                     </label>
@@ -448,7 +540,8 @@ export default function Profile() {
                       icon: UserIcon,
                     },
                     { id: "addresses", label: "Addresses", icon: MapPinIcon },
-
+                    { id: "orders", label: "My Orders", icon: ShoppingBagIcon },
+                    { id: "wishlist", label: "Wishlist", icon: HeartIcon },
                     { id: "settings", label: "Settings", icon: CogIcon },
                   ].map((tab) => (
                     <button
@@ -1212,6 +1305,95 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* NEW: Image Crop Modal */}
+        {showCropModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Crop Your Profile Picture
+                </h3>
+                <button
+                  onClick={handleCropCancel}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Crop Area */}
+              <div className="p-6">
+                <div className="mb-4">
+                  <ReactCrop
+                    crop={crop}
+                    onChange={(newCrop) => setCrop(newCrop)}
+                    aspect={1} // Square aspect ratio
+                    circularCrop // Optional: for circular profile pics
+                    minWidth={100}
+                    minHeight={100}
+                    maxWidth={400}
+                    maxHeight={400}
+                  >
+                    <img
+                      ref={imgRef}
+                      src={selectedImage}
+                      alt="Crop preview"
+                      style={{ maxHeight: "400px", maxWidth: "100%" }}
+                      onLoad={() => {
+                        // Set initial crop when image loads
+                        if (imgRef.current) {
+                          const { width, height } = imgRef.current;
+                          const size = Math.min(width, height, 200);
+                          setCrop({
+                            aspect: 1,
+                            width: size,
+                            height: size,
+                            x: (width - size) / 2,
+                            y: (height - size) / 2,
+                          });
+                        }
+                      }}
+                    />
+                  </ReactCrop>
+                </div>
+
+                <div className="text-sm text-gray-600 mb-4">
+                  💡 Drag to reposition and resize the crop area for your
+                  perfect profile picture
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={handleCropCancel}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCropConfirm}
+                    disabled={uploading}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    {uploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <CheckIcon className="w-4 h-4" />
+                        Apply & Upload
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Footer />
       </div>

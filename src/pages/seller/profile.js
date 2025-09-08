@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { toast } from "react-hot-toast";
+import ReactCrop from "react-image-crop";
+import "react-image-crop/dist/ReactCrop.css";
+
 import {
   UserIcon,
   BuildingOfficeIcon,
@@ -18,12 +21,19 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 
-// Image Upload Component
+// Enhanced Image Upload Component with Cropping
 function ImageUpload({ label, imageUrl, onImageChange, aspectRatio = "1:1" }) {
   const [uploading, setUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [crop, setCrop] = useState({
+    aspect: aspectRatio === "1:1" ? 1 : 16 / 9,
+  });
   const fileInputRef = useRef(null);
+  const imgRef = useRef(null);
 
-  const handleFileChange = async (e) => {
+  // Handle file selection - now opens crop modal
+  const handleFileChange = useCallback((e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -38,37 +48,111 @@ function ImageUpload({ label, imageUrl, onImageChange, aspectRatio = "1:1" }) {
       return;
     }
 
-    setUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSelectedImage(event.target.result);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset input for reselection
+    e.target.value = "";
+  }, []);
+
+  // Generate cropped image blob
+  const getCroppedImg = useCallback(
+    (image, crop) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      if (!crop || !ctx) return null;
+
+      const scaleX = image.naturalWidth / image.width;
+      const scaleY = image.naturalHeight / image.height;
+
+      canvas.width = crop.width;
+      canvas.height = crop.height;
+
+      ctx.drawImage(
+        image,
+        crop.x * scaleX,
+        crop.y * scaleY,
+        crop.width * scaleX,
+        crop.height * scaleY,
+        0,
+        0,
+        crop.width,
+        crop.height
+      );
+
+      return new Promise((resolve) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return;
+            blob.name = `cropped-${label
+              .toLowerCase()
+              .replace(/\s+/g, "-")}.jpg`;
+            resolve(blob);
+          },
+          "image/jpeg",
+          0.9
+        );
+      });
+    },
+    [label]
+  );
+
+  // Handle crop confirmation
+  const handleCropConfirm = useCallback(async () => {
+    if (!imgRef.current || !crop) return;
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "upload_preset",
-        process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-      );
-      formData.append("folder", "desigifting/seller");
+      setUploading(true);
+      const croppedImageBlob = await getCroppedImg(imgRef.current, crop);
 
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      if (croppedImageBlob) {
+        // Upload cropped image to Cloudinary
+        const formData = new FormData();
+        formData.append("file", croppedImageBlob);
+        formData.append(
+          "upload_preset",
+          process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+        );
+        formData.append("folder", "desigifting/seller");
 
-      if (!response.ok) throw new Error("Upload failed");
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
 
-      const data = await response.json();
-      onImageChange(data.secure_url);
-      toast.success("Image uploaded successfully!");
+        if (!response.ok) throw new Error("Upload failed");
+
+        const data = await response.json();
+        onImageChange(data.secure_url);
+        toast.success("Image uploaded successfully!");
+
+        setShowCropModal(false);
+        setSelectedImage(null);
+      }
     } catch (error) {
       console.error("Upload error:", error);
       toast.error("Failed to upload image");
     } finally {
       setUploading(false);
     }
-  };
+  }, [crop, getCroppedImg, onImageChange]);
+
+  // Handle crop cancel
+  const handleCropCancel = useCallback(() => {
+    setShowCropModal(false);
+    setSelectedImage(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  }, []);
 
   const removeImage = () => {
     onImageChange("");
@@ -82,94 +166,209 @@ function ImageUpload({ label, imageUrl, onImageChange, aspectRatio = "1:1" }) {
   };
 
   return (
-    <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        {label}
-        {aspectRatio === "16:9" && (
-          <span className="text-xs text-gray-500 ml-2">
-            (Recommended: 1200x675px)
-          </span>
-        )}
-        {aspectRatio === "1:1" && (
-          <span className="text-xs text-gray-500 ml-2">
-            (Recommended: 400x400px)
-          </span>
-        )}
-      </label>
+    <>
+      <div className="space-y-3">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+          {aspectRatio === "16:9" && (
+            <span className="text-xs text-gray-500 ml-2">
+              (Recommended: 1200x675px)
+            </span>
+          )}
+          {aspectRatio === "1:1" && (
+            <span className="text-xs text-gray-500 ml-2">
+              (Recommended: 400x400px)
+            </span>
+          )}
+        </label>
 
-      {imageUrl ? (
-        <div className="relative inline-block">
-          <div
-            className={`relative ${
-              aspectRatio === "16:9" ? "w-64 h-36" : "w-32 h-32"
-            } rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50`}
-          >
-            <img
-              src={imageUrl}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-              <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 flex gap-2">
-                <button
-                  type="button"
-                  onClick={triggerFileInput}
-                  className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
-                  disabled={uploading}
+        {imageUrl ? (
+          <div className="relative inline-block">
+            <div
+              className={`relative ${
+                aspectRatio === "16:9" ? "w-64 h-36" : "w-32 h-32"
+              } rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50`}
+            >
+              <img
+                src={imageUrl}
+                alt={label}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                <div className="opacity-0 hover:opacity-100 transition-opacity duration-200 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={triggerFileInput}
+                    className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition-colors"
+                    disabled={uploading}
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
+                    disabled={uploading}
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={triggerFileInput}
+              disabled={uploading}
+              className={`${
+                aspectRatio === "16:9" ? "w-64 h-36" : "w-32 h-32"
+              } border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-600 disabled:opacity-50`}
+            >
+              {uploading ? (
+                <div className="flex flex-col items-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="text-xs mt-2">Uploading...</span>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <PhotoIcon className="w-8 h-8 mb-2" />
+                  <span className="text-xs font-medium">Upload {label}</span>
+                  <span className="text-xs text-gray-400 mt-1">
+                    Click to browse
+                  </span>
+                </div>
+              )}
+            </button>
+          </div>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleFileChange}
+          className="hidden"
+          disabled={uploading}
+        />
+
+        <p className="text-xs text-gray-500">
+          Supports JPG, PNG, GIF up to 5MB
+        </p>
+      </div>
+
+      {/* Crop Modal */}
+      {showCropModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Crop Your {label}
+              </h3>
+              <button
+                onClick={handleCropCancel}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                disabled={uploading}
+              >
+                <XMarkIcon className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Crop Area */}
+            <div className="p-6">
+              <div className="mb-4">
+                <ReactCrop
+                  crop={crop}
+                  onChange={(newCrop) => setCrop(newCrop)}
+                  aspect={aspectRatio === "1:1" ? 1 : 16 / 9}
+                  minWidth={aspectRatio === "1:1" ? 100 : 200}
+                  minHeight={aspectRatio === "1:1" ? 100 : 112}
+                  maxWidth={aspectRatio === "1:1" ? 400 : 800}
+                  maxHeight={aspectRatio === "1:1" ? 400 : 450}
                 >
-                  <PencilIcon className="w-4 h-4" />
+                  <img
+                    ref={imgRef}
+                    src={selectedImage}
+                    alt="Crop preview"
+                    style={{
+                      maxHeight: aspectRatio === "1:1" ? "400px" : "450px",
+                      maxWidth: "100%",
+                    }}
+                    onLoad={() => {
+                      // Set initial crop when image loads
+                      if (imgRef.current) {
+                        const { width, height } = imgRef.current;
+                        let cropWidth, cropHeight, x, y;
+
+                        if (aspectRatio === "1:1") {
+                          const size = Math.min(width, height, 300);
+                          cropWidth = cropHeight = size;
+                          x = (width - size) / 2;
+                          y = (height - size) / 2;
+                        } else {
+                          // 16:9 aspect ratio
+                          const targetWidth = Math.min(width, 480);
+                          const targetHeight = targetWidth * (9 / 16);
+                          cropWidth = targetWidth;
+                          cropHeight = Math.min(targetHeight, height);
+                          x = (width - cropWidth) / 2;
+                          y = (height - cropHeight) / 2;
+                        }
+
+                        setCrop({
+                          aspect: aspectRatio === "1:1" ? 1 : 16 / 9,
+                          width: cropWidth,
+                          height: cropHeight,
+                          x,
+                          y,
+                        });
+                      }
+                    }}
+                  />
+                </ReactCrop>
+              </div>
+
+              <div className="text-sm text-gray-600 mb-4">
+                💡{" "}
+                {aspectRatio === "1:1"
+                  ? "Drag to reposition and resize the crop area for your perfect square logo"
+                  : "Drag to reposition and resize the crop area for your perfect banner (16:9 ratio)"}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={handleCropCancel}
+                  disabled={uploading}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                >
+                  Cancel
                 </button>
                 <button
-                  type="button"
-                  onClick={removeImage}
-                  className="bg-red-600 text-white p-2 rounded-full hover:bg-red-700 transition-colors"
+                  onClick={handleCropConfirm}
                   disabled={uploading}
+                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
-                  <TrashIcon className="w-4 h-4" />
+                  {uploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <CheckIcon className="w-4 h-4" />
+                      Crop & Upload
+                    </>
+                  )}
                 </button>
               </div>
             </div>
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={triggerFileInput}
-            disabled={uploading}
-            className={`${
-              aspectRatio === "16:9" ? "w-64 h-36" : "w-32 h-32"
-            } border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors flex flex-col items-center justify-center text-gray-500 hover:text-gray-600 disabled:opacity-50`}
-          >
-            {uploading ? (
-              <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <span className="text-xs mt-2">Uploading...</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center">
-                <PhotoIcon className="w-8 h-8 mb-2" />
-                <span className="text-xs font-medium">Upload {label}</span>
-                <span className="text-xs text-gray-400 mt-1">
-                  Click to browse
-                </span>
-              </div>
-            )}
-          </button>
-        </div>
       )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        className="hidden"
-        disabled={uploading}
-      />
-
-      <p className="text-xs text-gray-500">Supports JPG, PNG, GIF up to 5MB</p>
-    </div>
+    </>
   );
 }
 

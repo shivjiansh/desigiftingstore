@@ -22,7 +22,7 @@ export default function Header() {
     try {
       await signOut(auth);
       toast.success("Signed out");
-      router.push("/");
+      router.push("/products");
     } catch {
       toast.error("Error signing out");
     }
@@ -126,7 +126,7 @@ export default function Header() {
                   Login
                 </Link>
                 <Link
-                  href="/buyer/auth/register"
+                  href="/buyer/auth/login"
                   className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2 rounded-lg hover:from-emerald-700 hover:to-teal-700 font-medium transition-all duration-200"
                 >
                   Sign Up
