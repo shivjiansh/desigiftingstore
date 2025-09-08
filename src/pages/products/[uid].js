@@ -273,7 +273,7 @@ export default function ProductDetails() {
   const handleBuyNow = () => {
     if (!user) {
       notify.error("Please login to continue");
-      router.push("buyer/auth/login");
+      router.push("/buyer/auth/login");
       return;
     }
 

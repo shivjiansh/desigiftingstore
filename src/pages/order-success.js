@@ -89,7 +89,7 @@ export default function OrderSuccess() {
                 </p>
               </div>
               <Link
-                href="/"
+                href="/products"
                 className="inline-block bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-colors"
               >
                 Continue Shopping

@@ -191,13 +191,13 @@ export default function SellerDashboard() {
 
   // Get stats with fallback values
   const stats = {
-    totalRevenue: profile?.sellerStats?.totalRevenue || 1,
-    totalOrders: profile?.sellerStats?.totalOrders || 1,
-    totalProducts: profile?.sellerStats?.totalProducts || 1,
-    pendingOrders: profile?.sellerStats?.pendingOrders || 1,
-    monthlyRevenue: profile?.sellerStats?.monthlyRevenue || 1,
-    completedOrders: profile?.sellerStats?.completedOrders || 1,
-    averageOrderValue: profile?.sellerStats?.averageOrderValue || 1,
+    totalRevenue: profile?.sellerStats?.totalRevenue || 0,
+    totalOrders: profile?.sellerStats?.totalOrders || 0,
+    totalProducts: profile?.sellerStats?.totalProducts || 0,
+    pendingOrders: profile?.sellerStats?.pendingOrders || 0,
+    monthlyRevenue: profile?.sellerStats?.monthlyRevenue || 0,
+    completedOrders: profile?.sellerStats?.completedOrders || 0,
+    averageOrderValue: profile?.sellerStats?.averageOrderValue || 0,
   };
 
   // Get performance metrics with fallback
@@ -241,7 +241,7 @@ export default function SellerDashboard() {
                 <div className="flex space-x-3">
                   <Link
                     href="/seller/products/add"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors inline-flex items-center space-x-2"
                   >
                     <span>+</span>
                     <span>Add Product</span>
@@ -270,7 +270,7 @@ export default function SellerDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  {/* <div className="text-right">
                     <div
                       className={`flex items-center text-sm font-semibold ${getGrowthColor(
                         performanceMetrics.revenueGrowth
@@ -282,7 +282,7 @@ export default function SellerDashboard() {
                       {formatPercentage(performanceMetrics.revenueGrowth)}
                     </div>
                     <p className="text-xs text-gray-500">vs last month</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
               {/* Total Orders */}
@@ -301,7 +301,7 @@ export default function SellerDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  {/* <div className="text-right">
                     <div
                       className={`flex items-center text-sm font-semibold ${getGrowthColor(
                         performanceMetrics.orderGrowth
@@ -313,7 +313,7 @@ export default function SellerDashboard() {
                       {formatPercentage(performanceMetrics.orderGrowth)}
                     </div>
                     <p className="text-xs text-gray-500">vs last month</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
               {/* Products */}
@@ -332,7 +332,7 @@ export default function SellerDashboard() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
+                  {/* <div className="text-right">
                     <div
                       className={`flex items-center text-sm font-semibold ${getGrowthColor(
                         performanceMetrics.productGrowth
@@ -344,39 +344,89 @@ export default function SellerDashboard() {
                       {formatPercentage(performanceMetrics.productGrowth)}
                     </div>
                     <p className="text-xs text-gray-500">new this month</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
-              
+
               <Link href="/seller/milestones" className="group">
-                <div className="bg-white rounded-xl shadow-sm p-6 border group-hover:shadow-md transition-shadow cursor-pointer">
-                  <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-yellow-100 rounded-lg">
-                      <span className="text-2xl">🎯</span>
+
+                <div className="relative overflow-hidden">
+                  {/* Anniversary Background Effects */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 opacity-80 rounded-xl"></div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-300 to-transparent opacity-20 rounded-full -mr-16 -mt-16"></div>
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-yellow-300 to-transparent opacity-15 rounded-full -ml-12 -mb-12"></div>
+
+                
+                  {/* Enhanced Milestone Progress Card */}
+                  <div className="relative bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-4 sm:p-6 border-2 border-amber-200 group-hover:shadow-lg group-hover:border-amber-300 transition-all duration-200 cursor-pointer">
+                    {/* Anniversary Badge - Responsive positioning */}
+                    <div className="absolute -top-0 -right-0 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse z-20">
+                      LIMITED TIME!
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">
-                        Milestone Progress
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {stats.totalOrders % 150}/150 orders to bonus
-                      </p>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                        <div
-                          className="bg-yellow-500 h-2 rounded-full transition-all"
-                          style={{
-                            width: `${
-                              ((stats.totalOrders % 150) / 150) * 100
-                            }%`,
-                          }}
-                        ></div>
+
+                    {/* Mobile-First Flex Layout */}
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                      {/* Icon Section - Centered on mobile */}
+                      <div className="flex justify-center sm:justify-start">
+                        <div className="relative p-3 sm:p-3 bg-gradient-to-br from-yellow-100 to-amber-100 rounded-lg shadow-sm">
+                          <span className="text-2xl">🎉</span>
+                          {/* Sparkle effect - smaller on mobile */}
+                          <div className="absolute -top-1 -right-1 w-2 h-2 sm:w-3 sm:h-3 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
+                        </div>
+                      </div>
+
+                      {/* Content Section - Full width on mobile */}
+                      <div className="flex-1 text-center sm:text-left">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
+                          <h3 className="font-bold text-base sm:text-lg text-gray-900">
+                            Milestone Mega Celebration
+                          </h3>
+                          
+                        </div>
+
+
+                        {/* Enhanced Progress Bar - Taller on mobile */}
+                        <div className="relative w-full bg-gray-200 rounded-full h-3 sm:h-4 overflow-hidden mb-2">
+                          <div
+                            className="bg-gradient-to-r from-amber-400 via-yellow-500 to-orange-500 h-full rounded-full transition-all duration-1000 relative"
+                            style={{
+                              width: `${
+                                ((stats.totalOrders % 150) / 150) * 100
+                              }%`,
+                            }}
+                          >
+                            <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse"></div>
+                          </div>
+                        </div>
+
+                        {/* Progress Text - Stacked on small mobile */}
+                        <div className="flex flex-col xs:flex-row xs:justify-between text-xs text-gray-600 gap-1 xs:gap-0">
+                          
+                          <span className="font-semibold text-amber-700">
+                            {150 - (stats.totalOrders % 150)} orders remaining
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Arrow - Centered on mobile, right-aligned on desktop */}
+                      
+                    </div>
+
+                    {/* Anniversary Event Details - Stacked on mobile */}
+                    <div className="mt-4 pt-3 border-t border-amber-200/50">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+                        <span className="text-amber-700 font-semibold text-center sm:text-left">
+                          🎁 Anniversary Special: Up to ₹12,500 total bonus
+                        </span>
+                        <span className="text-red-600 font-bold animate-pulse text-center sm:text-right">
+                          📅 Until Nov 2025
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               </Link>
               {/* Average Order Value */}
-              
             </div>
 
             {/* Quick Actions */}

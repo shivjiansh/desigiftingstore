@@ -299,7 +299,7 @@ export default function Header() {
                 </Link>
 
                 <Link
-                  href="/buyer/auth/register"
+                  href="/buyer/auth/login"
                   className="flex items-center justify-center space-x-3 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded hover:from-emerald-700 hover:to-teal-700 transition-all duration-200"
                 >
                   <svg

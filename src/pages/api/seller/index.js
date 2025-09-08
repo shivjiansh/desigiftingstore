@@ -196,11 +196,11 @@ async function handleCreateSeller(req, res) {
           safeTrim(formData.phone) ||
           "",
         address: {
-          street: safeTrim(formData.businessInfo?.street),
-          city: safeTrim(formData.businessInfo?.city),
-          state: safeTrim(formData.businessInfo?.state),
-          pincode: safeTrim(formData.businessInfo?.pincode),
-          country: safeTrim(formData.businessInfo?.country) || "India",
+          street: safeTrim(formData.businessInfo?.address?.street),
+          city: safeTrim(formData.businessInfo?.address?.city),
+          state: safeTrim(formData.businessInfo?.address?.state),
+          pincode: safeTrim(formData.businessInfo?.address?.pincode),
+          country: safeTrim(formData.businessInfo?.address?.country) || "India",
         },
         businessType: formData.businessType || "individual",
         badge: {

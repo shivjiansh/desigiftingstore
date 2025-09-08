@@ -5,6 +5,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../../lib/firebase";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { useSellerDashboard } from "../../hooks/useSeller";
+import {ArrowUpIcon} from "@heroicons/react/24/outline";
 
 export default function SellerMilestones() {
   const [user] = useAuthState(auth);
@@ -27,9 +28,9 @@ export default function SellerMilestones() {
 
   // Get stats with fallback values
   const stats = {
-    totalOrders: profile?.sellerStats?.totalOrders || 47,
-    totalcashback: profile?.sellerStats?.totalcashback || 25340,
-    completedOrders: profile?.sellerStats?.completedOrders || 42,
+    totalOrders: profile?.sellerStats?.totalOrders || 0,
+    totalcashback: profile?.sellerStats?.totalcashback || 0,
+    completedOrders: profile?.sellerStats?.completedOrders || 0,
   };
 
   const currentMilestone = Math.floor(stats.totalOrders / 150);
@@ -37,31 +38,9 @@ export default function SellerMilestones() {
   const progressPercentage = ((stats.totalOrders % 150) / 150) * 100;
   const nextMilestoneTarget = (currentMilestone + 1) * 150;
   const bonusAmount = 500 * (currentMilestone + 1);
-
-  // Milestone history data
-  const milestoneHistory = [
-    {
-      id: 1,
-      ordersCompleted: 150,
-      bonusEarned: 500,
-      dateAchieved: "2025-08-15",
-      status: stats.totalOrders >= 150 ? "completed" : "pending",
-    },
-    {
-      id: 2,
-      ordersCompleted: 300,
-      bonusEarned: 1000,
-      dateAchieved: stats.totalOrders >= 300 ? "2025-08-28" : null,
-      status: stats.totalOrders >= 300 ? "completed" : "pending",
-    },
-    {
-      id: 3,
-      ordersCompleted: 450,
-      bonusEarned: 1500,
-      dateAchieved: null,
-      status: "pending",
-    },
-  ];
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
   if (sellerDataLoading) {
     return (
@@ -79,28 +58,166 @@ export default function SellerMilestones() {
   return (
     <>
       <Head>
-        <title>Order Milestones & Bonuses - DesiGifting Seller</title>
+        <title>Anniversary Milestones & Bonuses - DesiGifting Seller</title>
         <meta
           name="description"
-          content="Track your order milestones and bonus rewards"
+          content="Celebrating 1 year of Desigifting with exclusive milestone bonuses and cashback rewards"
         />
       </Head>
 
       <SellerLayout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-0">
-          {/* Page Header */}
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
-              Order Milestones & Bonus Rewards
-            </h1>
-            <p className="text-sm sm:text-base text-gray-600">
-              Complete milestones to earn exclusive bonuses and rewards
-            </p>
+          {/* Anniversary Celebration Banner */}
+          <div className="relative overflow-hidden bg-gradient-to-r from-amber-50 via-orange-50 to-red-50 rounded-2xl p-6 sm:p-8 mb-8 border border-amber-200 shadow-lg">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-gradient-to-br from-amber-300 to-orange-400 rounded-full opacity-20"></div>
+            <div className="absolute bottom-0 left-0 -mb-6 -ml-6 w-32 h-32 bg-gradient-to-tr from-red-300 to-pink-400 rounded-full opacity-15"></div>
+
+            <div className="relative z-10">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-100 to-orange-100 text-amber-800 px-4 py-2 rounded-full text-sm font-semibold mb-4 border border-amber-200">
+                  <span className="text-xl">🎉</span>
+                  <span>ANNIVERSARY CELEBRATION</span>
+                  <span className="text-xl">🎊</span>
+                </div>
+
+                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
+                  Celebrating{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-red-600">
+                    One Amazing Year
+                  </span>
+                </h1>
+
+                <p className="text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                  It's been an incredible journey since we launched Desigifting!
+                  To celebrate our 1st anniversary and thank our amazing seller
+                  community, we're introducing our exclusive
+                  <strong className="text-amber-700">
+                    {" "}
+                    5-Milestone Bonus Program
+                  </strong>{" "}
+                  with enhanced cashback rewards.
+                </p>
+              </div>
+
+              {/* Anniversary Stats */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="text-center bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-amber-200/50">
+                  <div className="text-2xl mb-2">🎂</div>
+                  <div className="text-2xl font-bold text-amber-700">365</div>
+                  <div className="text-sm text-gray-600">Days of Growth</div>
+                </div>
+                <div className="text-center bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50">
+                  <div className="text-2xl mb-2">🏆</div>
+                  <div className="text-2xl font-bold text-orange-700">5</div>
+                  <div className="text-sm text-gray-600">Milestone Levels</div>
+                </div>
+                <div className="text-center bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-red-200/50">
+                  <div className="text-2xl mb-2">💰</div>
+                  <div className="text-2xl font-bold text-red-700">₹12.5K</div>
+                  <div className="text-sm text-gray-600">
+                    Max Bonus Potential
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center mt-6">
+                <p className="text-sm text-gray-600 italic">
+                  "Thank you for being part of our success story. Here's to many
+                  more years together!"
+                  <span className="block mt-1 font-semibold text-gray-700">
+                    - The Desigifting Team
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Program Overview */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 sm:p-8 mb-8 border border-blue-200">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                Anniversary Milestone Program
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">
+                As part of our 1-year anniversary celebration, we've designed an
+                exclusive 5-tier milestone program that rewards your dedication
+                with substantial cashback bonuses and exclusive benefits.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg p-5 border border-blue-200/50">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-blue-600">🎯</span>
+                  Program Highlights
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">✓</span>
+                    <span>
+                      5 progressive milestone levels (150 orders each)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">✓</span>
+                    <span>
+                      Cashback bonuses from ₹500 to ₹2,500 per milestone
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">✓</span>
+                    <span>
+                      Total earning potential up to ₹12,500 in bonuses
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-500 mt-1">✓</span>
+                    <span>Exclusive anniversary perks and recognition</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="bg-white rounded-lg p-5 border border-blue-200/50">
+                <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-purple-600">⏰</span>
+                  Program Timeline
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>
+                      <strong>Launch:</strong> September 2025 (Anniversary
+                      Month)
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>
+                      <strong>Duration:</strong> 12 months from enrollment
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>
+                      <strong>Payouts:</strong> Within 5 business days of
+                      milestone completion
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-1">•</span>
+                    <span>
+                      <strong>Eligibility:</strong> All active sellers
+                      automatically enrolled
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
 
           {/* Current Progress Card */}
           <div className="bg-gradient-to-r from-emerald-50 to-blue-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 mb-6 sm:mb-8 border border-emerald-100 shadow-sm">
-            {/* Mobile: Stack vertically, Desktop: Side by side */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
               <div className="flex items-center gap-3 sm:gap-4">
                 <div className="relative">
@@ -117,21 +234,21 @@ export default function SellerMilestones() {
                 </div>
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                    Current Progress
+                    Your Anniversary Journey
                   </h2>
                   <p className="text-sm sm:text-base text-gray-600">
-                    Level {currentMilestone + 1} • {stats.totalOrders} total
-                    orders
+                    Milestone {currentMilestone + 1} • {stats.totalOrders} total
+                    orders completed
                   </p>
                 </div>
               </div>
 
               <div className="text-left sm:text-right">
-                <div className="bg-yellow-100 text-yellow-800 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base">
-                  🏆 Next Bonus: ₹{bonusAmount.toLocaleString()}
+                <div className="bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 px-4 sm:px-6 py-2 sm:py-3 rounded-full font-bold text-sm sm:text-base border border-amber-200">
+                  🎉 Next Bonus: ₹{bonusAmount.toLocaleString()}
                 </div>
                 <p className="text-xs sm:text-sm text-gray-500 mt-2">
-                  {ordersToNext} orders remaining
+                  {ordersToNext} orders until your next anniversary reward
                 </p>
               </div>
             </div>
@@ -139,15 +256,15 @@ export default function SellerMilestones() {
             {/* Progress Bar */}
             <div className="space-y-2 sm:space-y-3">
               <div className="flex justify-between text-xs sm:text-sm font-medium text-gray-700">
-                <span>Progress: {stats.totalOrders % 150}/150</span>
+                <span>Current Progress: {stats.totalOrders % 150}/150</span>
                 <span className="text-emerald-600">
-                  {progressPercentage.toFixed(1)}%
+                  {progressPercentage.toFixed(1)}% Complete
                 </span>
               </div>
 
               <div className="relative w-full bg-gray-200 rounded-full h-4 sm:h-5 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-emerald-500 to-blue-600 h-4 sm:h-5 rounded-full transition-all duration-1000 ease-out relative"
+                  className="bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 h-4 sm:h-5 rounded-full transition-all duration-1000 ease-out relative"
                   style={{ width: `${progressPercentage}%` }}
                 >
                   <div className="absolute inset-0 bg-white/30 rounded-full animate-pulse"></div>
@@ -157,31 +274,38 @@ export default function SellerMilestones() {
 
               <div className="flex justify-between text-xs sm:text-sm text-gray-500">
                 <span>{currentMilestone * 150} orders</span>
-                <span>{nextMilestoneTarget} orders</span>
+                <span>
+                  {nextMilestoneTarget} orders (Milestone {currentMilestone + 1}
+                  )
+                </span>
               </div>
             </div>
 
-            {/* Stats Row - Mobile: 1 column, Tablet+: 3 columns */}
+            {/* Stats Row */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-white/50">
               <div className="text-center bg-white/50 rounded-lg p-3 sm:p-0 sm:bg-transparent">
                 <div className="text-xl sm:text-2xl font-bold text-emerald-600">
                   {stats.totalOrders}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600">
-                  Orders Completed
+                  Anniversary Orders
                 </div>
               </div>
               <div className="text-center bg-white/50 rounded-lg p-3 sm:p-0 sm:bg-transparent">
                 <div className="text-xl sm:text-2xl font-bold text-blue-600">
-                  ₹{"0"}
+                  ₹
+                  {(
+                    (currentMilestone * 500 * (currentMilestone + 1)) /
+                    2
+                  ).toLocaleString()}
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600">
-                  Cashback Earned
+                  Bonus Earned
                 </div>
               </div>
               <div className="text-center bg-white/50 rounded-lg p-3 sm:p-0 sm:bg-transparent">
                 <div className="text-xl sm:text-2xl font-bold text-purple-600">
-                  {currentMilestone}
+                  {currentMilestone}/5
                 </div>
                 <div className="text-xs sm:text-sm text-gray-600">
                   Milestones Achieved
@@ -190,72 +314,97 @@ export default function SellerMilestones() {
             </div>
           </div>
 
-          {/* Milestone History */}
+          {/* Anniversary Milestone Roadmap */}
           <div className="bg-white rounded-xl shadow-sm border mb-6 sm:mb-8">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Upcoming Milestones
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-pink-50">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span>🎊</span>
+                Anniversary Milestone Roadmap
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                Your journey to bigger rewards
+              <p className="text-sm text-gray-600 mt-1">
+                Your exclusive 5-tier journey with escalating rewards
+                celebrating our 1st anniversary
               </p>
             </div>
             <div className="p-4 sm:p-6">
               <div className="space-y-3 sm:space-y-4">
-                {/* Generate upcoming milestones dynamically */}
                 {Array.from({ length: 5 }, (_, index) => {
-                  const milestoneNumber = currentMilestone + index + 1;
+                  const milestoneNumber = index + 1;
                   const ordersRequired = milestoneNumber * 150;
                   const bonusAmount = 500 * milestoneNumber;
                   const ordersFromCurrent = ordersRequired - stats.totalOrders;
-                  const isNext = index === 0;
+                  const isCompleted = stats.totalOrders >= ordersRequired;
+                  const isNext =
+                    !isCompleted &&
+                    ordersFromCurrent ===
+                      Math.min(
+                        ...Array.from({ length: 5 }, (_, i) => {
+                          const req = (i + 1) * 150;
+                          return req > stats.totalOrders
+                            ? req - stats.totalOrders
+                            : Infinity;
+                        })
+                      );
 
                   return (
                     <div
                       key={milestoneNumber}
-                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 p-3 sm:p-4 rounded-lg border-2 transition-all ${
-                        isNext
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 p-4 rounded-xl border-2 transition-all ${
+                        isCompleted
+                          ? "bg-green-50 border-green-200 ring-2 ring-green-100"
+                          : isNext
                           ? "bg-blue-50 border-blue-200 ring-2 ring-blue-100"
                           : "bg-gray-50 border-gray-200"
                       }`}
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
                         <div
-                          className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                            isNext
+                          className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                            isCompleted
+                              ? "bg-green-100 text-green-600"
+                              : isNext
                               ? "bg-blue-100 text-blue-600"
                               : "bg-gray-100 text-gray-400"
                           }`}
                         >
-                          {isNext ? "🎯" : "🏆"}
+                          {isCompleted ? "✅" : isNext ? "🎯" : "🏆"}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-semibold text-gray-900 text-sm sm:text-base">
-                              Milestone {milestoneNumber}
+                              Anniversary Milestone {milestoneNumber}
                             </h4>
+                            {isCompleted && (
+                              <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                                COMPLETED 🎉
+                              </span>
+                            )}
                             {isNext && (
                               <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                                NEXT
+                                CURRENT TARGET
+                              </span>
+                            )}
+                            {milestoneNumber === 5 && !isCompleted && (
+                              <span className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">
+                                GRAND FINALE
                               </span>
                             )}
                           </div>
                           <p className="text-xs sm:text-sm text-gray-600">
-                            Complete {ordersRequired} orders total
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span
-                              className={`text-xs font-medium ${
-                                isNext ? "text-blue-600" : "text-gray-500"
-                              }`}
-                            >
-                              {ordersFromCurrent} orders to go
+                            Complete {ordersRequired} total orders •
+                            <span className="font-medium text-gray-800">
+                              {" "}
+                              {isCompleted
+                                ? "Achieved!"
+                                : `${ordersFromCurrent} orders remaining`}
                             </span>
-                            {isNext && (
-                              <div className="flex-1 max-w-24 sm:max-w-32">
+                          </p>
+                          {isNext && !isCompleted && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <div className="flex-1 max-w-32 sm:max-w-40">
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                   <div
-                                    className="bg-blue-500 h-2 rounded-full transition-all"
+                                    className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all"
                                     style={{
                                       width: `${Math.max(
                                         0,
@@ -265,28 +414,40 @@ export default function SellerMilestones() {
                                   />
                                 </div>
                               </div>
-                            )}
-                          </div>
+                              <span className="text-xs font-medium text-blue-600">
+                                {(
+                                  ((150 - ordersFromCurrent) / 150) *
+                                  100
+                                ).toFixed(0)}
+                                % complete
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="text-left sm:text-right ml-13 sm:ml-0">
+                      <div className="text-left sm:text-right ml-15 sm:ml-0">
                         <div
-                          className={`font-bold text-lg ${
-                            isNext ? "text-blue-600" : "text-gray-500"
+                          className={`font-bold text-xl ${
+                            isCompleted
+                              ? "text-green-600"
+                              : isNext
+                              ? "text-blue-600"
+                              : "text-gray-500"
                           }`}
                         >
                           ₹{bonusAmount.toLocaleString()}
                         </div>
                         <div className="text-xs sm:text-sm text-gray-500">
-                          Bonus Reward
+                          Anniversary Bonus
                         </div>
-                        {isNext && (
-                          <div className="text-xs text-blue-600 font-medium mt-1">
-                            🔥{" "}
-                            {(((150 - ordersFromCurrent) / 150) * 100).toFixed(
-                              0
-                            )}
-                            % there!
+                        {isCompleted && (
+                          <div className="text-xs text-green-600 font-medium mt-1">
+                            🎉 Bonus Earned!
+                          </div>
+                        )}
+                        {milestoneNumber === 5 && (
+                          <div className="text-xs text-purple-600 font-medium mt-1">
+                            👑 Ultimate Reward
                           </div>
                         )}
                       </div>
@@ -296,18 +457,19 @@ export default function SellerMilestones() {
               </div>
 
               {/* Motivational Footer */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+              <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <span className="text-white text-lg">💪</span>
+                  <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-lg">🚀</span>
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-800 text-sm sm:text-base">
-                      Keep Going!
+                      Keep the Anniversary Spirit Alive!
                     </h4>
                     <p className="text-xs sm:text-sm text-gray-600">
-                      Each completed order brings you closer to your next bonus
-                      milestone
+                      Every order completed is a step closer to your next
+                      anniversary milestone. Thank you for making our first year
+                      incredible!
                     </p>
                   </div>
                 </div>
@@ -315,77 +477,120 @@ export default function SellerMilestones() {
             </div>
           </div>
 
-          {/* Quick Actions - New section to motivate action */}
+          {/* Anniversary Action Center */}
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 sm:p-6 border border-emerald-100 mb-6 sm:mb-8">
-            <h3 className="text-base sm:text-lg font-bold text-emerald-800 mb-3 sm:mb-4">
-              🚀 Boost Your Progress
+            <h3 className="text-base sm:text-lg font-bold text-emerald-800 mb-3 sm:mb-4 flex items-center gap-2">
+              <span>🎯</span>
+              Anniversary Action Center
             </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Maximize your milestone progress with these proven strategies from
+              our anniversary celebration guide.
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <button
                 onClick={() => router.push("/seller/products/add")}
-                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                className="flex items-center gap-3 p-4 bg-white rounded-lg border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm"
               >
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                   <span className="text-emerald-600">📦</span>
                 </div>
                 <div className="text-left">
-                  <div className="font-medium text-gray-800 text-sm">
+                  <div className="font-semibold text-gray-800 text-sm">
                     Add Products
                   </div>
                   <div className="text-xs text-gray-600">
-                    More products = more orders
+                    Expand your catalog for more orders
                   </div>
                 </div>
               </button>
 
               <button
                 onClick={() => router.push("/seller/analytics")}
-                className="flex items-center gap-3 p-3 bg-white rounded-lg border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                className="flex items-center gap-3 p-4 bg-white rounded-lg border border-emerald-200 hover:bg-emerald-50 transition-colors shadow-sm"
               >
-                <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
                   <span className="text-emerald-600">📊</span>
                 </div>
                 <div className="text-left">
-                  <div className="font-medium text-gray-800 text-sm">
-                    View Analytics
+                  <div className="font-semibold text-gray-800 text-sm">
+                    Performance Analytics
                   </div>
                   <div className="text-xs text-gray-600">
-                    Optimize your performance
+                    Optimize for milestone success
                   </div>
                 </div>
               </button>
             </div>
           </div>
 
-          {/* Bonus Information */}
+          {/* Anniversary Program Terms */}
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-4 sm:p-6 border border-purple-100">
-            <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4">
-              💡 How Bonus Rewards Work
+            <h3 className="text-base sm:text-lg font-bold text-purple-800 mb-3 sm:mb-4 flex items-center gap-2">
+              <span>📋</span>
+              Anniversary Program Terms & Benefits
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">
-                  Milestone Requirements
+                <h4 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base flex items-center gap-1">
+                  <span className="text-blue-600">✓</span>
+                  Qualification Criteria
                 </h4>
-                <ul className="space-y-1 text-xs sm:text-sm text-gray-600">
-                  <li>• Complete orders must be delivered successfully</li>
-                  <li>• Orders must maintain quality standards</li>
-                  <li>• Customer satisfaction rating above 4.0</li>
+                <ul className="space-y-1.5 text-xs sm:text-sm text-gray-600">
+                  <li>• Orders must be successfully delivered and confirmed</li>
+                  <li>
+                    • Maintain minimum 4.0-star customer satisfaction rating
+                  </li>
+                  <li>
+                    • Account must remain in good standing throughout program
+                  </li>
+                  <li>
+                    • Anniversary program active from Sept 2025 - Sept 2026
+                  </li>
                 </ul>
               </div>
               <div>
-                <h4 className="font-semibold text-gray-800 mb-2 text-sm sm:text-base">
-                  Reward Structure
+                <h4 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base flex items-center gap-1">
+                  <span className="text-green-600">🎁</span>
+                  Exclusive Anniversary Benefits
                 </h4>
-                <ul className="space-y-1 text-xs sm:text-sm text-gray-600">
-                  <li>• Bonus increases with each milestone</li>
-                  <li>• Payments processed within 3-5 business days</li>
-                  <li>• Additional perks unlock at higher levels</li>
+                <ul className="space-y-1.5 text-xs sm:text-sm text-gray-600">
+                  <li>
+                    • Progressive bonus structure (₹500 to ₹2,500 per milestone)
+                  </li>
+                  <li>
+                    • Fast-track payment processing within 5 business days
+                  </li>
+                  <li>• Special anniversary seller badges and recognition</li>
+                  <li>
+                    • Priority customer support and dedicated success manager
+                  </li>
                 </ul>
               </div>
             </div>
+
+            <div className="mt-6 p-4 bg-white/70 rounded-lg border border-purple-200/50">
+              <p className="text-xs sm:text-sm text-gray-600 text-center">
+                <strong className="text-purple-700">
+                  Anniversary Special:
+                </strong>{" "}
+                This milestone program is our way of saying thank you for an
+                incredible first year. All bonuses are additional to your
+                regular earnings and commission structure.
+                <span className="block mt-2 font-medium text-gray-700">
+                  Happy 1st Anniversary from all of us at Desigifting! 🎉
+                </span>
+              </p>
+            </div>
           </div>
         </div>
+        <button
+                        onClick={scrollToTop}
+                        className="fixed bottom-8 right-4 w-10 h-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
+                        aria-label="Back to top"
+                      >
+                        <ArrowUpIcon className="h-5 w-5" />
+                      </button>
       </SellerLayout>
     </>
   );

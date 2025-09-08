@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import SellerLayout from "../../components/seller/SellerLayout";
 import { notify } from "../../lib/notifications";
+import {ArrowUpIcon} from "@heroicons/react/24/outline";
 
 import {
   PlusIcon,
@@ -36,6 +37,10 @@ export default function SellerProducts() {
   const router = useRouter();
 
   const productsPerPage = 12;
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -735,6 +740,13 @@ export default function SellerProducts() {
             </div>
           )}
         </div>
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-4 w-10 h-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
+          aria-label="Back to top"
+        >
+          <ArrowUpIcon className="h-5 w-5" />
+        </button>
       </SellerLayout>
     </>
   );

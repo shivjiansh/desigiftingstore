@@ -540,8 +540,6 @@ export default function Profile() {
                       icon: UserIcon,
                     },
                     { id: "addresses", label: "Addresses", icon: MapPinIcon },
-                    { id: "orders", label: "My Orders", icon: ShoppingBagIcon },
-                    { id: "wishlist", label: "Wishlist", icon: HeartIcon },
                     { id: "settings", label: "Settings", icon: CogIcon },
                   ].map((tab) => (
                     <button

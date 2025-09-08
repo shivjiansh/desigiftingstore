@@ -75,7 +75,7 @@ export default function SellerLayout({ children }) {
       setLocalSellerData(null);
       setHasLoadedProfile(false); // Reset on signout
       toast.success("Signed out successfully");
-      router.push("/");
+      router.push("/products");
     } catch {
       toast.error("Error signing out");
     }
@@ -87,7 +87,7 @@ export default function SellerLayout({ children }) {
     { name: "Orders", href: "/seller/orders", icon: "📋" },
     { name: "Analytics", href: "/seller/analytics", icon: "📊" },
     { name: "Profile", href: "/seller/profile", icon: "👨‍💼" },
-    {name: "Cashback", href: "/seller/milestones",icon: "🎯"  },
+    { name: "Cashback", href: "/seller/milestones", icon: "🎉" },
     { name: "Payout", href: "/seller/payout", icon: "💰" },
   ];
 
@@ -212,6 +212,47 @@ export default function SellerLayout({ children }) {
                 router.pathname === item.href ||
                 (item.href !== "/seller/dashboard" &&
                   router.pathname.startsWith(item.href));
+                   if (item.name === "Cashback") {
+                     return (
+                       <div key={item.name} className="relative">
+                         {/* Anniversary Background */}
+                         <div className="absolute inset-0 bg-gradient-to-r from-amber-100 to-yellow-100 opacity-60 rounded-md animate-pulse"></div>
+
+                         <Link
+                           href={item.href}
+                           className={`relative flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group ${
+                             isActive
+                               ? "bg-gradient-to-r from-amber-200 to-yellow-200 text-amber-800 shadow-md"
+                               : "text-amber-700 hover:bg-gradient-to-r hover:from-amber-100 hover:to-yellow-100"
+                           }`}
+                         >
+                           <div className="flex items-center">
+                             <span className="mr-3 text-lg animate-bounce">
+                               {item.icon}
+                             </span>
+                             <span className="font-semibold">{item.name}</span>
+                           </div>
+
+                           {/* Anniversary Badge */}
+                           <div className="flex flex-col items-end">
+                             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                               NEW
+                             </span>
+                             <span className="text-xs text-amber-600 font-medium mt-0.5">
+                               1st Anniversary
+                             </span>
+                           </div>
+                         </Link>
+
+                         {/* Sparkle Effects */}
+                         <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
+                         <div
+                           className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-60"
+                           style={{ animationDelay: "1s" }}
+                         ></div>
+                       </div>
+                     );
+                   }
               return (
                 <Link
                   key={item.name}

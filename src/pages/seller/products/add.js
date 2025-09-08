@@ -7,6 +7,7 @@ import { auth } from "../../../lib/firebase";
 import SellerLayout from "../../../components/seller/SellerLayout";
 import { notify } from "../../../lib/notifications";
 import { useSellerDashboard } from "../../../hooks/useSeller";
+import {ArrowUpIcon} from "@heroicons/react/24/outline";
 
 export default function AddProduct() {
   const [user, setUser] = useState(null);
@@ -27,6 +28,7 @@ export default function AddProduct() {
     tags: [],
     images: [],
     status: "active", //active, fewleft, inactive
+    isActive: "true",
     hasOffer: false,
     offerPrice: "",
     offerStartDate: "",
@@ -171,6 +173,10 @@ export default function AddProduct() {
       (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
     return (parseFloat(product.price) - discount).toFixed(2);
   };
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
   const addTag = () => {
     if (newTag.trim() && !product.tags.includes(newTag.trim().toLowerCase())) {
@@ -327,12 +333,11 @@ export default function AddProduct() {
 
       const productData = {
         ...product,
-        status: '',
+        status: "active",
         sellerId: user.uid,
+        offerPrice: product.hasOffer ? parseFloat(calculateOfferPrice()) : 0,
         businessName: profile.businessInfo.businessName || "frictional",
-        
-       
-  
+
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -794,7 +799,7 @@ export default function AddProduct() {
                           <div className="flex items-center justify-center">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             <span className="ml-3 text-gray-600">
-                              Uploading to Cloudinary...
+                              Uploading...
                             </span>
                           </div>
                         ) : (
@@ -1065,6 +1070,13 @@ export default function AddProduct() {
             </div>
           </div>
         </div>
+        <button
+                        onClick={scrollToTop}
+                        className="fixed bottom-8 right-4 w-10 h-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
+                        aria-label="Back to top"
+                      >
+                        <ArrowUpIcon className="h-5 w-5" />
+                      </button>
       </SellerLayout>
     </>
   );

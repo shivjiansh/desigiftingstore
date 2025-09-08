@@ -18,12 +18,14 @@ import {
   CalendarIcon,
   InformationCircleIcon,
   ShieldCheckIcon,
+  XMarkIcon,
   TrendingUpIcon,
 } from "@heroicons/react/24/outline";
 
 export default function SellerPayout() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
+    const [showComingSoon, setShowComingSoon] = useState(true);
   const [payoutData, setPayoutData] = useState({
     currentWeekEarnings: 0,
     lastWeekPayout: 0,
@@ -107,6 +109,8 @@ export default function SellerPayout() {
     }
   }, [authLoading, isAuthenticated, user, router]);
 
+
+
   const fetchPayoutData = async () => {
     try {
       setLoading(true);
@@ -173,6 +177,7 @@ export default function SellerPayout() {
         (sum, day) => sum + day.netEarnings,
         0
       );
+
 
       const mockData = {
         currentWeekEarnings: totalWeekEarnings,
@@ -774,6 +779,136 @@ export default function SellerPayout() {
                   Cancel
                 </button>
                 <button className="btn btn-primary">Add Method</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showComingSoon && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="relative bg-gradient-to-br from-white via-amber-50/30 to-orange-50/30 backdrop-blur-sm rounded-2xl max-w-md w-full p-8 shadow-2xl mx-4 border border-amber-200/50">
+              <button
+                onClick={() => router.back()}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+
+              {/* Anniversary Badge */}
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-semibold shadow-lg">
+                  🎉 ANNIVERSARY FEATURE
+                </div>
+              </div>
+
+              {/* Icon */}
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                <svg
+                  className="w-10 h-10 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+
+              {/* Main Content */}
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  Enhanced Payout Dashboard
+                  <span className="block text-lg text-amber-600 font-semibold mt-1">
+                    Coming This Anniversary!
+                  </span>
+                </h3>
+
+                <p className="text-gray-600 text-sm leading-relaxed mb-4">
+                  As part of our{" "}
+                  <strong className="text-amber-700">
+                    1st Anniversary celebration
+                  </strong>
+                  , we're launching an advanced payout management system with
+                  real-time tracking, instant transfers, and detailed earning
+                  analytics.
+                </p>
+
+                {/* Feature Preview */}
+                <div className="bg-white/80 rounded-lg p-4 mb-4 border border-amber-200/50">
+                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
+                    🚀 What's Coming:
+                  </h4>
+                  <ul className="text-xs text-gray-600 space-y-1 text-left">
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Instant payout processing & real-time status</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Multiple payment methods (UPI, Bank, Wallet)</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Detailed earning breakdowns & tax reports</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-green-500">✓</span>
+                      <span>Anniversary milestone bonus tracking</span>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Anniversary Timeline */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 mb-4 border border-amber-200">
+                  <div className="flex items-center justify-center gap-2 mb-2">
+                    <span className="text-amber-600">📅</span>
+                    <span className="text-sm font-semibold text-amber-800">
+                      Launch Timeline
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-700">
+                    <strong>Beta Launch:</strong> October 2025 (Anniversary
+                    Month)
+                    <br />
+                    <strong>Full Release:</strong> November 2025
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                <button
+                  onClick={() =>
+                    (window.location.href =
+                      "mailto:shivansh.jauhari@gmail.com?subject=Anniversary Payout System - Early Access Request&body=Hi Team,%0A%0AI'm interested in early access to the new Anniversary Payout Dashboard.%0A%0ASeller ID: " +
+                      (user?.uid || "N/A") +
+                      "%0A%0AThank you!")
+                  }
+                  className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-4 py-3 rounded-lg hover:from-emerald-700 hover:to-blue-700 transition-all font-semibold shadow-lg"
+                >
+                  🎉 Join Anniversary Beta
+                </button>
+
+                <button
+                  onClick={() => router.push("/seller/milestones")}
+                  className="w-full bg-amber-100 text-amber-800 px-4 py-2 rounded-lg hover:bg-amber-200 transition-colors font-medium text-sm border border-amber-200"
+                >
+                  View Milestone Bonuses Instead
+                </button>
+              </div>
+
+              {/* Footer Note */}
+              <div className="mt-4 p-3 bg-white/60 rounded-lg border border-gray-200/50">
+                <p className="text-xs text-gray-500 text-center">
+                  <span className="text-amber-600 font-semibold">
+                    Anniversary Promise:
+                  </span>{" "}
+                  All existing payouts continue normally. New system adds
+                  features without disrupting current processes.
+                </p>
               </div>
             </div>
           </div>

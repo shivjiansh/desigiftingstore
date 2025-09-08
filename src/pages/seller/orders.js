@@ -13,6 +13,7 @@ import {
   XMarkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ArrowUpIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "react-hot-toast";
 
@@ -197,6 +198,10 @@ export default function SellerOrders() {
   const [modalOpen, setModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
+
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
   const statusOptions = [
     {
@@ -678,6 +683,13 @@ export default function SellerOrders() {
           </div>
         )}
       </div>
+      <button
+        onClick={scrollToTop}
+        className="fixed bottom-8 right-4 w-10 h-10 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-full flex items-center justify-center transition-all duration-200 shadow-lg"
+        aria-label="Back to top"
+      >
+        <ArrowUpIcon className="h-5 w-5" />
+      </button>
     </SellerLayout>
   );
 }
