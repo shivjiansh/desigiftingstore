@@ -109,11 +109,6 @@ class MyDocument extends Document {
           <meta name="HandheldFriendly" content="True" />
           <meta name="MobileOptimized" content="320" />
 
-          {/**Google */}
-          <meta
-            name="google-site-verification"
-            content="Ai3YXJq-X5YSl_mVrFABlLlHvN8T2XhlJjSUBqXCQZg"
-          />
 
           {/* Security Headers */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
@@ -126,7 +121,7 @@ class MyDocument extends Document {
           <meta name="msvalidate.01" content="your_bing_verification_code" />
           <meta
             name="google-site-verification"
-            content="your_google_verification_code"
+            content="Ai3YXJq-X5YSl_mVrFABlLlHvN8T2XhlJjSUBqXCQZg"
           />
           <meta
             name="yandex-verification"
