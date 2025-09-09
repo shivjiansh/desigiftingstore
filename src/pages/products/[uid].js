@@ -388,57 +388,22 @@ export default function ProductDetails() {
     }
   };
 
-const shareProduct = async () => {
-  if (navigator.share) {
-    try {
-      // First, check if file sharing is supported
-      if (navigator.canShare && navigator.canShare({ files: [] })) {
-        // Fetch the product image
-        const imageUrl = product.image || product.images?.[0]; // Your product image URL
-
-        if (imageUrl) {
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-
-          // Create File object with proper MIME type
-          const imageFile = new File([blob], "product-image.jpg", {
-            type: blob.type || "image/jpeg",
-            lastModified: new Date().getTime(),
-          });
-
-          // Share with image
-          await navigator.share({
-            title: product.name,
-            text: product.description,
-            url: window.location.href,
-            files: [imageFile], // ← This adds the image
-          });
-        } else {
-          // Fallback: share without image
-          await navigator.share({
-            title: product.name,
-            text: product.description,
-            url: window.location.href,
-          });
-        }
-      } else {
-        // Browser doesn't support file sharing, share text only
+  const shareProduct = async () => {
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: product.name,
           text: product.description,
           url: window.location.href,
         });
+      } catch (error) {
+        console.error("Error sharing:", error);
       }
-    } catch (error) {
-      console.error("Error sharing:", error);
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      notify.success("Product link copied to clipboard!");
     }
-  } else {
-    // Fallback for browsers without Web Share API
-    navigator.clipboard.writeText(window.location.href);
-    notify.success("Product link copied to clipboard!");
-  }
-};
-
+  };
 
   if (loading) {
     return (
