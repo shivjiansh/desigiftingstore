@@ -109,9 +109,15 @@ class MyDocument extends Document {
           <meta name="HandheldFriendly" content="True" />
           <meta name="MobileOptimized" content="320" />
 
+          {/**Google */}
+          <meta
+            name="google-site-verification"
+            content="Ai3YXJq-X5YSl_mVrFABlLlHvN8T2XhlJjSUBqXCQZg"
+          />
+
           {/* Security Headers */}
           <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-          
+
           <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
           <meta name="referrer" content="strict-origin-when-cross-origin" />
 
@@ -128,13 +134,11 @@ class MyDocument extends Document {
           />
 
           {/* PWA Manifest */}
-          
 
           {/* Canonical URL - Will be overridden by individual pages */}
           <link rel="canonical" href="https://desigifting.store" />
 
           {/* Preload Critical Resources */}
-          
 
           {/* Organization Structured Data */}
           <script
