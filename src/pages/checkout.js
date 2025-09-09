@@ -293,7 +293,7 @@ export default function Checkout() {
 
             // Verify payment on backend
             const verifyResponse = await fetch(
-              "/api/payments/razorpay/verify",
+              "/api/payments/verify",
               {
                 method: "POST",
                 headers: {

@@ -2,7 +2,7 @@
   "name": "Desigifting - Customized Gifts Marketplace",
   "short_name": "Desigifting",
   "description": "Create unique, personalized gifts with our multi-vendor marketplace",
-  "start_url": "/",
+  "start_url": "/products",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
@@ -17,5 +17,10 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ]
+  ],
+    "serviceworker": {                       
+    "src": "/my-service-worker.js",
+    "scope": "/products",
+    "type": "classic"
+  }
 }
