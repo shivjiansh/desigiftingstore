@@ -42,7 +42,7 @@ export default function Products() {
 
   const [filters, setFilters] = useState({
     category: "",
-    priceRange: [0, 2000],
+    priceRange: [0, 20000],
     rating: 0,
     seller: "",
     inStock: false,
@@ -320,7 +320,7 @@ export default function Products() {
   const clearFilters = () => {
     setFilters({
       category: "",
-      priceRange: [0, 2000],
+      priceRange: [0, 20000],
       rating: 0,
       seller: "",
       inStock: false,
@@ -645,7 +645,7 @@ export default function Products() {
                           handleFilterChange({
                             priceRange: [
                               filters.priceRange[0],
-                              parseInt(e.target.value) || 2000,
+                              parseInt(e.target.value) || 20000,
                             ],
                           })
                         }
