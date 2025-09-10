@@ -40,7 +40,7 @@ export default function BuyerLogin() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-    const result = await login(formData.email, formData.password, "buyer");
+    const result = await login(formData.email, formData.password);
     if (result.success) {
       const redirectTo = router.query.redirect || "/products";
       router.push(redirectTo);

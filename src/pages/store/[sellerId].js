@@ -487,8 +487,7 @@ export default function SellerStorePage() {
                           )}
                           <span className="ml-2 text-gray-600">
                             ({seller.sellerStats?.ratings?.total || 0} reviews)
-                          </span>
-                          
+                          </span>                          
                         </div>
 
                         {seller.businessInfo?.address && (
@@ -501,7 +500,7 @@ export default function SellerStorePage() {
                       </div>
 
                       <p className="text-gray-700 max-w-2xl">
-                        {seller.businessInfo?.description || "THIS WILL BE DESCRIPTION"}
+                        {seller.description || "THIS WILL BE DESCRIPTIONs"}
                       </p>
                     </div>
 
@@ -698,9 +697,9 @@ export default function SellerStorePage() {
                             />
                           </div>
                           {/* Count */}
-                          <div className="w-8 text-right text-sm text-gray-600 font-medium">
+                          {/* <div className="w-8 text-right text-sm text-gray-600 font-medium">
                             {count}
-                          </div>
+                          </div> */}
                         </div>
                       );
                     })}
@@ -710,7 +709,7 @@ export default function SellerStorePage() {
             )}
 
           {/* Reviews List */}
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             {reviews.length > 0 ? (
               <>
                 {(showAllReviews ? reviews : reviews.slice(0, 3)).map(
@@ -793,7 +792,7 @@ export default function SellerStorePage() {
                 </p>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
 
         {/* Rating Modal */}

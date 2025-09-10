@@ -170,8 +170,8 @@ export default function SellerRegister() {
         // Seller-specific fields
         businessInfo: {
           businessName: formData.businessName.trim(),
-          tagline: "",
-          description: "",
+          tagline: formData.businessInfo?.tagline,
+          description: formData.businessInfo?.description,
           businessPhone: formData.businessPhone.trim() || formData.phone.trim(),
           address: {
             street: formData.street.trim(),

@@ -49,8 +49,53 @@ export default function Header() {
           </Link>
 
           {/* Desktop nav */}
+          {/* Desktop nav */}
           <nav className="hidden md:flex space-x-8">
-            {/* ... nav links ... */}
+            {user ? (
+              // Logged in navigation
+              <>
+                <Link
+                  href="/wishlist"
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Wishlist
+                </Link>
+                <Link
+                  href="/orders"
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Orders
+                </Link>
+                <Link
+                  href="/profile"
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Profile
+                </Link>
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              // Logged out navigation
+              <>
+                <Link
+                  href="/products"
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Browse Products
+                </Link>
+                <Link
+                  href="/sellers"
+                  className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
+                >
+                  Partnered Stores
+                </Link>
+              </>
+            )}
           </nav>
 
           {/* Actions */}
@@ -84,38 +129,10 @@ export default function Header() {
                   <span className="font-medium">
                     {user.displayName
                       ? user.displayName.split(" ")[0]
-                      : "Account"}
+                      : "Buyer"}
                   </span>
                 </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-lg py-1">
-                    <Link
-                      href="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
-                    >
-                      My Account
-                    </Link>
-                    <Link
-                      href="/orders"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
-                    >
-                      My Orders
-                    </Link>
-                    <Link
-                      href="/wishlist"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
-                    >
-                      Wishlist
-                    </Link>
-                    <hr className="my-1" />
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
+                
               </div>
             ) : (
               <div className="hidden md:flex space-x-4">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
@@ -21,10 +21,13 @@ import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
 
 export default function SellersPage() {
   const router = useRouter();
+   const [isExpanded, setIsExpanded] = useState(false);
+    const [isClamped, setIsClamped] = useState(false);
   const [sellers, setSellers] = useState([]);
   const [filteredSellers, setFilteredSellers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const textRef = useRef(null);
 
   useEffect(() => {
     fetchSellers();
@@ -33,6 +36,18 @@ export default function SellersPage() {
   useEffect(() => {
     filterSellers();
   }, [sellers, searchTerm]);
+
+  useEffect(() => {
+    const checkIfClamped = () => {
+      if (textRef.current) {
+        const element = textRef.current;
+        // Check if content is overflowing
+        setIsClamped(element.scrollHeight > element.clientHeight);
+      }
+    };
+
+    checkIfClamped(); // Call the function
+  }, []); // Add dependency array
 
   const fetchSellers = async () => {
     setLoading(true);
@@ -48,7 +63,7 @@ export default function SellersPage() {
       setLoading(false);
     }
   };
-
+console.log("###### fetched seller",sellers);
   const filterSellers = () => {
     let filtered = sellers;
     if (searchTerm) {
@@ -198,9 +213,6 @@ export default function SellersPage() {
                 </>
               )}
             </p>
-            <div className="text-sm text-gray-500">
-              Last updated: {new Date().toLocaleDateString()}
-            </div>
           </div>
         </div>
 
@@ -260,14 +272,16 @@ export default function SellersPage() {
                         {seller.businessInfo.businessName}
                       </h3>
                       <div className="flex items-center space-x-1">
-                        {renderStars(seller.rating || 3)}
+                        {renderStars(seller.sellerStats?.ratings?.average || 3)}
                         <span className="text-sm text-gray-600 ml-1">
-                          ({seller.reviewCount || 0})
+                          ({seller.sellerStats?.ratings?.total || 0})
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-sm text-gray-600 mb-1">{seller.name}</p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      Artist: {seller.name}
+                    </p>
 
                     {seller.businessInfo?.address?.state ||
                       ("dsg" && (
@@ -282,10 +296,25 @@ export default function SellersPage() {
                         </div>
                       ))}
 
-                    <p className="text-gray-700 text-sm mb-4 line-clamp-3">
-                      {seller.businessInfo.description ||
-                        "Creating unique custom gifts with love and attention to detail."}
-                    </p>
+                    <div className="description-section">
+                      <p
+                        ref={textRef}
+                        className={`text-gray-700 text-sm mb-2 transition-all duration-300 ${
+                          isExpanded ? "" : "line-clamp-3"
+                        }`}
+                      >
+                        {seller.description}
+                      </p>
+
+                      {/* {isClamped && (
+                        <button
+                          onClick={toggleExpanded}
+                          className="text-emerald-600 hover:text-emerald-700 text-sm font-semibold underline decoration-dotted underline-offset-2 hover:no-underline transition-all duration-200"
+                        >
+                          {isExpanded ? "← Read Less" : "Read More →"}
+                        </button>
+                      )} */}
+                    </div>
 
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-gray-100">
@@ -297,7 +326,7 @@ export default function SellersPage() {
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-gray-900">
-                          {seller.totalSales || 0}
+                          {seller.sellerStats?.totalSales || 0}
                         </div>
                         <div className="text-xs text-gray-500">Sales</div>
                       </div>
@@ -310,7 +339,6 @@ export default function SellersPage() {
                     </div>
 
                     {/* Categories */}
-                    
 
                     {/* Contact Info */}
                     <div className="flex items-center justify-between text-xs text-gray-500 mb-4">

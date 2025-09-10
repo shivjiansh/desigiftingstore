@@ -80,7 +80,7 @@ class MyDocument extends Document {
           <meta name="publisher" content="Desigifting" />
           <meta
             name="copyright"
-            content="© 2025 Desigifting. All rights reserved."
+            content="© 2024 Desigifting. All rights reserved."
           />
           <meta name="rating" content="general" />
           <meta name="distribution" content="global" />
