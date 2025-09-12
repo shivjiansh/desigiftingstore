@@ -11,6 +11,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { notify } from "../../../lib/notifications";
+// ❌ Removed: import emailService from "../../../lib/emailService";
 
 export default function SellerRegister() {
   const [formData, setFormData] = useState({
@@ -261,12 +262,39 @@ export default function SellerRegister() {
       const result = await response.json();
 
       if (result.success) {
-        // Send email verification (optional)
-        // await sendEmailVerification(user);
+        // ✅ Send seller onboarding email via API route
+        try {
+          const emailResponse = await fetch("/api/email/send-onboarding", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: user.email,
+              name: formData.name.trim(),
+              businessName: formData.businessName.trim(),
+              userType: "seller",
+            }),
+          });
+
+          const emailResult = await emailResponse.json();
+
+          if (emailResult.success) {
+            console.log("✅ Seller onboarding email sent successfully");
+          } else {
+            console.error(
+              "⚠️ Failed to send onboarding email:",
+              emailResult.error
+            );
+          }
+        } catch (emailError) {
+          console.error("⚠️ Onboarding email API error:", emailError);
+          // Don't fail registration if email fails
+        }
 
         // Success feedback and redirect
         notify.success(
-          "Seller account created successfully! Verification will take around 24 hrs"
+          "Seller account created successfully! Check your email for next steps. Verification will take around 24 hrs"
         );
         router.push("/seller/dashboard?welcome=true");
       } else {

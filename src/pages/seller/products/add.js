@@ -335,6 +335,7 @@ export default function AddProduct() {
         ...product,
         status: "active",
         sellerId: user.uid,
+        sellerEmail:user.email,
         offerPrice: product.hasOffer ? parseFloat(calculateOfferPrice()) : 0,
         businessName: profile.businessInfo.businessName || "frictional",
 

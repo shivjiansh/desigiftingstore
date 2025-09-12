@@ -366,7 +366,7 @@ export default function Products() {
                   Loading Products
                 </p>
                 <p className="text-sm text-gray-500">
-                  Discovering amazing custom gifts for you...
+                  Discovering amazing personalized gifts for you...
                 </p>
               </div>
             </div>
@@ -385,7 +385,7 @@ export default function Products() {
         <meta name="description" content={seoDescription} />
         <meta
           name="keywords"
-          content="custom gifts, personalized products, handmade, artisan crafts, photo gifts, engraved gifts, custom mugs, personalized jewelry, wedding gifts, home decor, India"
+          content="gifting, custom gifts, personalized products, handmade, artisan crafts, photo gifts, engraved gifts, custom mugs, personalized jewelry, wedding gifts, home decor, India"
         />
 
         {/* Canonical URL */}
@@ -528,7 +528,7 @@ export default function Products() {
               <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
                 {searchTerm
                   ? `Showing ${filteredProducts.length} results for "${searchTerm}"`
-                  : "Find the perfect personalized gift from our collection of heartcrafted products made with love"}
+                  : "Find your perfect personalized gift from collection of heartcrafted products made with love"}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
@@ -711,7 +711,6 @@ export default function Products() {
                     </span>
 
                     {/* View Mode Toggle - Hidden on mobile */}
-                    
                   </div>
                 </div>
               </div>
@@ -737,7 +736,6 @@ export default function Products() {
                     >
                       Clear All Filters
                     </button>
-                    
                   </div>
                 </div>
               ) : (

@@ -18,6 +18,7 @@ import {
   XMarkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  EnvelopeIcon,
 } from "@heroicons/react/24/outline";
 
 function CustomizationsView({
@@ -27,6 +28,7 @@ function CustomizationsView({
 }) {
   const [open, setOpen] = useState(false);
   if (!customImages.length && !customText && !specialMessage) return null;
+
   return (
     <div className="bg-white border rounded-lg shadow-sm p-4 mb-6">
       <button
@@ -94,7 +96,12 @@ export default function Checkout() {
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [scriptError, setScriptError] = useState(false);
+
+  // Email status tracking
+  const [emailStatus, setEmailStatus] = useState({
+    buyer: "pending", // 'pending', 'sending', 'sent', 'failed'
+    seller: "pending",
+  });
 
   const [newAddress, setNewAddress] = useState({
     name: "",
@@ -119,25 +126,19 @@ export default function Checkout() {
     return unsub;
   }, [router]);
 
-
-
-  // Add timeout fallback
   useEffect(() => {
     const timer = setTimeout(() => {
       if (typeof window !== "undefined" && window.Razorpay) {
         setRazorpayLoaded(true);
       } else if (!razorpayLoaded) {
         console.log("Razorpay script load timeout, checking manually...");
-        // Check if Razorpay is available anyway
         if (typeof window !== "undefined" && window.Razorpay) {
           setRazorpayLoaded(true);
         }
       }
-    }, 5000); // 5 second timeout
-
+    }, 5000);
     return () => clearTimeout(timer);
   }, [razorpayLoaded]);
-
 
   useEffect(() => {
     if (user) {
@@ -157,6 +158,7 @@ export default function Checkout() {
       const data = JSON.parse(checkoutData);
       setOrderItems(data || []);
       setLoading(false);
+      console.log("******",orderItems);
     } catch {
       notify.error("Failed to load checkout data");
       router.push("/products");
@@ -181,11 +183,9 @@ export default function Checkout() {
   }
 
   function calculateTotals() {
-    const subtotal = orderItems.items.reduce(
-      (sum, i) => sum + i.price * i.quantity,
-      0
-    );
-    const shipping = subtotal < 500 ? 0 : 100;
+    const subtotal =
+      orderItems.items?.reduce((sum, i) => sum + i.price * i.quantity, 0) || 0;
+    const shipping = subtotal < 500 ? 100 : 0;
     const tax = subtotal * 0.18;
     return { subtotal, shipping, tax, total: subtotal + shipping + tax };
   }
@@ -238,6 +238,124 @@ export default function Checkout() {
     }
   }
 
+  // 📧 EMAIL SENDING FUNCTIONS
+  //customer email send
+  async function sendOrderConfirmationEmail(orderData) {
+    try {
+      setEmailStatus((prev) => ({ ...prev, buyer: "sending" }));
+
+      const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
+
+      const emailPayload = {
+        customerEmail: user.email,
+        customerName: user.displayName || user.email.split("@")[0],
+        orderId: orderData.id,
+        productName: orderData.items?.[0]?.name || "Custom Gift",
+        sellerName: orderData.items?.[0]?.businessName || "DesiGifting Partner",
+        amount: orderData.totalAmount,
+
+        expectedDelivery: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("en-IN"),
+        orderUrl: `${window.location.origin}/orders`,
+        deliveryAddress: selectedAddress
+          ? `${selectedAddress.addressLine1}, ${selectedAddress.city}, ${selectedAddress.state} - ${selectedAddress.pincode}`
+          : "",
+      };
+
+      const response = await fetch("/api/email/order-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailPayload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setEmailStatus((prev) => ({ ...prev, buyer: "sent" }));
+        console.log("✅ Buyer confirmation email sent");
+        return true;
+      } else {
+        setEmailStatus((prev) => ({ ...prev, buyer: "failed" }));
+        console.error("❌ Buyer email failed:", result.error);
+        return false;
+      }
+    } catch (error) {
+      setEmailStatus((prev) => ({ ...prev, buyer: "failed" }));
+      console.error("❌ Buyer email service error:", error);
+      return false;
+    }
+  }
+
+  //seller email order recieved
+  async function sendSellerOrderAlert(orderData) {
+    try {
+      setEmailStatus((prev) => ({ ...prev, seller: "sending" }));
+      console.log("oder dat#########",orderData);
+      const sellerEmailPayload = {
+        sellerEmail: orderData.items?.[0]?.sellerEmail || "sellerEmail@example.com",
+        sellerName: orderData.items?.[0]?.businessName || "Seller",
+        orderId: orderData.id,
+        customerName: user.displayName || user.email.split("@")[0],
+        productName: orderData.items?.[0]?.name || "Custom Gift",
+        amount: orderData.totalAmount,
+        
+        expectedDelivery: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("en-IN"),
+        dashboardUrl: `${window.location.origin}/seller/orders`,
+      };
+
+      const response = await fetch("/api/email/seller-alert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sellerEmailPayload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setEmailStatus((prev) => ({ ...prev, seller: "sent" }));
+        console.log("✅ Seller alert email sent");
+        return true;
+      } else {
+        setEmailStatus((prev) => ({ ...prev, seller: "failed" }));
+        console.error("❌ Seller email failed:", result.error);
+        return false;
+      }
+    } catch (error) {
+      setEmailStatus((prev) => ({ ...prev, seller: "failed" }));
+      console.error("❌ Seller email service error:", error);
+      return false;
+    }
+  }
+
+  async function sendPaymentConfirmation(orderData, paymentId) {
+    try {
+      const emailPayload = {
+        customerEmail: user.email,
+        customerName: user.displayName || user.email.split("@")[0],
+        orderId: orderData.id,
+        amount: orderData.totalAmount,
+        paymentMethod: orderData.paymentMethod,
+        transactionId: paymentId,
+      };
+
+      const response = await fetch("/api/email/payment-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(emailPayload),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        console.log("✅ Payment confirmation email sent");
+      }
+    } catch (error) {
+      console.error("❌ Payment confirmation email failed:", error);
+    }
+  }
+
   // Create Razorpay order
   async function createRazorpayOrder(orderData) {
     try {
@@ -267,7 +385,7 @@ export default function Checkout() {
     }
   }
 
-  // Handle Razorpay payment
+  // Handle Razorpay payment with email integration
   async function handleRazorpayPayment(orderData) {
     if (!razorpayLoaded) {
       notify.error("Payment system is loading. Please try again.");
@@ -275,7 +393,6 @@ export default function Checkout() {
     }
 
     try {
-      // Create Razorpay order
       const razorpayOrder = await createRazorpayOrder(orderData);
       const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
@@ -283,35 +400,31 @@ export default function Checkout() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: "Desi Gifting",
-        description: "Payment for your order",
+        name: "DesiGifting",
+        description: "Payment for your personalized gift",
         order_id: razorpayOrder.id,
         handler: async function (response) {
-          // Payment successful
           try {
             setProcessing(true);
 
-            // Verify payment on backend
-            const verifyResponse = await fetch(
-              "/api/payments/verify",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${await user.getIdToken()}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  razorpay_signature: response.razorpay_signature,
-                }),
-              }
-            );
+            // Verify payment
+            const verifyResponse = await fetch("/api/payments/verify", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${await user.getIdToken()}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
 
             const verifyResult = await verifyResponse.json();
 
             if (verifyResult.success) {
-              // Create order after successful payment verification
+              // Create order after successful payment
               const finalOrderData = {
                 ...orderData,
                 razorpayPaymentId: response.razorpay_payment_id,
@@ -331,7 +444,27 @@ export default function Checkout() {
               const orderResult = await orderResponse.json();
 
               if (orderResult.success) {
-                // Clear checkout data
+                // 📧 Send emails after successful order creation
+                console.log("🎉 Order created successfully, sending emails...");
+
+                // Send emails in parallel (non-blocking)
+                Promise.allSettled([
+                  sendOrderConfirmationEmail(orderResult.data),
+                  sendSellerOrderAlert(orderResult.data),
+                  sendPaymentConfirmation(
+                    orderResult.data,
+                    response.razorpay_payment_id
+                  ),
+                ]).then((results) => {
+                  const failedEmails = results.filter(
+                    (r) => r.status === "rejected"
+                  ).length;
+                  if (failedEmails > 0) {
+                    console.warn(`⚠️ ${failedEmails} email(s) failed to send`);
+                  }
+                });
+
+                // Clear checkout data and redirect
                 sessionStorage.removeItem("checkoutData");
                 notify.success("Order placed successfully!");
                 router.push(`/order-success?orderId=${orderResult.data.id}`);
@@ -342,7 +475,7 @@ export default function Checkout() {
               notify.error("Payment verification failed");
             }
           } catch (error) {
-            console.error("Post-payment error:", error);
+            console.error("Post-payment processing error:", error);
             notify.error("Payment completed but order processing failed");
           } finally {
             setProcessing(false);
@@ -359,7 +492,7 @@ export default function Checkout() {
             : "",
         },
         theme: {
-          color: "#059669", // Emerald color matching your theme
+          color: "#059669",
         },
         modal: {
           ondismiss: function () {
@@ -378,7 +511,7 @@ export default function Checkout() {
     }
   }
 
-  // Handle Cash on Delivery
+  // Handle Cash on Delivery with email integration
   async function handleCODPayment(orderData) {
     try {
       const token = await user.getIdToken();
@@ -399,7 +532,23 @@ export default function Checkout() {
       const result = await response.json();
 
       if (result.success) {
-        // Clear checkout data
+        // 📧 Send emails for COD order
+        console.log("🎉 COD Order created successfully, sending emails...");
+
+        // Send emails in parallel
+        Promise.allSettled([
+          sendOrderConfirmationEmail(result.data),
+          sendSellerOrderAlert(result.data),
+        ]).then((results) => {
+          const failedEmails = results.filter(
+            (r) => r.status === "rejected"
+          ).length;
+          if (failedEmails > 0) {
+            console.warn(`⚠️ ${failedEmails} email(s) failed to send`);
+          }
+        });
+
+        // Clear checkout data and redirect
         sessionStorage.removeItem("checkoutData");
         notify.success("Order placed successfully!");
         router.push(`/order-success?orderId=${result.data.id}`);
@@ -420,6 +569,9 @@ export default function Checkout() {
 
     setProcessing(true);
 
+    // Reset email status
+    setEmailStatus({ buyer: "pending", seller: "pending" });
+
     try {
       const { subtotal, shipping, tax, total } = calculateTotals();
       const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
@@ -430,12 +582,12 @@ export default function Checkout() {
         orderDate: new Date().toISOString(),
         buyerName: user.displayName || user.email,
         userId: user.uid,
-        businessName: orderItems.items[0].businessName || "",
-        sellerId: orderItems.items[0].sellerId,
+        businessName: orderItems.items?.[0]?.businessName || "",
+        sellerId: orderItems.items?.[0]?.sellerId,
         subtotal: subtotal,
         shipping: shipping,
         taxAmount: tax,
-        totalAmount: total,
+        totalAmount: total + (paymentMethod === "cod" ? 50 : 0),
         paymentMethod,
         customizations: orderItems.customizations || {
           customText: "custom text",
@@ -458,6 +610,74 @@ export default function Checkout() {
       setProcessing(false);
     }
   }
+
+  // Email Status Component
+  const EmailStatusIndicator = () => {
+    if (emailStatus.buyer === "pending" && emailStatus.seller === "pending") {
+      return null;
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <EnvelopeIcon className="w-5 h-5 text-gray-400 mr-2" />
+          <span className="font-medium text-gray-700">Email Notifications</span>
+        </div>
+
+        <div className="space-y-2 text-sm">
+          {/* Buyer email status */}
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Order confirmation:</span>
+            <div className="flex items-center">
+              {emailStatus.buyer === "sending" && (
+                <div className="flex items-center text-blue-600">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-t-transparent mr-1"></div>
+                  Sending...
+                </div>
+              )}
+              {emailStatus.buyer === "sent" && (
+                <div className="flex items-center text-green-600">
+                  <CheckCircleIcon className="w-3 h-3 mr-1" />
+                  Sent
+                </div>
+              )}
+              {emailStatus.buyer === "failed" && (
+                <div className="flex items-center text-red-600">
+                  <XMarkIcon className="w-3 h-3 mr-1" />
+                  Failed
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Seller email status */}
+          <div className="flex items-center justify-between">
+            <span className="text-gray-600">Seller notification:</span>
+            <div className="flex items-center">
+              {emailStatus.seller === "sending" && (
+                <div className="flex items-center text-blue-600">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-600 border-t-transparent mr-1"></div>
+                  Sending...
+                </div>
+              )}
+              {emailStatus.seller === "sent" && (
+                <div className="flex items-center text-green-600">
+                  <CheckCircleIcon className="w-3 h-3 mr-1" />
+                  Sent
+                </div>
+              )}
+              {emailStatus.seller === "failed" && (
+                <div className="flex items-center text-red-600">
+                  <XMarkIcon className="w-3 h-3 mr-1" />
+                  Failed
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
     return (
@@ -483,11 +703,13 @@ export default function Checkout() {
   return (
     <>
       <Head>
-        <title>Checkout - Desi Gifting</title>
-        <meta name="description" content="Complete your order" />
+        <title>Checkout - DesiGifting</title>
+        <meta
+          name="description"
+          content="Complete your personalized gift order"
+        />
       </Head>
 
-      {/* Load Razorpay Script */}
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={() => setRazorpayLoaded(true)}
@@ -501,12 +723,17 @@ export default function Checkout() {
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <h1 className="text-2xl font-bold mb-8">Checkout</h1>
+
+          {/* Email Status Indicator */}
+          <EmailStatusIndicator />
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
+              {/* Order Items Section */}
               <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="font-semibold mb-4">Order Items</h2>
                 <div className="space-y-4">
-                  {orderItems.items.map((item, i) => (
+                  {orderItems.items?.map((item, i) => (
                     <div
                       key={i}
                       className="flex items-center border-b last:border-b-0 py-4"
@@ -529,14 +756,17 @@ export default function Checkout() {
                       <div className="flex-1 px-4">
                         <h3 className="truncate font-medium">{item.name}</h3>
                         <p className="text-sm text-gray-600">
+                          by {item.businessName}
+                        </p>
+                        <p className="text-sm text-gray-600">
                           Qty: {item.quantity}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p>₹{item.price}</p>
-                        <p className="text-xs">
+                      <div className="text-right ">
+                        <p className="font-semibold">
                           ₹{(item.price * item.quantity).toFixed(2)}
                         </p>
+                        
                       </div>
                     </div>
                   ))}
@@ -548,6 +778,7 @@ export default function Checkout() {
                 />
               </div>
 
+              {/* Delivery Address Section */}
               <div className="bg-white p-6 rounded-lg shadow">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="font-semibold flex items-center">
@@ -556,18 +787,19 @@ export default function Checkout() {
                   </h2>
                   <button
                     onClick={() => setShowAddAddress(true)}
-                    className="flex items-center text-emerald-800"
+                    className="flex items-center text-emerald-600 hover:text-emerald-700"
                   >
                     <PlusIcon className="w-4 h-4 mr-1" /> Add New
                   </button>
                 </div>
+
                 {addresses.length === 0 ? (
                   <div className="text-center py-8">
                     <MapPinIcon className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                    <p>No addresses found</p>
+                    <p className="text-gray-600 mb-4">No addresses found</p>
                     <button
                       onClick={() => setShowAddAddress(true)}
-                      className="mt-4 bg-emerald-500 text-white px-4 py-2 rounded"
+                      className="bg-emerald-600 text-white px-6 py-2 rounded-lg hover:bg-emerald-700"
                     >
                       Add Address
                     </button>
@@ -577,7 +809,7 @@ export default function Checkout() {
                     {addresses.map((a) => (
                       <label
                         key={a.id}
-                        className={`block border p-4 rounded cursor-pointer ${
+                        className={`block border p-4 rounded-lg cursor-pointer transition-colors ${
                           selectedAddressId === a.id
                             ? "border-emerald-600 bg-emerald-50"
                             : "border-gray-200 hover:border-gray-300"
@@ -594,12 +826,12 @@ export default function Checkout() {
                         <div className="flex justify-between">
                           <div>
                             <p className="font-medium">{a.name}</p>
-                            <p className="text-sm">{a.phone}</p>
-                            <p className="text-sm">
+                            <p className="text-sm text-gray-600">{a.phone}</p>
+                            <p className="text-sm text-gray-600">
                               {a.addressLine1}
                               {a.addressLine2 && `, ${a.addressLine2}`}
                             </p>
-                            <p className="text-sm">
+                            <p className="text-sm text-gray-600">
                               {a.city}, {a.state} - {a.pincode}
                             </p>
                           </div>
@@ -612,11 +844,12 @@ export default function Checkout() {
                   </div>
                 )}
 
+                {/* Add Address Modal */}
                 {showAddAddress && (
                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[90vh] overflow-auto space-y-4">
                       <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold">Add Address</h3>
+                        <h3 className="font-semibold">Add New Address</h3>
                         <button onClick={() => setShowAddAddress(false)}>
                           <XMarkIcon className="w-6 h-6" />
                         </button>
@@ -631,9 +864,10 @@ export default function Checkout() {
                         "pincode",
                       ].map((f) => (
                         <div key={f}>
-                          <label className="block text-sm font-medium">
-                            {f.charAt(0).toUpperCase() + f.slice(1)}{" "}
-                            {f !== "addressLine2" && "*"}
+                          <label className="block text-sm font-medium mb-1">
+                            {f.charAt(0).toUpperCase() +
+                              f.slice(1).replace(/([A-Z])/g, " $1")}
+                            {f !== "addressLine2" && " *"}
                           </label>
                           <input
                             type="text"
@@ -644,7 +878,8 @@ export default function Checkout() {
                                 [f]: e.target.value,
                               }))
                             }
-                            className="w-full border px-3 py-2 rounded"
+                            className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            required={f !== "addressLine2"}
                           />
                         </div>
                       ))}
@@ -660,18 +895,18 @@ export default function Checkout() {
                           }
                           className="mr-2"
                         />
-                        Set as default
+                        Set as default address
                       </label>
                       <div className="flex gap-3">
                         <button
                           onClick={() => setShowAddAddress(false)}
-                          className="flex-1 bg-gray-200 py-2 rounded"
+                          className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={handleAddAddress}
-                          className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2 rounded hover:from-emerald-700 hover:to-teal-700 transition-colors"
+                          className="flex-1 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700"
                         >
                           Add Address
                         </button>
@@ -682,8 +917,10 @@ export default function Checkout() {
               </div>
             </div>
 
+            {/* Order Summary & Payment */}
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded shadow">
+              {/* Payment Method */}
+              <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="font-semibold mb-4 flex items-center">
                   <CreditCardIcon className="w-5 h-5 mr-2" />
                   Payment Method
@@ -695,18 +932,20 @@ export default function Checkout() {
                     title: "Online Payment",
                     desc: "UPI, Cards, NetBanking via Razorpay",
                     badge: "Recommended",
+                    badgeColor: "bg-green-100 text-green-800",
                   },
                   {
                     id: "cod",
                     icon: TruckIcon,
                     title: "Cash on Delivery",
-                    desc: "Pay when you receive",
+                    desc: "Pay when you receive your gift",
                     badge: "₹50 extra charges",
+                    badgeColor: "bg-orange-100 text-orange-800",
                   },
                 ].map((opt) => (
                   <label
                     key={opt.id}
-                    className={`block border p-4 rounded mb-3 cursor-pointer transition-all ${
+                    className={`block border p-4 rounded-lg mb-3 cursor-pointer transition-all ${
                       paymentMethod === opt.id
                         ? "border-emerald-600 bg-emerald-50 shadow-sm"
                         : "border-gray-200 hover:border-gray-300"
@@ -728,11 +967,7 @@ export default function Checkout() {
                             <p className="font-medium">{opt.title}</p>
                             {opt.badge && (
                               <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  opt.id === "razorpay"
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-orange-100 text-orange-800"
-                                }`}
+                                className={`text-xs px-2 py-1 rounded-full ${opt.badgeColor}`}
                               >
                                 {opt.badge}
                               </span>
@@ -757,12 +992,13 @@ export default function Checkout() {
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded shadow sticky top-4">
+              {/* Order Summary */}
+              <div className="bg-white p-6 rounded-lg shadow sticky top-4">
                 <h2 className="font-semibold mb-4">Order Summary</h2>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span>
-                      Subtotal ({orderItems?.items?.length || 0} items)
+                      Subtotal ({orderItems?.items[0]?.quantity || 0} items)
                     </span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
@@ -811,7 +1047,7 @@ export default function Checkout() {
                     !selectedAddressId ||
                     (paymentMethod === "razorpay" && !razorpayLoaded)
                   }
-                  className="w-full mt-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 flex items-center justify-center"
+                  className="w-full mt-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 px-4 rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-400 flex items-center justify-center text-lg"
                 >
                   {processing ? (
                     <>
@@ -835,6 +1071,8 @@ export default function Checkout() {
                     </div>
                   </div>
                 )}
+
+                {/* Email notification info */}
               </div>
             </div>
           </div>

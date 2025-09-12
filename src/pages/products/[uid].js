@@ -297,6 +297,7 @@ export default function ProductDetails() {
           businessName: product.businessName,
           sellerId: product.sellerId,
           images: product.images,
+          sellerEmail: product.sellerEmail,
         },
       ],
       customizations: {

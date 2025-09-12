@@ -22,6 +22,8 @@ export default function BuyerRegister() {
   });
   const [errors, setErrors] = useState({});
   const [showPasswordHelp, setShowPasswordHelp] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+
   const { register, isLoading } = useAuth();
   const router = useRouter();
 
@@ -67,11 +69,34 @@ export default function BuyerRegister() {
     const result = await register(userData, "buyer");
 
     if (result.success) {
-      router.push("/products?welcome=true");
+      setVerificationSent(true);
+      // Auto-redirect after 10 seconds, or user can click button
+      setTimeout(() => {
+        if (verificationSent) {
+          router.push("/products?welcome=true");
+        }
+      }, 1000000);
     } else {
       setErrors({
         general: result.error || "Registration failed. Please try again.",
       });
+    }
+  };
+
+  const handleResendVerification = async () => {
+    // Call API to resend verification email
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      if (response.ok) {
+        alert("Verification email sent again!");
+      }
+    } catch (error) {
+      console.error("Failed to resend verification:", error);
     }
   };
 
@@ -196,7 +221,7 @@ export default function BuyerRegister() {
         <div className="flex-1 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="mx-auto w-full max-w-md">
             {/* Mobile Logo */}
-            <div className="flex items-center justify-center space-x-3 mb-4 group px-4">
+            <div className="flex items-center justify-center space-x-3 mb-4 group px-4 lg:hidden">
               <div className="relative">
                 <Image
                   src="/images/logo1.png"
@@ -238,302 +263,366 @@ export default function BuyerRegister() {
 
             {/* Registration Form */}
             <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {errors.general && (
-                  <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
-                    <div className="flex items-center">
-                      <span className="text-red-400 mr-3">⚠️</span>
-                      <p className="text-red-800 text-sm font-medium">
-                        {errors.general}
-                      </p>
-                    </div>
+              {verificationSent ? (
+                <div className="text-center space-y-6">
+                  {/* Success Icon */}
+                  <div className="mx-auto w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">📧</span>
                   </div>
-                )}
 
-                <div>
-                  <label
-                    htmlFor="name"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Full Name
-                  </label>
-                  <input
-                    id="name"
-                    type="text"
-                    autoComplete="name"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                      errors.name
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200 focus:border-emerald-500"
-                    }`}
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
-                  />
-                  {errors.name && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.name}
+                  {/* Success Message */}
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">
+                      Check Your Email!
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      We've sent a verification link to:
                     </p>
-                  )}
+                    <p className="font-semibold text-emerald-600 bg-emerald-50 px-4 py-2 rounded-lg">
+                      {formData.email}
+                    </p>
+                  </div>
+
+                  {/* Instructions */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                    <h4 className="font-semibold text-blue-900 mb-2">
+                      Next Steps:
+                    </h4>
+                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Check your email inbox (and spam folder)</li>
+                      <li>Click the verification link in the email</li>
+                      <li>Return here to sign in and start shopping</li>
+                    </ol>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => router.push("/products?welcome=true")}
+                      className="w-full bg-emerald-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-emerald-700 transition-colors"
+                    >
+                      Continue to Products
+                    </button>
+
+                    <button
+                      onClick={handleResendVerification}
+                      className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors text-sm"
+                    >
+                      Didn't receive email? Resend verification
+                    </button>
+                  </div>
+
+                  {/* Auto-redirect notice */}
+                  <p className="text-xs text-gray-500">
+                    You'll be automatically redirected to products in 10 seconds
+                  </p>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    autoComplete="email"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                      errors.email
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200 focus:border-emerald-500"
-                    }`}
-                    placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                  />
-                  {errors.email && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.email}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="phone"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Phone Number
-                  </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    autoComplete="tel"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                      errors.phone
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200 focus:border-emerald-500"
-                    }`}
-                    placeholder="+91 98765 43210"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                  />
-                  {errors.phone && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.phone}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    autoComplete="new-password"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                      errors.password
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200 focus:border-emerald-500"
-                    }`}
-                    placeholder="Create a strong password"
-                    value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
-                    }
-                    onFocus={() => setShowPasswordHelp(true)}
-                    onBlur={() => setShowPasswordHelp(false)}
-                  />
-                  {errors.password && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.password}
-                    </p>
-                  )}
-
-                  {showPasswordHelp && formData.password && (
-                    <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                      <p className="text-xs text-gray-600 mb-2">
-                        Password requirements:
-                      </p>
-                      <div className="space-y-1 text-xs">
-                        <div
-                          className={`flex items-center ${
-                            passwordValidation.minLength
-                              ? "text-green-600"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          <span className="mr-2">
-                            {passwordValidation.minLength ? "✓" : "○"}
-                          </span>
-                          At least 8 characters
-                        </div>
-                        <div
-                          className={`flex items-center ${
-                            passwordValidation.hasUpperCase
-                              ? "text-green-600"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          <span className="mr-2">
-                            {passwordValidation.hasUpperCase ? "✓" : "○"}
-                          </span>
-                          One uppercase letter
-                        </div>
-                        <div
-                          className={`flex items-center ${
-                            passwordValidation.hasLowerCase
-                              ? "text-green-600"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          <span className="mr-2">
-                            {passwordValidation.hasLowerCase ? "✓" : "○"}
-                          </span>
-                          One lowercase letter
-                        </div>
-                        <div
-                          className={`flex items-center ${
-                            passwordValidation.hasNumbers
-                              ? "text-green-600"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          <span className="mr-2">
-                            {passwordValidation.hasNumbers ? "✓" : "○"}
-                          </span>
-                          One number
-                        </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  {errors.general && (
+                    <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
+                      <div className="flex items-center">
+                        <span className="text-red-400 mr-3">⚠️</span>
+                        <p className="text-red-800 text-sm font-medium">
+                          {errors.general}
+                        </p>
                       </div>
                     </div>
                   )}
-                </div>
 
-                <div>
-                  <label
-                    htmlFor="confirmPassword"
-                    className="block text-sm font-semibold text-gray-700 mb-2"
-                  >
-                    Confirm Password
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
-                      errors.confirmPassword
-                        ? "border-red-300 bg-red-50"
-                        : "border-gray-200 focus:border-emerald-500"
-                    }`}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      handleInputChange("confirmPassword", e.target.value)
-                    }
-                  />
-                  {errors.confirmPassword && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center">
-                      <span className="mr-1">⚠️</span>
-                      {errors.confirmPassword}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
+                  <div>
+                    <label
+                      htmlFor="name"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Full Name
+                    </label>
                     <input
-                      type="checkbox"
-                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                      checked={formData.agreeToTerms}
+                      id="name"
+                      type="text"
+                      autoComplete="name"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                        errors.name
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-emerald-500"
+                      }`}
+                      placeholder="Enter your full name"
+                      value={formData.name}
                       onChange={(e) =>
-                        handleInputChange("agreeToTerms", e.target.checked)
+                        handleInputChange("name", e.target.value)
                       }
                     />
-                    <span className="ml-2 text-sm text-gray-700">
-                      I agree to the{" "}
-                      <Link
-                        href="/terms"
-                        className="text-emerald-600 hover:text-emerald-700 font-medium"
-                      >
-                        Terms
-                      </Link>{" "}
-                      and{" "}
-                      <Link
-                        href="/privacy"
-                        className="text-emerald-600 hover:text-emerald-700 font-medium"
-                      >
-                        Privacy Policy
-                      </Link>
-                    </span>
-                  </label>
-                </div>
-                {errors.agreeToTerms && (
-                  <p className="text-sm text-red-600 flex items-center">
-                    <span className="mr-1">⚠️</span>
-                    {errors.agreeToTerms}
-                  </p>
-                )}
+                    {errors.name && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {errors.name}
+                      </p>
+                    )}
+                  </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-xl font-semibold text-lg hover:from-emerald-700 hover:to-teal-700 focus:ring-4 focus:ring-emerald-200 transform hover:scale-[1.02] transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center space-x-2">
-                      <LoadingSpinner size="sm" color="white" />
-                      <span>Creating account...</span>
-                    </div>
-                  ) : (
-                    "Create My Account"
+                  <div>
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Email Address
+                    </label>
+                    <input
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                        errors.email
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-emerald-500"
+                      }`}
+                      placeholder="your@email.com"
+                      value={formData.email}
+                      onChange={(e) =>
+                        handleInputChange("email", e.target.value)
+                      }
+                    />
+                    {errors.email && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {errors.email}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="phone"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Phone Number
+                    </label>
+                    <input
+                      id="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                        errors.phone
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-emerald-500"
+                      }`}
+                      placeholder="+91 98765 43210"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                    />
+                    {errors.phone && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {errors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Password
+                    </label>
+                    <input
+                      id="password"
+                      type="password"
+                      autoComplete="new-password"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                        errors.password
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-emerald-500"
+                      }`}
+                      placeholder="Create a strong password"
+                      value={formData.password}
+                      onChange={(e) =>
+                        handleInputChange("password", e.target.value)
+                      }
+                      onFocus={() => setShowPasswordHelp(true)}
+                      onBlur={() => setShowPasswordHelp(false)}
+                    />
+                    {errors.password && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {errors.password}
+                      </p>
+                    )}
+
+                    {showPasswordHelp && formData.password && (
+                      <div className="mt-2 p-3 bg-gray-50 rounded-md">
+                        <p className="text-xs text-gray-600 mb-2">
+                          Password requirements:
+                        </p>
+                        <div className="space-y-1 text-xs">
+                          <div
+                            className={`flex items-center ${
+                              passwordValidation.minLength
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            <span className="mr-2">
+                              {passwordValidation.minLength ? "✓" : "○"}
+                            </span>
+                            At least 8 characters
+                          </div>
+                          <div
+                            className={`flex items-center ${
+                              passwordValidation.hasUpperCase
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            <span className="mr-2">
+                              {passwordValidation.hasUpperCase ? "✓" : "○"}
+                            </span>
+                            One uppercase letter
+                          </div>
+                          <div
+                            className={`flex items-center ${
+                              passwordValidation.hasLowerCase
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            <span className="mr-2">
+                              {passwordValidation.hasLowerCase ? "✓" : "○"}
+                            </span>
+                            One lowercase letter
+                          </div>
+                          <div
+                            className={`flex items-center ${
+                              passwordValidation.hasNumbers
+                                ? "text-green-600"
+                                : "text-gray-500"
+                            }`}
+                          >
+                            <span className="mr-2">
+                              {passwordValidation.hasNumbers ? "✓" : "○"}
+                            </span>
+                            One number
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-semibold text-gray-700 mb-2"
+                    >
+                      Confirm Password
+                    </label>
+                    <input
+                      id="confirmPassword"
+                      type="password"
+                      autoComplete="new-password"
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 ${
+                        errors.confirmPassword
+                          ? "border-red-300 bg-red-50"
+                          : "border-gray-200 focus:border-emerald-500"
+                      }`}
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        handleInputChange("confirmPassword", e.target.value)
+                      }
+                    />
+                    {errors.confirmPassword && (
+                      <p className="mt-2 text-sm text-red-600 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {errors.confirmPassword}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                        checked={formData.agreeToTerms}
+                        onChange={(e) =>
+                          handleInputChange("agreeToTerms", e.target.checked)
+                        }
+                      />
+                      <span className="ml-2 text-sm text-gray-700">
+                        I agree to the{" "}
+                        <Link
+                          href="/terms"
+                          className="text-emerald-600 hover:text-emerald-700 font-medium"
+                        >
+                          Terms
+                        </Link>{" "}
+                        and{" "}
+                        <Link
+                          href="/privacy"
+                          className="text-emerald-600 hover:text-emerald-700 font-medium"
+                        >
+                          Privacy Policy
+                        </Link>
+                      </span>
+                    </label>
+                  </div>
+                  {errors.agreeToTerms && (
+                    <p className="text-sm text-red-600 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {errors.agreeToTerms}
+                    </p>
                   )}
-                </button>
-              </form>
+
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-xl font-semibold text-lg hover:from-emerald-700 hover:to-teal-700 focus:ring-4 focus:ring-emerald-200 transform hover:scale-[1.02] transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <LoadingSpinner size="sm" color="white" />
+                        <span>Creating account...</span>
+                      </div>
+                    ) : (
+                      "Create My Account"
+                    )}
+                  </button>
+                </form>
+              )}
             </div>
 
             {/* Footer Links */}
-            <div className="mt-8 text-center space-y-2">
-              <p className="text-sm text-gray-600">
-                Want to sell custom gifts?{" "}
-                <Link
-                  href="/seller/auth/register"
-                  className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-                >
-                  Become a Seller
-                </Link>
-              </p>
-              <p className="text-xs text-gray-500">
-                By creating an account, you agree to our{" "}
-                <Link
-                  href="/terms"
-                  className="text-emerald-600 hover:text-emerald-700"
-                >
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                  href="/privacy"
-                  className="text-emerald-600 hover:text-emerald-700"
-                >
-                  Privacy Policy
-                </Link>
-              </p>
-            </div>
+            {!verificationSent && (
+              <div className="mt-8 text-center space-y-2">
+                <p className="text-sm text-gray-600">
+                  Want to sell custom gifts?{" "}
+                  <Link
+                    href="/seller/auth/register"
+                    className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
+                  >
+                    Become a Seller
+                  </Link>
+                </p>
+                <p className="text-xs text-gray-500">
+                  By creating an account, you agree to our{" "}
+                  <Link
+                    href="/terms"
+                    className="text-emerald-600 hover:text-emerald-700"
+                  >
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link
+                    href="/privacy"
+                    className="text-emerald-600 hover:text-emerald-700"
+                  >
+                    Privacy Policy
+                  </Link>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
