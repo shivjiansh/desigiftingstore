@@ -152,7 +152,7 @@ export default function Products() {
     try {
       setLoading(true);
       console.log("Fetching All products from API...");
-      const response = await fetch("/api/products");
+      const response = await fetch("/api/products?all=true");
       if (response.ok) {
         const data = await response.json();
         console.log("Fetched ok products:", data);
@@ -181,7 +181,6 @@ export default function Products() {
         return (
           product.name?.toLowerCase().includes(searchLower) ||
           product.description?.toLowerCase().includes(searchLower) ||
-          product.category?.toLowerCase().includes(searchLower) ||
           product.businessName?.toLowerCase().includes(searchLower) ||
           product.sellerName?.toLowerCase().includes(searchLower) ||
           (product.tags &&
@@ -193,14 +192,6 @@ export default function Products() {
             ))
         );
       });
-    }
-
-    // Category filter
-    if (filters.category && filters.category.trim()) {
-      filtered = filtered.filter(
-        (product) =>
-          product.category?.toLowerCase() === filters.category.toLowerCase()
-      );
     }
 
     // Price range filter
@@ -217,11 +208,6 @@ export default function Products() {
       filtered = filtered.filter(
         (product) => (product.rating || 0) >= filters.rating
       );
-    }
-
-    // Stock filter
-    if (filters.inStock) {
-      filtered = filtered.filter((product) => (product.stock || 0) > 0);
     }
 
     // Customization filter

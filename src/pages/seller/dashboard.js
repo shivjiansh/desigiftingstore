@@ -58,34 +58,7 @@ export default function SellerDashboard() {
         console.log("result kaha hai?",result);
         setRecentOrders(result.data.recentOrders);
       } else {
-        console.error("Failed to fetch recent orders:", result.error);
-        // Set fallback data if API fails
-        setRecentOrders([
-          {
-            id: "ORD-1234",
-            customerName: "John Doe",
-            amount: 299.99,
-            status: "pending",
-            createdAt: new Date(),
-            items: 1,
-          },
-          {
-            id: "ORD-1233",
-            customerName: "Jane Smith",
-            amount: 156.5,
-            status: "completed",
-            createdAt: new Date(),
-            items: 2,
-          },
-          {
-            id: "ORD-1232",
-            customerName: "Mike Johnson",
-            amount: 89.99,
-            status: "processing",
-            createdAt: new Date(),
-            items: 1,
-          },
-        ]);
+       console.log("problem while fetching order recent");
       }
     } catch (error) {
       console.error("Error fetching recent orders:", error);
@@ -349,14 +322,12 @@ export default function SellerDashboard() {
               </div>
 
               <Link href="/seller/milestones" className="group">
-
                 <div className="relative overflow-hidden">
                   {/* Anniversary Background Effects */}
                   <div className="absolute inset-0 bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100 opacity-80 rounded-xl"></div>
                   <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-amber-300 to-transparent opacity-20 rounded-full -mr-16 -mt-16"></div>
                   <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-yellow-300 to-transparent opacity-15 rounded-full -ml-12 -mb-12"></div>
 
-                
                   {/* Enhanced Milestone Progress Card */}
                   <div className="relative bg-white/90 backdrop-blur-sm rounded-xl shadow-sm p-4 sm:p-6 border-2 border-amber-200 group-hover:shadow-lg group-hover:border-amber-300 transition-all duration-200 cursor-pointer">
                     {/* Anniversary Badge - Responsive positioning */}
@@ -381,9 +352,7 @@ export default function SellerDashboard() {
                           <h3 className="font-bold text-base sm:text-lg text-gray-900">
                             Milestone Mega Celebration
                           </h3>
-                          
                         </div>
-
 
                         {/* Enhanced Progress Bar - Taller on mobile */}
                         <div className="relative w-full bg-gray-200 rounded-full h-3 sm:h-4 overflow-hidden mb-2">
@@ -401,7 +370,6 @@ export default function SellerDashboard() {
 
                         {/* Progress Text - Stacked on small mobile */}
                         <div className="flex flex-col xs:flex-row xs:justify-between text-xs text-gray-600 gap-1 xs:gap-0">
-                          
                           <span className="font-semibold text-amber-700">
                             {150 - (stats.totalOrders % 150)} orders remaining
                           </span>
@@ -409,7 +377,6 @@ export default function SellerDashboard() {
                       </div>
 
                       {/* Arrow - Centered on mobile, right-aligned on desktop */}
-                      
                     </div>
 
                     {/* Anniversary Event Details - Stacked on mobile */}
@@ -527,7 +494,7 @@ export default function SellerDashboard() {
                 ) : recentOrders && recentOrders.length > 0 ? (
                   <div className="space-y-4">
                     {console.log("Recent Orders Data:", recentOrders)}
-                    {recentOrders.slice(0, 3).map((order, index) => (
+                    {recentOrders.slice(0, 5).map((order, index) => (
                       <div
                         key={order.id || index}
                         className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
@@ -535,7 +502,7 @@ export default function SellerDashboard() {
                       >
                         <div>
                           <p className="font-medium text-gray-900">
-                            #{order.id.slice(8)}
+                            #{order.id.slice(0, 8)}
                           </p>
                           <p className="text-sm text-gray-600">
                             Customer: {order.customerName}

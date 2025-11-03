@@ -10,6 +10,7 @@ import {
   methodNotAllowed,
   getPaginatedResults 
 } from '../utils';
+import { Console } from 'console';
 
 export default async function handler(req, res) {
   const { method, query } = req;
@@ -37,35 +38,59 @@ export default async function handler(req, res) {
 // GET /api/products/all - Return full array of all active products
 async function handleFetchAllProducts(req, res) {
   console.log("Fetching all active products");
+
   try {
+    console.log("alllllllll");
+
+    // Query all active products from Firestore
     const snapshot = await adminDb
       .collection("products")
       .where("isActive", "==", true)
       .orderBy("createdAt", "desc")
       .get();
 
+    // Map Firestore documents to product objects
     const allProducts = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
         ...data,
+        // Convert Firestore timestamps to ISO strings
         createdAt: data.createdAt?.toDate?.().toISOString(),
         updatedAt: data.updatedAt?.toDate?.().toISOString(),
       };
     });
+
     console.log(`Fetched ${allProducts.length} active products`);
 
-    return sendSuccess(res, allProducts, "All products fetched successfully");
+    // ✅ FIXED: Wrap response in same format as handleGetProducts
+    const result = {
+      results: allProducts, // ← Products array wrapped in "results"
+      totalFound: allProducts.length, // ← Total count
+      page: 1, // ← Page number (1 since we return all)
+      limit: allProducts.length, // ← Limit equals total
+      hasMore: false, // ← No more pages (returned all)
+    };
+
+    // Return success response with unified format
+    return sendSuccess(res, result, "All products fetched successfully");
   } catch (error) {
     console.error("Error fetching all products:", error);
-    return res.status(500).json({ success: false, error: "Failed to fetch products" });
+
+    // Return error response
+    return res.status(500).json({
+      success: false,
+      error: "Failed to fetch products",
+      details: error.message,
+    });
   }
 }
 
 
+
 // GET /api/products - Get products with filtering and pagination
 async function handleGetProducts(req, res) {
-  const { 
+  const {
     id,
     sellerId,
     tags,
@@ -73,116 +98,121 @@ async function handleGetProducts(req, res) {
     maxPrice,
     search,
     featured,
-    isActive = 'true',
     page = 1,
     limit = 20,
-    orderBy = 'createdAt',
-    orderDirection = 'desc'
+    orderBy = "createdAt",
+    orderDirection = "desc",
   } = req.query;
 
-  // Get single product by ID
-  if (id) {
-    const productDoc = await adminDb.collection('products').doc(id).get();
+  try {
+    console.log("HHHHHHHHHHH");
+    // Get single product by ID
+    if (id) {
+      const productDoc = await adminDb.collection("products").doc(id).get();
 
-    if (!productDoc.exists) {
-      return res.status(404).json({
-        success: false,
-        error: 'Product not found'
-      });
-    }
-
-    const productData = { id: productDoc.id, ...productDoc.data() };
-
-    // Check if product is active or user is the seller/admin
-    if (!productData.isActive) {
-      const decodedToken = await verifyAuthToken(req);
-      const userRole = await getUserRole(decodedToken.uid);
-
-      if (decodedToken.uid !== productData.sellerId && userRole !== 'admin') {
+      if (!productDoc.exists) {
         return res.status(404).json({
           success: false,
-          error: 'Product not found'
+          error: "Product not found",
         });
       }
+
+      const productData = { id: productDoc.id, ...productDoc.data() };
+      return sendSuccess(res, productData, "Product retrieved successfully");
     }
 
-    return sendSuccess(res, productData, 'Product retrieved successfully');
-  }
+    // Build query - only filter by sellerId
+    console.log("Building product query");
+    console.log("Requested sellerId:", sellerId);
 
-  
+    let query = adminDb.collection("products");
 
-  // Build filters for product search
-  console.log("Building product query with filters");
-  const filters = {};
+    // ONLY filter by sellerId if provided
+    if (sellerId) {
+      console.log("Filtering by sellerId:", sellerId);
+      query = query.where("sellerId", "==", sellerId);
+    } else {
+      console.log("⚠️ WARNING: No sellerId provided");
+    }
 
-  if (isActive !== 'all') {
-    filters.isActive = isActive === 'true';
-  }
+    console.log("Query built successfully");
 
-  if (sellerId) {
-    filters.sellerId = sellerId;
-  }
-  console.log("Filters so far:", filters);
-  // For tag filtering, we'll need to use array-contains-any
-  let query = adminDb.collection('products');
+    // Apply ordering
+    const validOrderFields = [
+      "createdAt",
+      "price",
+      "name",
+      "rating",
+      "totalSales",
+    ];
+    const orderField = validOrderFields.includes(orderBy)
+      ? orderBy
+      : "createdAt";
+    const orderDir = orderDirection === "asc" ? "asc" : "desc";
 
-  // Apply basic filters
-  Object.entries(filters).forEach(([field, value]) => {
-    query = query.where(field, '==', value);
-  });
-  console.log("Query after basic filters:", query);
+    console.log("Ordering by:", orderField, orderDir);
+    query = query.orderBy(orderField, orderDir);
 
-  // Apply tag filter if provided
- 
+    // Apply pagination
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
 
-  // Apply ordering
-  const validOrderFields = ['createdAt', 'price', 'name', 'rating', 'totalSales'];
-  const orderField = validOrderFields.includes(orderBy) ? orderBy : 'createdAt';
-  const orderDir = orderDirection === 'asc' ? 'asc' : 'desc';
+    if (pageNum > 1) {
+      const offset = (pageNum - 1) * limitNum;
+      query = query.offset(offset);
+    }
 
-  query = query.orderBy(orderField, orderDir);
+    query = query.limit(limitNum);
 
-  console.log("Final query before pagination:", query);
-  // Apply pagination
-  if (page > 1) {
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    query = query.offset(offset);
-  }
+    console.log("Executing query...");
+    const snapshot = await query.get();
 
-  query = query.limit(parseInt(limit));
-  console.log("Query with pagination:", query);
-  const snapshot = await query.get();
-  const products = [];
-  console.log("Processing query results");
-  snapshot.forEach(doc => {
-    const productData = { id: doc.id, ...doc.data() };
-    console.log("Product found:", productData);
+    console.log("Query returned", snapshot.size, "documents");
 
-    // Apply search filter on results (since Firestore doesn't support full-text search)
-    if (search) {
-      const searchTerm = search.toLowerCase();
-      const matchesSearch = 
-        productData.name?.toLowerCase().includes(searchTerm) ||
-        productData.description?.toLowerCase().includes(searchTerm) ||
-        productData.tags?.some(tag => tag.toLowerCase().includes(searchTerm));
+    const products = [];
 
-      if (matchesSearch) {
+    snapshot.forEach((doc) => {
+      const productData = { id: doc.id, ...doc.data() };
+
+      // Apply search filter on results
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        const matchesSearch =
+          productData.name?.toLowerCase().includes(searchTerm) ||
+          productData.description?.toLowerCase().includes(searchTerm) ||
+          productData.tags?.some((tag) =>
+            tag.toLowerCase().includes(searchTerm)
+          );
+
+        if (matchesSearch) {
+          products.push(productData);
+        }
+      } else {
         products.push(productData);
       }
-    } else {
-      products.push(productData);
-    }
-  });
+    });
 
-  const result = {
-    results: products,
-    totalFound: products.length,
-    page: parseInt(page),
-    limit: parseInt(limit),
-    hasMore: products.length === parseInt(limit)
-  };
+    console.log("Final product count:", products.length);
 
-  return sendSuccess(res, result, 'Products retrieved successfully');
+    const result = {
+      results: products,
+      totalFound: products.length,
+      page: pageNum,
+      limit: limitNum,
+      hasMore: products.length === limitNum,
+    };
+
+    return sendSuccess(res, result, "Products retrieved successfully");
+  } catch (error) {
+    console.error("❌ ERROR in handleGetProducts:", error);
+    console.error("Error stack:", error.stack);
+
+    return res.status(500).json({
+      success: false,
+      error: "Failed to retrieve products",
+      details: error.message,
+    });
+  }
 }
 
 // POST /api/products - Create new product
@@ -191,16 +221,12 @@ async function handleCreateProduct(req, res) {
     const decoded = await verifyAuthToken(req);
     const body = req.body;
 
-    if (!body.name || !body.price) {
+    if (!body.name ) {
       return res
         .status(400)
-        .json({ success: false, error: "Name and price are required" });
+        .json({ success: false, error: "Name is required" });
     }
-    if (isNaN(body.price) || body.price <= 0) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Price must be a positive number" });
-    }
+ 
 
     const now = new Date().toISOString();
     const newProduct = {
@@ -208,7 +234,7 @@ async function handleCreateProduct(req, res) {
       sellerId: decoded.uid,
       price: parseFloat(body.price),
       stock: parseInt(body.stock) || 0,
-      isActive: ["active", "fewleft"].includes(body.status),
+      isActive: ["active", "fewleft", "inactive"].includes(body.status),
       createdAt: now,
       updatedAt: now,
     };

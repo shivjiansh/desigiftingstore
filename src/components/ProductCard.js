@@ -10,7 +10,7 @@ export default function ProductCard({ product, className = "" }) {
   const router = useRouter();
   const [idx, setIdx] = useState(0);
   const intervalRef = useRef(null);
-  
+
   // Swipe state
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
@@ -18,15 +18,121 @@ export default function ProductCard({ product, className = "" }) {
 
   if (!product) return null;
 
-  // Existing offer logic...
+  // ============================================
+  // ✅ HELPERS: Support all 3 pricing types
+  // ============================================
+
+  // Get minimum price (for all pricing types)
+  const getMinPrice = () => {
+    if (product.pricingType === "set" && product.setPricing?.length > 0) {
+      // For set pricing, get minimum from all sets
+      const prices = product.setPricing.map((s) => parseFloat(s.price) || 0);
+      return Math.min(...prices);
+    } else if (
+      product.pricingType === "variant" &&
+      product.variants?.length > 0
+    ) {
+      // For variant pricing, get minimum from all variants
+      const prices = product.variants.map((v) => parseFloat(v.price) || 0);
+      return Math.min(...prices);
+    } else {
+      // For simple pricing
+      return parseFloat(product.price) || 0;
+    }
+  };
+
+  // Get maximum price (for display range)
+  const getMaxPrice = () => {
+    if (product.pricingType === "set" && product.setPricing?.length > 0) {
+      const prices = product.setPricing.map((s) => parseFloat(s.price) || 0);
+      return Math.max(...prices);
+    } else if (
+      product.pricingType === "variant" &&
+      product.variants?.length > 0
+    ) {
+      const prices = product.variants.map((v) => parseFloat(v.price) || 0);
+      return Math.max(...prices);
+    } else {
+      return parseFloat(product.price) || 0;
+    }
+  };
+
+  // Get display price (for main price tag)
+  const getDisplayPrice = () => {
+    return getMinPrice();
+  };
+
+  // Get original price (for line-through on simple pricing with offer)
+  const getOriginalPrice = () => {
+    if (product.pricingType === "set" || product.pricingType === "variant") {
+      return null; // No line-through for set/variant pricing
+    }
+
+    // For simple pricing with offer
+    const now = new Date();
+    const start = product.offerStartDate && new Date(product.offerStartDate);
+    const end = product.offerEndDate && new Date(product.offerEndDate);
+    const isOfferLive =
+      product.hasOffer &&
+      product.offerPercentage > 0 &&
+      start <= now &&
+      now <= end;
+
+    if (isOfferLive) {
+      return parseFloat(product.price) || 0;
+    }
+    return null;
+  };
+
+  // Get offer price (for discounted price display)
+  const getOfferPrice = () => {
+    if (product.pricingType !== "simple" || !product.hasOffer) {
+      return null;
+    }
+
+    const now = new Date();
+    const start = product.offerStartDate && new Date(product.offerStartDate);
+    const end = product.offerEndDate && new Date(product.offerEndDate);
+    const isOfferLive =
+      product.offerPercentage > 0 && start <= now && now <= end;
+
+    return isOfferLive ? parseFloat(product.offerPrice) || 0 : null;
+  };
+
+  // Check if offer is live (only for simple pricing)
   const now = new Date();
   const start = product.offerStartDate && new Date(product.offerStartDate);
   const end = product.offerEndDate && new Date(product.offerEndDate);
   const isOfferLive =
+    product.pricingType === "simple" &&
     product.hasOffer &&
     product.offerPercentage > 0 &&
     start <= now &&
     now <= end;
+
+  // Get pricing badge text
+  const getPricingBadgeText = () => {
+    if (product.pricingType === "set") {
+      return `${product.setPricing?.length || 0} bundles`;
+    } else if (product.pricingType === "variant") {
+      return `${product.variants?.length || 0} options`;
+    }
+    return null;
+  };
+
+  // Get price range text
+  const getPriceRangeText = () => {
+    const minPrice = getMinPrice();
+    const maxPrice = getMaxPrice();
+
+    if (product.pricingType === "set" || product.pricingType === "variant") {
+      if (minPrice === maxPrice) {
+        return `₹${minPrice}`;
+      }
+      return `₹${minPrice} - ₹${maxPrice}`;
+    }
+    return null;
+  };
 
   // Prepare images
   const images =
@@ -51,44 +157,39 @@ export default function ProductCard({ product, className = "" }) {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
     setIsSwiping(false);
-    // Pause auto-cycle while swiping
     clearInterval(intervalRef.current);
   };
 
   const onTouchMove = (e) => {
     if (!touchStart) return;
     setTouchEnd(e.targetTouches[0].clientX);
-    
+
     const distance = Math.abs(touchStart - e.targetTouches[0].clientX);
     if (distance > 10) {
       setIsSwiping(true);
-      e.preventDefault(); // Prevent scrolling
+      e.preventDefault();
     }
   };
 
   const onTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
     if (images.length > 1) {
       if (isLeftSwipe) {
-        // Swipe left - next image
         setIdx((prev) => (prev + 1) % images.length);
       } else if (isRightSwipe) {
-        // Swipe right - previous image
         setIdx((prev) => (prev - 1 + images.length) % images.length);
       }
     }
 
-    // Reset swipe state and resume auto-cycle
     setTouchStart(null);
     setTouchEnd(null);
     setIsSwiping(false);
-    
-    // Resume auto-cycle
+
     if (images.length > 1) {
       intervalRef.current = setInterval(() => {
         setIdx((i) => (i + 1) % images.length);
@@ -97,15 +198,27 @@ export default function ProductCard({ product, className = "" }) {
   };
 
   const openProduct = (e) => {
-    // Don't navigate if user was swiping
     if (!isSwiping) {
-      router.push(`/products/${product.id}`);
+      router.push("/products/" + product.id);
     }
   };
 
+  // Calculate savings for simple pricing
+  const displayPrice = getDisplayPrice();
+  const originalPrice = getOriginalPrice();
+  const offerPrice = getOfferPrice();
+  const savings = isOfferLive
+    ? Math.round(
+        (parseFloat(product.price) || 0) - (parseFloat(product.offerPrice) || 0)
+      )
+    : 0;
+
   return (
     <div
-      className={`flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden ${className}`}
+      className={
+        "flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow overflow-hidden " +
+        className
+      }
     >
       {/* Image with swipe support */}
       <div
@@ -114,40 +227,48 @@ export default function ProductCard({ product, className = "" }) {
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
-        style={{ touchAction: 'pan-y pinch-zoom' }}
+        style={{ touchAction: "pan-y pinch-zoom" }}
       >
         <Image
           src={images[idx].url}
           alt={product.name}
           layout="fill"
           objectFit="cover"
-          className={`transition-transform duration-200 ${isSwiping ? 'scale-105' : ''}`}
+          className={
+            "transition-transform duration-200 " +
+            (isSwiping ? "scale-105" : "")
+          }
         />
-        
+
         {/* Pagination dots */}
         {images.length > 1 && (
           <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
             {images.map((_, i) => (
               <span
                 key={i}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  i === idx ? "bg-white" : "bg-white/50"
-                }`}
+                className={
+                  "w-2 h-2 rounded-full transition-colors " +
+                  (i === idx ? "bg-white" : "bg-white/50")
+                }
               />
             ))}
           </div>
         )}
 
-     
-        {/* Offer badge */}
+        {/* ✅ Offer badge - Only for SIMPLE pricing with active offer */}
         {isOfferLive && (
           <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-semibold px-2 py-1 rounded">
             {product.offerPercentage}% OFF
           </div>
         )}
+
+        {/* ✅ Pricing type badge */}
+        
+
+        
       </div>
 
-      {/* Rest of your existing component... */}
+      {/* Rest of component */}
       <div className="p-3 flex flex-col flex-1">
         <h3
           className="text-sm font-medium text-gray-800 line-clamp-2 mb-1 cursor-pointer"
@@ -168,19 +289,49 @@ export default function ProductCard({ product, className = "" }) {
           </div>
         )}
 
-        <div className="flex items-center space-x-2 mb-3">
-          {isOfferLive ? (
+        {/* ✅ PRICE DISPLAY: 
+          - SIMPLE: Show regular price (no "From")
+          - BUNDLE/VARIANT: Show "From" + min price
+        */}
+        <div className="flex items-center space-x-2 mb-3 flex-wrap gap-1">
+          {product.pricingType === "simple" ? (
+            // ✅ SIMPLE PRICING - Show original price (no "From")
             <>
-              <span className="text-lg font-bold text-emerald-600 leading-none">
-                ₹{product.offerPrice}
+              {isOfferLive ? (
+                <>
+                  <span className="text-lg font-bold text-emerald-600 leading-none">
+                    ₹{product.offerPrice}
+                  </span>
+                  <span className="text-sm text-gray-400 line-through leading-none">
+                    ₹{product.price}
+                  </span>
+                </>
+              ) : (
+                <span className="text-lg font-bold text-gray-900">
+                  ₹{product.price}
+                </span>
+              )}
+            </>
+          ) : product.pricingType === "set" ? (
+            // ✅ SET PRICING (Bundles) - Show "From"
+            <>
+              <span className="text-[10px] text-gray-600">From</span>
+              <span className="text-lg font-bold text-gray-900 leading-none">
+                {getPriceRangeText()}
               </span>
-              <span className="text-sm text-gray-400 line-through leading-none">
-                ₹{product.price}
+            </>
+          ) : product.pricingType === "variant" ? (
+            // ✅ VARIANT PRICING (Size, Color) - Show "From"
+            <>
+              <span className="text-[10px] text-gray-600">From</span>
+              <span className="text-lg font-bold text-gray-900 leading-none">
+                {getPriceRangeText()}
               </span>
             </>
           ) : (
-            <span className="text-lg font-bold text-gray-900">
-              ₹{product.price}
+            // ✅ FALLBACK (if no pricingType) - Show simple price
+            <span className="text-lg font-bold text-gray-900 leading-none">
+              ₹{displayPrice}
             </span>
           )}
         </div>
@@ -214,9 +365,9 @@ export default function ProductCard({ product, className = "" }) {
               </span>
             )}
           </div>
-          {isOfferLive && (
+          {isOfferLive && savings > 0 && (
             <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">
-              You save ₹{Math.round(product.price - product.offerPrice)}
+              Save ₹{savings}
             </span>
           )}
         </div>

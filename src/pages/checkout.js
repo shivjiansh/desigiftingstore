@@ -96,7 +96,7 @@ export default function Checkout() {
   const [showAddAddress, setShowAddAddress] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-
+  const [isCod,setCodData] = useState(true);
   // Email status tracking
   const [emailStatus, setEmailStatus] = useState({
     buyer: "pending", // 'pending', 'sending', 'sent', 'failed'
@@ -143,9 +143,20 @@ export default function Checkout() {
   useEffect(() => {
     if (user) {
       loadCheckoutData();
+      setCodData();
       loadUserAddresses();
     }
   }, [user]);
+
+   useEffect(() => {
+     if (paymentMethod === "cod" && isCod === "false") {
+       setPaymentMethod("razorpay");
+       notify?.info?.(
+         "COD not available for this order. Switched to Online Payment."
+       );
+     }
+   }, [ paymentMethod, setPaymentMethod]);
+
 
   function loadCheckoutData() {
     try {
@@ -158,7 +169,8 @@ export default function Checkout() {
       const data = JSON.parse(checkoutData);
       setOrderItems(data || []);
       setLoading(false);
-      console.log("******",orderItems);
+      console.log("******",data);
+     
     } catch {
       notify.error("Failed to load checkout data");
       router.push("/products");
@@ -167,6 +179,7 @@ export default function Checkout() {
 
   async function loadUserAddresses() {
     try {
+      
       const token = await user.getIdToken();
       const res = await fetch("/api/user/addresses", {
         headers: { Authorization: `Bearer ${token}` },
@@ -730,7 +743,7 @@ export default function Checkout() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               {/* Order Items Section */}
-              <div className="bg-white p-6 rounded-lg shadow">
+              {/* <div className="bg-white p-6 rounded-lg shadow">
                 <h2 className="font-semibold mb-4">Order Items</h2>
                 <div className="space-y-4">
                   {orderItems.items?.map((item, i) => (
@@ -776,6 +789,96 @@ export default function Checkout() {
                   customText={orderItems.customizations?.customText}
                   specialMessage={orderItems.customizations?.specialMessage}
                 />
+              </div> */}
+
+              {/* Order Items */}
+              <div className="bg-white rounded-lg shadow-sm border p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Order Items
+                </h2>
+                <div className="space-y-6">
+                  {orderItems.items && orderItems.items.length > 0 ? (
+                    orderItems.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="border-b last:border-b-0 pb-6 last:pb-0"
+                      >
+                        <div className="flex gap-4">
+                          {item.images &&
+                            item.images.length > 0 &&
+                            item.images[0]?.url && (
+                              <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                                <img
+                                  src={item.images[0].url}
+                                  alt={item.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {item.name}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {item.businessName}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Qty: {item.quantity} × ₹
+                              {parseFloat(item.price).toFixed(2)}
+                            </p>
+                            <p className="font-semibold text-emerald-600 mt-2">
+                              ₹
+                              {(item.quantity * parseFloat(item.price)).toFixed(
+                                2
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Variant/Set Details */}
+                        {(item.selectedVariant || item.selectedSet) && (
+                          <div className="bg-emerald-50 border border-emerald-200 rounded p-3 mt-3">
+                            {item.selectedVariant && (
+                              <div className="text-sm">
+                                <p className="text-gray-700">
+                                  <span className="font-medium">Variant:</span>{" "}
+                                  {item.selectedVariant.name}
+                                </p>
+                                {item.selectedVariant.description && (
+                                  <p className="text-gray-600 text-xs">
+                                    {item.selectedVariant.description}
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {item.selectedSet && (
+                              <div className="text-sm">
+                                <p className="text-gray-700">
+                                  <span className="font-medium">Set:</span>{" "}
+                                  {item.selectedSet.name}
+                                </p>
+                                <p className="text-gray-600 text-xs">
+                                  {item.selectedSet.quantity} items included
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Customizations */}
+                        <CustomizationsView
+                          customImages={orderItems.customizations?.customImages}
+                          customText={orderItems.customizations?.customText}
+                          specialMessage={
+                            orderItems.customizations?.specialMessage
+                          }
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No items in order</p>
+                  )}
+                </div>
               </div>
 
               {/* Delivery Address Section */}
@@ -933,6 +1036,7 @@ export default function Checkout() {
                     desc: "UPI, Cards, NetBanking via Razorpay",
                     badge: "Recommended",
                     badgeColor: "bg-green-100 text-green-800",
+                    available: "true",
                   },
                   {
                     id: "cod",
@@ -941,6 +1045,7 @@ export default function Checkout() {
                     desc: "Pay when you receive your gift",
                     badge: "₹50 extra charges",
                     badgeColor: "bg-orange-100 text-orange-800",
+                    available: "false",
                   },
                 ].map((opt) => (
                   <label
@@ -1082,3 +1187,704 @@ export default function Checkout() {
     </>
   );
 }
+
+
+
+// import { useState, useEffect } from "react";
+// import { useRouter } from "next/router";
+// import Head from "next/head";
+// import Script from "next/script";
+// import { onAuthStateChanged } from "firebase/auth";
+// import { auth } from "../lib/firebase";
+// import Header from "../components/Header";
+// import Footer from "../components/Footer";
+// import { notify } from "../lib/notifications";
+
+// // ✅ FIXED: Only import icons that actually exist
+// import {
+//   MapPinIcon,
+//   CreditCardIcon,
+//   PlusIcon,
+//   CheckCircleIcon,
+//   XMarkIcon,
+//   ChevronDownIcon,
+//   ChevronUpIcon,
+// } from "@heroicons/react/24/outline";
+
+// // ✅ Use ExclamationTriangleIcon instead of ExclamationIcon
+// import { ExclamationTriangleIcon } from "@heroicons/react/24/outline";
+
+// export default function Checkout() {
+//   const router = useRouter();
+//   const [user, setUser] = useState(null);
+//   const [loading, setLoading] = useState(true);
+//   const [checkoutData, setCheckoutData] = useState(null);
+//   const [addresses, setAddresses] = useState([]);
+//   const [selectedAddressId, setSelectedAddressId] = useState("");
+//   const [paymentMethod, setPaymentMethod] = useState("razorpay");
+//   const [showAddAddress, setShowAddAddress] = useState(false);
+//   const [processing, setProcessing] = useState(false);
+//   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+//   const [codAvailable, setCodAvailable] = useState(true);
+//   const [checkingCod, setCheckingCod] = useState(true);
+
+//   const [newAddress, setNewAddress] = useState({
+//     name: "",
+//     phone: "",
+//     addressLine1: "",
+//     addressLine2: "",
+//     city: "",
+//     state: "",
+//     pincode: "",
+//     isDefault: false,
+//   });
+
+//   useEffect(() => {
+//     const unsub = onAuthStateChanged(auth, (currentUser) => {
+//       if (!currentUser) {
+//         notify.error("Please login to checkout");
+//         router.push("/buyer/auth/login");
+//       } else {
+//         setUser(currentUser);
+//       }
+//     });
+//     return () => unsub();
+//   }, [router]);
+
+//   useEffect(() => {
+//     const timer = setTimeout(() => {
+//       if (typeof window !== "undefined" && window.Razorpay) {
+//         setRazorpayLoaded(true);
+//       }
+//     }, 5000);
+//     return () => clearTimeout(timer);
+//   }, []);
+
+//   useEffect(() => {
+//     if (user) {
+//       loadCheckoutData();
+//     }
+//   }, [user]);
+
+//   const checkCodAvailability = async (items) => {
+//     try {
+//       setCheckingCod(true);
+//       const codChecks = await Promise.all(
+//         items.map(async (item) => {
+//           try {
+//             const response = await fetch(`/api/products?id=${item.productId}`);
+//             const result = await response.json();
+//             if (result.success) {
+//               return result.data.codAvailable !== false;
+//             }
+//             return true;
+//           } catch (error) {
+//             return true;
+//           }
+//         })
+//       );
+//       const allCodAvailable = codChecks.every((a) => a);
+//       setCodAvailable(allCodAvailable);
+
+//       if (!allCodAvailable && paymentMethod === "cod") {
+//         setPaymentMethod("razorpay");
+//         notify.info("COD not available for this order.");
+//       }
+//     } catch (error) {
+//       console.error("Error checking COD:", error);
+//     } finally {
+//       setCheckingCod(false);
+//     }
+//   };
+
+//   const loadCheckoutData = async () => {
+//     try {
+//       setLoading(true);
+//       const data = sessionStorage.getItem("checkoutData");
+//       if (data) {
+//         const parsed = JSON.parse(data);
+//         setCheckoutData(parsed);
+//         await checkCodAvailability(parsed.items || []);
+//       } else {
+//         router.push("/products");
+//       }
+
+//       if (user) {
+//         try {
+//           const idToken = await user.getIdToken();
+//           const res = await fetch("/api/user/addresses", {
+//             headers: { Authorization: `Bearer ${idToken}` },
+//           });
+//           if (res.ok) {
+//             const addressData = await res.json();
+//             setAddresses(addressData.data || []);
+//             const defaultAddr = addressData.data?.find((a) => a.isDefault);
+//             if (defaultAddr) {
+//               setSelectedAddressId(defaultAddr.id);
+//             }
+//           }
+//         } catch (err) {
+//           console.error("Error loading addresses:", err);
+//         }
+//       }
+//     } catch (error) {
+//       console.error("Error loading checkout data:", error);
+//       notify.error("Failed to load checkout data");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const handleAddAddress = async () => {
+//     if (
+//       !newAddress.name ||
+//       !newAddress.phone ||
+//       !newAddress.addressLine1 ||
+//       !newAddress.city ||
+//       !newAddress.state ||
+//       !newAddress.pincode
+//     ) {
+//       notify.error("Please fill all required fields");
+//       return;
+//     }
+
+//     try {
+//       const idToken = await user.getIdToken();
+//       const response = await fetch("/api/user/addresses", {
+//         method: "POST",
+//         headers: {
+//           Authorization: `Bearer ${idToken}`,
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify(newAddress),
+//       });
+
+//       if (!response.ok) throw new Error("Failed to add address");
+
+//       const result = await response.json();
+//       setAddresses([...addresses, result.data]);
+//       setSelectedAddressId(result.data.id);
+//       setShowAddAddress(false);
+//       setNewAddress({
+//         name: "",
+//         phone: "",
+//         addressLine1: "",
+//         addressLine2: "",
+//         city: "",
+//         state: "",
+//         pincode: "",
+//         isDefault: false,
+//       });
+//       notify.success("Address added successfully");
+//     } catch (error) {
+//       console.error("Error adding address:", error);
+//       notify.error("Failed to add address");
+//     }
+//   };
+
+  // const handlePlaceOrder = async () => {
+  //   if (paymentMethod === "cod" && !codAvailable) {
+  //     notify.error("Cash on Delivery not available");
+  //     return;
+  //   }
+
+  //   if (!selectedAddressId) {
+  //     notify.error("Please select a delivery address");
+  //     return;
+  //   }
+
+  //   if (!checkoutData?.items?.length) {
+  //     notify.error("No items in order");
+  //     return;
+  //   }
+
+  //   try {
+  //     setProcessing(true);
+  //     const idToken = await user.getIdToken();
+
+  //     const orderData = {
+  //       ...checkoutData,
+  //       addressId: selectedAddressId,
+  //       paymentMethod,
+  //     };
+
+  //     const response = await fetch("/api/orders", {
+  //       method: "POST",
+  //       headers: {
+  //         Authorization: `Bearer ${idToken}`,
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(orderData),
+  //     });
+
+  //     if (!response.ok) throw new Error("Failed to create order");
+
+  //     const result = await response.json();
+
+  //     if (paymentMethod === "cod") {
+  //       sessionStorage.removeItem("checkoutData");
+  //       router.push(`/order-confirmation/${result.orderId}`);
+  //     } else if (paymentMethod === "razorpay") {
+  //       if (razorpayLoaded && window.Razorpay) {
+  //         console.log("Initiating Razorpay payment");
+  //       } else {
+  //         notify.error("Payment gateway not loaded");
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error placing order:", error);
+  //     notify.error(error.message || "Failed to place order");
+  //   } finally {
+  //     setProcessing(false);
+  //   }
+  // };
+
+//   if (loading || checkingCod) {
+//     return (
+//       <div className="min-h-screen bg-gray-50">
+//         <Header />
+//         <div className="max-w-6xl mx-auto px-4 py-8">
+//           <div className="animate-pulse space-y-4">
+//             <div className="h-8 bg-gray-300 rounded w-1/3"></div>
+//             <div className="h-64 bg-gray-300 rounded"></div>
+//           </div>
+//         </div>
+//         <Footer />
+//       </div>
+//     );
+//   }
+
+//   if (!checkoutData) {
+//     return (
+//       <div className="min-h-screen bg-gray-50">
+//         <Header />
+//         <div className="max-w-6xl mx-auto px-4 py-8 text-center">
+//           <p className="text-gray-600">No items to checkout</p>
+//         </div>
+//         <Footer />
+//       </div>
+//     );
+//   }
+
+//   const totalAmount = checkoutData.totalAmount || 0;
+
+//   return (
+//     <>
+//       <Head>
+//         <title>Checkout - Desi Gifting</title>
+//       </Head>
+
+//       <div className="min-h-screen bg-gray-50">
+//         <Header />
+
+//         <div className="max-w-6xl mx-auto px-4 py-8">
+//           <h1 className="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+
+//           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+//             <div className="lg:col-span-2 space-y-6">
+              // {/* Order Items */}
+              // <div className="bg-white rounded-lg shadow-sm border p-6">
+              //   <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              //     Order Items
+              //   </h2>
+              //   <div className="space-y-6">
+              //     {checkoutData.items && checkoutData.items.length > 0 ? (
+              //       checkoutData.items.map((item, idx) => (
+              //         <div
+              //           key={idx}
+              //           className="border-b last:border-b-0 pb-6 last:pb-0"
+              //         >
+              //           <div className="flex gap-4">
+              //             {item.images &&
+              //               item.images.length > 0 &&
+              //               item.images[0]?.url && (
+              //                 <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+              //                   <img
+              //                     src={item.images[0].url}
+              //                     alt={item.name}
+              //                     className="w-full h-full object-cover"
+              //                   />
+              //                 </div>
+              //               )}
+              //             <div className="flex-1">
+              //               <h3 className="font-semibold text-gray-900">
+              //                 {item.name}
+              //               </h3>
+              //               <p className="text-sm text-gray-600">
+              //                 {item.businessName}
+              //               </p>
+              //               <p className="text-sm text-gray-600 mt-1">
+              //                 Qty: {item.quantity} × ₹
+              //                 {parseFloat(item.price).toFixed(2)}
+              //               </p>
+              //               <p className="font-semibold text-emerald-600 mt-2">
+              //                 ₹
+              //                 {(item.quantity * parseFloat(item.price)).toFixed(
+              //                   2
+              //                 )}
+              //               </p>
+              //             </div>
+              //           </div>
+
+              //           {/* Variant/Set Details */}
+              //           {(item.selectedVariant || item.selectedSet) && (
+              //             <div className="bg-emerald-50 border border-emerald-200 rounded p-3 mt-3">
+              //               {item.selectedVariant && (
+              //                 <div className="text-sm">
+              //                   <p className="text-gray-700">
+              //                     <span className="font-medium">Variant:</span>{" "}
+              //                     {item.selectedVariant.name}
+              //                   </p>
+              //                   {item.selectedVariant.description && (
+              //                     <p className="text-gray-600 text-xs">
+              //                       {item.selectedVariant.description}
+              //                     </p>
+              //                   )}
+              //                 </div>
+              //               )}
+              //               {item.selectedSet && (
+              //                 <div className="text-sm">
+              //                   <p className="text-gray-700">
+              //                     <span className="font-medium">Bundle:</span>{" "}
+              //                     {item.selectedSet.name}
+              //                   </p>
+              //                   <p className="text-gray-600 text-xs">
+              //                     {item.selectedSet.quantity} items included
+              //                   </p>
+              //                 </div>
+              //               )}
+              //             </div>
+              //           )}
+
+              //           {/* Customizations */}
+              //           {checkoutData.customizations &&
+              //             (checkoutData.customizations.customText ||
+              //               checkoutData.customizations.specialMessage ||
+              //               (checkoutData.customizations.customImages &&
+              //                 checkoutData.customizations.customImages.length >
+              //                   0)) && (
+              //               <div className="bg-blue-50 border border-blue-200 rounded p-3 mt-3">
+              //                 <p className="text-sm font-medium text-gray-900 mb-2">
+              //                   📝 Customizations
+              //                 </p>
+              //                 {checkoutData.customizations.customText && (
+              //                   <div className="text-sm mb-2">
+              //                     <span className="font-medium">Text:</span> "
+              //                     {checkoutData.customizations.customText}"
+              //                   </div>
+              //                 )}
+              //                 {checkoutData.customizations.specialMessage && (
+              //                   <div className="text-sm mb-2">
+              //                     <span className="font-medium">Message:</span>{" "}
+              //                     "{checkoutData.customizations.specialMessage}"
+              //                   </div>
+              //                 )}
+              //                 {checkoutData.customizations.customImages &&
+              //                   checkoutData.customizations.customImages
+              //                     .length > 0 && (
+              //                     <div className="text-sm">
+              //                       <span className="font-medium">Images:</span>{" "}
+              //                       {
+              //                         checkoutData.customizations.customImages
+              //                           .length
+              //                       }{" "}
+              //                       uploaded
+              //                     </div>
+              //                   )}
+              //               </div>
+              //             )}
+              //         </div>
+              //       ))
+              //     ) : (
+              //       <p className="text-gray-500">No items in order</p>
+              //     )}
+              //   </div>
+              // </div>
+
+//               {/* Delivery Address */}
+//               <div className="bg-white rounded-lg shadow-sm border p-6">
+//                 <div className="flex items-center justify-between mb-4">
+//                   <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+//                     <MapPinIcon className="w-5 h-5 mr-2" />
+//                     Delivery Address
+//                   </h2>
+//                   <button
+//                     onClick={() => setShowAddAddress(true)}
+//                     className="text-emerald-600 hover:text-emerald-700 text-sm font-medium flex items-center"
+//                   >
+//                     <PlusIcon className="w-4 h-4 mr-1" /> Add New
+//                   </button>
+//                 </div>
+
+//                 {addresses && addresses.length === 0 ? (
+//                   <div className="text-center py-6">
+//                     <p className="text-gray-600 mb-3">No saved addresses</p>
+//                     <button
+//                       onClick={() => setShowAddAddress(true)}
+//                       className="bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700"
+//                     >
+//                       Add Address
+//                     </button>
+//                   </div>
+//                 ) : (
+//                   <div className="space-y-2">
+//                     {addresses &&
+//                       addresses.map((addr) => (
+//                         <label
+//                           key={addr.id}
+//                           className={`block p-3 rounded-lg border-2 cursor-pointer transition ${
+//                             selectedAddressId === addr.id
+//                               ? "border-emerald-500 bg-emerald-50"
+//                               : "border-gray-200 hover:border-emerald-300"
+//                           }`}
+//                         >
+//                           <input
+//                             type="radio"
+//                             name="address"
+//                             value={addr.id}
+//                             checked={selectedAddressId === addr.id}
+//                             onChange={() => setSelectedAddressId(addr.id)}
+//                             className="sr-only"
+//                           />
+//                           <div className="flex justify-between">
+//                             <div className="text-sm">
+//                               <p className="font-medium text-gray-900">
+//                                 {addr.name}
+//                               </p>
+//                               <p className="text-gray-600">{addr.phone}</p>
+//                               <p className="text-gray-600">
+//                                 {addr.addressLine1}
+//                                 {addr.addressLine2 && `, ${addr.addressLine2}`}
+//                               </p>
+//                               <p className="text-gray-600">
+//                                 {addr.city}, {addr.state} - {addr.pincode}
+//                               </p>
+//                             </div>
+//                             {selectedAddressId === addr.id && (
+//                               <CheckCircleIcon className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+//                             )}
+//                           </div>
+//                         </label>
+//                       ))}
+//                   </div>
+//                 )}
+
+//                 {/* Add Address Modal */}
+//                 {showAddAddress && (
+//                   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+//                     <div className="bg-white p-6 rounded-lg max-w-md w-full max-h-[90vh] overflow-auto space-y-4">
+//                       <div className="flex justify-between items-center mb-4">
+//                         <h3 className="font-semibold">Add New Address</h3>
+//                         <button onClick={() => setShowAddAddress(false)}>
+//                           <XMarkIcon className="w-6 h-6" />
+//                         </button>
+//                       </div>
+//                       {[
+//                         "name",
+//                         "phone",
+//                         "addressLine1",
+//                         "addressLine2",
+//                         "city",
+//                         "state",
+//                         "pincode",
+//                       ].map((field) => (
+//                         <div key={field}>
+//                           <label className="block text-sm font-medium mb-1">
+//                             {field
+//                               .replace(/([A-Z])/g, " $1")
+//                               .replace(/^./, (str) => str.toUpperCase())}
+//                             {field !== "addressLine2" && " *"}
+//                           </label>
+//                           <input
+//                             type="text"
+//                             value={newAddress[field]}
+//                             onChange={(e) =>
+//                               setNewAddress((p) => ({
+//                                 ...p,
+//                                 [field]: e.target.value,
+//                               }))
+//                             }
+//                             className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:ring-2 focus:ring-emerald-500"
+//                           />
+//                         </div>
+//                       ))}
+//                       <label className="flex items-center">
+//                         <input
+//                           type="checkbox"
+//                           checked={newAddress.isDefault}
+//                           onChange={(e) =>
+//                             setNewAddress((p) => ({
+//                               ...p,
+//                               isDefault: e.target.checked,
+//                             }))
+//                           }
+//                           className="mr-2"
+//                         />
+//                         Set as default
+//                       </label>
+//                       <div className="flex gap-3">
+//                         <button
+//                           onClick={() => setShowAddAddress(false)}
+//                           className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300"
+//                         >
+//                           Cancel
+//                         </button>
+//                         <button
+//                           onClick={handleAddAddress}
+//                           className="flex-1 bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700"
+//                         >
+//                           Add
+//                         </button>
+//                       </div>
+//                     </div>
+//                   </div>
+//                 )}
+//               </div>
+
+//               {/* Payment Method */}
+//               <div className="bg-white rounded-lg shadow-sm border p-6">
+//                 <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+//                   <CreditCardIcon className="w-5 h-5 mr-2" />
+//                   Payment Method
+//                 </h2>
+
+//                 <div className="space-y-2">
+//                   <button
+//                     onClick={() => setPaymentMethod("razorpay")}
+//                     className={`w-full p-3 rounded-lg border-2 transition text-left ${
+//                       paymentMethod === "razorpay"
+//                         ? "border-emerald-500 bg-emerald-50"
+//                         : "border-gray-200 hover:border-emerald-300"
+//                     }`}
+//                   >
+//                     <div className="flex items-center justify-between">
+//                       <div>
+//                         <p className="font-medium text-gray-900">
+//                           Online Payment
+//                         </p>
+//                         <p className="text-xs text-gray-600">
+//                           Card, UPI, Net Banking
+//                         </p>
+//                       </div>
+//                       {paymentMethod === "razorpay" && (
+//                         <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+//                       )}
+//                     </div>
+//                   </button>
+
+//                   <button
+//                     onClick={() => {
+//                       if (!codAvailable) {
+//                         notify.error("COD not available for this order");
+//                         return;
+//                       }
+//                       setPaymentMethod("cod");
+//                     }}
+//                     disabled={!codAvailable}
+//                     className={`w-full p-3 rounded-lg border-2 transition text-left ${
+//                       !codAvailable
+//                         ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+//                         : paymentMethod === "cod"
+//                         ? "border-emerald-500 bg-emerald-50"
+//                         : "border-gray-200 hover:border-emerald-300"
+//                     }`}
+//                   >
+//                     <div className="flex items-center justify-between">
+//                       <div>
+//                         <p className="font-medium text-gray-900">
+//                           Cash on Delivery
+//                         </p>
+//                         <p className="text-xs text-gray-600">
+//                           {codAvailable ? "Pay on delivery" : "Not available"}
+//                         </p>
+//                       </div>
+//                       {codAvailable ? (
+//                         paymentMethod === "cod" ? (
+//                           <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+//                         ) : (
+//                           <div className="w-5 h-5 border-2 border-gray-300 rounded-full"></div>
+//                         )
+//                       ) : (
+//                         <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
+//                       )}
+//                     </div>
+//                   </button>
+//                 </div>
+
+//                 {!codAvailable && (
+//                   <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+//                     ⚠️ Cash on Delivery not available for this order
+//                   </div>
+//                 )}
+//               </div>
+//             </div>
+
+//             {/* Sidebar */}
+//             <div className="lg:col-span-1">
+//               <div className="bg-white rounded-lg shadow-sm border p-6 sticky top-8">
+//                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
+//                   Order Summary
+//                 </h2>
+
+//                 <div className="space-y-3 text-sm mb-4">
+//                   {checkoutData.items && checkoutData.items.length > 0 ? (
+//                     checkoutData.items.map((item, idx) => (
+//                       <div key={idx} className="flex justify-between">
+//                         <span className="text-gray-600 truncate">
+//                           {item.name} × {item.quantity}
+//                         </span>
+//                         <span className="font-medium text-gray-900 flex-shrink-0">
+//                           ₹{(item.quantity * parseFloat(item.price)).toFixed(2)}
+//                         </span>
+//                       </div>
+//                     ))
+//                   ) : (
+//                     <p className="text-gray-500">No items</p>
+//                   )}
+//                 </div>
+
+//                 <div className="border-t pt-4 mb-4">
+//                   <div className="flex justify-between mb-2">
+//                     <span className="text-gray-600">Subtotal</span>
+//                     <span className="font-medium">
+//                       ₹{totalAmount.toFixed(2)}
+//                     </span>
+//                   </div>
+//                   <div className="flex justify-between">
+//                     <span className="text-gray-600">Shipping</span>
+//                     <span className="font-medium">Free</span>
+//                   </div>
+//                 </div>
+
+//                 <div className="border-t pt-4 mb-6">
+//                   <div className="flex justify-between items-center">
+//                     <span className="font-semibold text-gray-900">Total</span>
+//                     <span className="text-2xl font-bold text-emerald-600">
+//                       ₹{totalAmount.toFixed(2)}
+//                     </span>
+//                   </div>
+//                 </div>
+
+//                 <button
+//                   onClick={handlePlaceOrder}
+//                   disabled={processing || !selectedAddressId}
+//                   className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:bg-gray-400 transition"
+//                 >
+//                   {processing ? "Processing..." : "Place Order"}
+//                 </button>
+
+//                 <p className="text-xs text-gray-500 text-center mt-4">
+//                   By placing order, you agree to our terms
+//                 </p>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+
+//         <Footer />
+//       </div>
+
+//       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
+//     </>
+//   );
+// }

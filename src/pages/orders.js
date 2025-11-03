@@ -364,8 +364,22 @@ export default function MyOrders() {
                         </div>
                         <div className="flex-1">
                           <p className="font-medium text-gray-900">
-                            {item.name}
+                            Name: {item.name}
                           </p>
+                          <p className="text-sm text-gray-600">
+                            {item.pricingType === "variant" && (
+                              <span className="ml-0">
+                              Variant: {item.selectedVariant.name}
+                              </span>
+                            )}
+                            {item.pricingType === "set" && (
+                              <span className="ml-0">
+                                Set: {item.selectedSet.quantity}
+                              </span>
+                            )}
+                          </p>
+
+                          {/* {if(item.pricimgType === "varient")} */}
                           <p className="text-sm text-gray-600">
                             Qty: {item.quantity}
                           </p>

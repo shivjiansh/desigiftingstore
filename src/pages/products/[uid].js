@@ -37,7 +37,6 @@ export default function ProductDetails() {
   const router = useRouter();
   const { uid } = router.query;
 
-  // State management
   const [user, setUser] = useState(null);
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -50,18 +49,19 @@ export default function ProductDetails() {
   const [showAllReviews, setShowAllReviews] = useState(false);
   const [showCustomizationPanel, setShowCustomizationPanel] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [selectedSet, setSelectedSet] = useState(null);
 
-  // Customization states
   const [customText, setCustomText] = useState("");
   const [customImages, setCustomImages] = useState([]);
   const [specialMessage, setSpecialMessage] = useState("");
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  // Offer live logic
+  // ✅ OFFER LOGIC - defined FIRST
   const now = new Date();
   const start = product?.offerStartDate && new Date(product.offerStartDate);
   const end = product?.offerEndDate && new Date(product.offerEndDate);
   const isOfferLive =
+    product?.pricingType === "simple" &&
     product?.hasOffer &&
     product.offerPercentage > 0 &&
     start instanceof Date &&
@@ -69,14 +69,84 @@ export default function ProductDetails() {
     now >= start &&
     now <= end;
 
+  // ✅ Helper functions
+  const getMinPrice = () => {
+    if (product?.pricingType === "set" && product?.setPricing?.length > 0) {
+      const prices = product.setPricing.map((s) => parseFloat(s.price) || 0);
+      return Math.min(...prices);
+    } else if (
+      product?.pricingType === "variant" &&
+      product?.variants?.length > 0
+    ) {
+      const prices = product.variants.map((v) => parseFloat(v.price) || 0);
+      return Math.min(...prices);
+    } else {
+      return parseFloat(product?.price) || 0;
+    }
+  };
+
+  const getMaxPrice = () => {
+    if (product?.pricingType === "set" && product?.setPricing?.length > 0) {
+      const prices = product.setPricing.map((s) => parseFloat(s.price) || 0);
+      return Math.max(...prices);
+    } else if (
+      product?.pricingType === "variant" &&
+      product?.variants?.length > 0
+    ) {
+      const prices = product.variants.map((v) => parseFloat(v.price) || 0);
+      return Math.max(...prices);
+    } else {
+      return parseFloat(product?.price) || 0;
+    }
+  };
+
+  // ✅ getCurrentPrice - INDEX BASED for variants
+  const getCurrentPrice = () => {
+    // SET PRICING
+    if (product?.pricingType === "set" && selectedSet) {
+      const selected = product.setPricing.find((s) => {
+        const setId = s.id || s.uid || s._id;
+        return String(setId) === String(selectedSet);
+      });
+      return selected ? parseFloat(selected.price) : getMinPrice();
+    }
+
+    // ✅ VARIANT PRICING - INDEX BASED
+    if (product?.pricingType === "variant" && selectedSet) {
+      const indexMatch = selectedSet.match(/variant-(\d+)/);
+      if (indexMatch) {
+        const index = parseInt(indexMatch[1]);
+        const selected = product.variants[index];
+        if (selected && selected.price) {
+          const price = parseFloat(selected.price);
+          console.log(`✅ Variant ${index}: "${selected.name}" - ₹${price}`);
+          return price;
+        }
+      }
+      console.warn("⚠️ Variant not found for:", selectedSet);
+      return getMinPrice();
+    }
+
+    // SIMPLE PRICING
+    if (product?.pricingType === "simple") {
+      return isOfferLive
+        ? parseFloat(product.offerPrice)
+        : parseFloat(product?.price) || 0;
+    }
+
+    return getMinPrice();
+  };
+
+  const calculateTotalPrice = () => {
+    const basePrice = getCurrentPrice();
+    const total = (basePrice * quantity).toFixed(2);
+    return total;
+  };
+
   // Authentication
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log(
-        "Auth state changed:",
-        currentUser ? "User logged in" : "User logged out"
-      );
       setUser(currentUser);
       setAuthLoading(false);
     });
@@ -92,60 +162,40 @@ export default function ProductDetails() {
 
   useEffect(() => {
     async function checkWishlist() {
-      if (authLoading) {
-        console.log("Auth still loading...");
-        return;
-      }
-
+      if (authLoading) return;
       try {
         if (!user) {
-          console.log("User not authenticated");
           setIsWishlisted(false);
           return;
         }
-
-        console.log("Checking wishlist status for product ID:", uid);
         const idToken = await user.getIdToken();
-
         const res = await fetch(`/api/user/wishlist?productId=${uid}`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${idToken}`,
           },
         });
-
         if (!res.ok) throw new Error("Failed to fetch wishlist");
-
         const result = await res.json();
-        console.log("API response:", result);
-
         if (result.success) {
           setIsWishlisted(result.data.isWishlisted);
-        } else {
-          throw new Error(result.error || "Unknown error");
         }
       } catch (err) {
         console.error(err);
-        notify.error("Could not load wishlist status");
       }
     }
     checkWishlist();
-    console.log("Wishlist check triggered => ", isWishlisted);
   }, [authLoading, user, uid]);
 
   const loadProductData = async () => {
     try {
       setLoading(true);
-
-      console.log("Fetching product with ID:", uid);
       const productResponse = await fetch(`/api/products?id=${uid}`);
       const productResult = await productResponse.json();
-      console.log("Fetched product result:", productResult);
 
       if (productResult.success) {
         setProduct(productResult.data);
 
-        // Initialize customizations
         const initialCustomizations = {};
         productResult.data.customizationOptions?.forEach((option) => {
           if (option.required) {
@@ -154,7 +204,16 @@ export default function ProductDetails() {
         });
         setSelectedCustomizations(initialCustomizations);
 
-        // Load related products from same seller
+        // ✅ Only initialize for SET, NOT for VARIANT
+        if (
+          productResult.data.pricingType === "set" &&
+          productResult.data.setPricing?.length > 0
+        ) {
+          const firstSet = productResult.data.setPricing[0];
+          const setId = firstSet.id || firstSet.uid || firstSet._id;
+          setSelectedSet(setId);
+        }
+
         if (productResult.data.sellerId) {
           loadRelatedProducts(productResult.data.sellerId, uid);
         }
@@ -177,7 +236,6 @@ export default function ProductDetails() {
         `/api/products?sellerId=${sellerId}&limit=6`
       );
       const result = await response.json();
-
       if (result.success) {
         const related =
           result.data.results?.filter((p) => p.id !== currentProductId) || [];
@@ -189,28 +247,22 @@ export default function ProductDetails() {
   };
 
   const handleCustomizationChange = (optionId, value) => {
-    setSelectedCustomizations((prev) => ({
-      ...prev,
-      [optionId]: value,
-    }));
+    setSelectedCustomizations((prev) => ({ ...prev, [optionId]: value }));
   };
 
   const handleImageUpload = async (event) => {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
-
     if (customImages.length + files.length > 5) {
       notify.error("Maximum 5 images allowed");
       return;
     }
-
     setUploadingImages(true);
     try {
       const uploadPromises = files.map(async (file) => {
         if (file.size > 10 * 1024 * 1024) {
           throw new Error(`File ${file.name} is too large (max 10MB)`);
         }
-
         const formData = new FormData();
         formData.append("file", file);
         formData.append(
@@ -220,16 +272,9 @@ export default function ProductDetails() {
 
         const response = await fetch(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
+          { method: "POST", body: formData }
         );
-
-        if (!response.ok) {
-          throw new Error("Failed to upload image");
-        }
-
+        if (!response.ok) throw new Error("Failed to upload image");
         const data = await response.json();
         return {
           id: Date.now() + Math.random(),
@@ -237,7 +282,6 @@ export default function ProductDetails() {
           name: file.name,
         };
       });
-
       const uploadedImages = await Promise.all(uploadPromises);
       setCustomImages((prev) => [...prev, ...uploadedImages]);
       notify.success(`${uploadedImages.length} image(s) uploaded successfully`);
@@ -255,7 +299,6 @@ export default function ProductDetails() {
 
   const validateCustomizations = () => {
     if (!product?.customizationOptions) return true;
-
     for (const option of product.customizationOptions) {
       if (option.required && !selectedCustomizations[option.id]) {
         notify.error(`Please provide ${option.name}`);
@@ -265,11 +308,6 @@ export default function ProductDetails() {
     return true;
   };
 
-  const calculateTotalPrice = () => {
-    const basePrice = isOfferLive ? product.offerPrice : product?.price || 0;
-    return (basePrice * quantity).toFixed(2);
-  };
-
   const handleBuyNow = () => {
     if (!user) {
       notify.error("Please login to continue");
@@ -277,22 +315,71 @@ export default function ProductDetails() {
       return;
     }
 
-    if (!validateCustomizations()) {
+    // Validate variant/set selection
+    if (product?.pricingType === "variant" && !selectedSet) {
+      notify.error("Please select a variant");
+      return;
+    }
+    if (product?.pricingType === "set" && !selectedSet) {
+      notify.error("Please select a set");
       return;
     }
 
+    if (!validateCustomizations()) return;
     if (product.stock < quantity) {
       notify.error("Insufficient stock");
       return;
     }
 
-    // Prepare checkout data with customizations
+    // ✅ Get variant/set details if applicable
+    let variantData = null;
+    let setData = null;
+
+    if (product?.pricingType === "variant" && selectedSet) {
+      // Extract index from "variant-0", "variant-1"
+      const indexMatch = selectedSet.match(/variant-(\d+)/);
+      if (indexMatch) {
+        const index = parseInt(indexMatch[1]);
+        variantData = product.variants[index];
+      }
+    }
+
+    if (product?.pricingType === "set" && selectedSet) {
+      // Find set by ID
+      setData = product.setPricing.find(
+        (s) => String(s.id || s.uid || s._id) === String(selectedSet)
+      );
+    }
+
+    // ✅ Build checkout data with variant/set details
     const checkoutData = {
       items: [
         {
           productId: product.id,
           name: product.name,
-          price: isOfferLive ? product.offerPrice : product.price,
+          pricingType: product.pricingType,
+          cod: product.codAvailable,
+          // ✅ Include variant data if applicable
+          ...(variantData && {
+            selectedVariant: {
+              id: selectedSet,
+              name: variantData.name,
+              description: variantData.description,
+              price: variantData.price,
+            },
+          }),
+
+          // ✅ Include set data if applicable
+          ...(setData && {
+            selectedSet: {
+              id: selectedSet,
+              name: setData.name,
+              quantity: setData.quantity,
+              price: setData.price,
+            },
+          }),
+
+          price: getCurrentPrice(),
           quantity: quantity,
           businessName: product.businessName,
           sellerId: product.sellerId,
@@ -309,51 +396,9 @@ export default function ProductDetails() {
       totalAmount: parseFloat(calculateTotalPrice()),
     };
 
+    console.log("Checkout Data:", checkoutData);
     sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
     router.push("/checkout");
-  };
-
-  const handleAddToCart = async () => {
-    if (!user) {
-      notify.error("Please login to add to cart");
-      router.push("/auth/login");
-      return;
-    }
-
-    if (!validateCustomizations()) {
-      return;
-    }
-
-    try {
-      const idToken = await user.getIdToken();
-      const response = await fetch("/api/cart", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-          customizations: {
-            ...selectedCustomizations,
-            customText: customText.trim(),
-            customImages: customImages,
-            specialMessage: specialMessage.trim(),
-          },
-        }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        notify.success("Added to cart!");
-      } else {
-        notify.error(result.error || "Failed to add to cart");
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error);
-      notify.error("Failed to add to cart");
-    }
   };
 
   const toggleWishlist = async () => {
@@ -361,11 +406,7 @@ export default function ProductDetails() {
       notify.error("Please login to add to wishlist");
       return;
     }
-
     try {
-      console.log(
-        isWishlisted ? "Removing from wishlist" : "Adding to wishlist"
-      );
       const idToken = await user.getIdToken();
       const response = await fetch("/api/user/wishlist", {
         method: isWishlisted ? "DELETE" : "POST",
@@ -375,7 +416,6 @@ export default function ProductDetails() {
         },
         body: JSON.stringify({ productId: product.id }),
       });
-
       const result = await response.json();
       if (result.success) {
         setIsWishlisted(!isWishlisted);
@@ -417,12 +457,6 @@ export default function ProductDetails() {
             </div>
           </div>
           <div className="h-96 bg-gray-300"></div>
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="space-y-4">
-              <div className="h-8 bg-gray-300 rounded w-1/2"></div>
-              <div className="h-6 bg-gray-300 rounded w-1/4"></div>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -457,14 +491,13 @@ export default function ProductDetails() {
       <div className="min-h-screen bg-gray-50 pb-10">
         <Header />
 
-        {/* Hero Image Section */}
+        {/* Hero Image */}
         <div className="relative h-96 sm:h-[500px] lg:h-[600px] bg-white overflow-hidden">
           {isOfferLive && (
             <div className="absolute bottom-6 left-6 z-20 bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-bold">
               {product.offerPercentage}% OFF
             </div>
           )}
-
           {product.images && product.images.length > 0 ? (
             <Image
               src={product.images[currentImageIndex]?.url || "/placeholder.jpg"}
@@ -479,14 +512,10 @@ export default function ProductDetails() {
             </div>
           )}
 
-          {/* Action Buttons Overlay */}
           <div className="absolute top-6 right-6 flex space-x-2 z-10">
             <button
               onClick={toggleWishlist}
-              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-colors"
-              aria-label={
-                isWishlisted ? "Remove from wishlist" : "Add to wishlist"
-              }
+              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg"
             >
               {isWishlisted ? (
                 <HeartIconSolid className="w-5 h-5 text-red-500" />
@@ -496,26 +525,23 @@ export default function ProductDetails() {
             </button>
             <button
               onClick={shareProduct}
-              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-colors"
-              aria-label="Share product"
+              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg"
             >
               <ShareIcon className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Back Button */}
           <div className="absolute top-6 left-6 z-10">
             <button
               onClick={() => router.back()}
-              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg transition-colors flex items-center space-x-2"
-              aria-label="Go back"
+              className="bg-white/90 hover:bg-white p-3 rounded-full shadow-lg"
             >
               <ArrowLeftIcon className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Image Thumbnails */}
+        {/* Thumbnails */}
         {product.images && product.images.length > 1 && (
           <div className="bg-white border-b border-gray-200 py-4">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -524,15 +550,15 @@ export default function ProductDetails() {
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-3 transition-all duration-200 hover:scale-105 relative ${
+                    className={`flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-3 transition-all ${
                       currentImageIndex === index
-                        ? "border-emerald-500 ring-2 ring-emerald-500 ring-opacity-50 shadow-lg"
-                        : "border-gray-200 hover:border-gray-300"
+                        ? "border-emerald-500"
+                        : "border-gray-200"
                     }`}
                   >
                     <Image
                       src={image.url}
-                      alt={`${product.name} - Image ${index + 1}`}
+                      alt={`${product.name}`}
                       width={80}
                       height={80}
                       className="w-full h-full object-cover"
@@ -546,120 +572,196 @@ export default function ProductDetails() {
 
         {/* Main Content */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
-            {/* Product Details - Left Column */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2">
-              {/* Header */}
-              <div className="mb-8">
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                  {product.name}
-                </h1>
-                <p className="text-lg text-gray-600 mb-4 leading-relaxed">
-                  {product.description}
-                </p>
-
-                {/* Rating */}
-                {product.rating > 0 && (
-                  <div className="flex items-center space-x-2 mb-4">
-                    <div className="flex items-center">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <StarIconSolid
-                          key={star}
-                          className={`w-5 h-5 ${
-                            star <= product.rating
-                              ? "text-yellow-400"
-                              : "text-gray-300"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      {product.rating.toFixed(1)} ({product.reviewCount}{" "}
-                      reviews)
-                    </span>
+              <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                {product.name}
+              </h1>
+              <p className="text-lg text-gray-600 mb-4">
+                {product.description}
+              </p>
+              {product.rating > 0 && (
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="flex items-center">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <StarIconSolid
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= product.rating
+                            ? "text-yellow-400"
+                            : "text-gray-300"
+                        }`}
+                      />
+                    ))}
                   </div>
-                )}
-              </div>
+                  <span className="text-sm text-gray-600">
+                    {product.rating.toFixed(1)} ({product.reviewCount} reviews)
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Price & Purchase Section - Right Column */}
+            {/* Pricing & Purchase */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg border p-6 sticky top-8">
-                {/* Price */}
-                <div className="mb-6">
-                  <div className="flex items-center space-x-3 mb-2">
-                    {isOfferLive ? (
-                      <>
-                        <span className="text-3xl font-bold text-green-600">
-                          ₹{product.offerPrice}
-                        </span>
-                        <span className="text-xl text-gray-500 line-through">
+                {/* ✅ PRICING - All 3 types */}
+                {product?.pricingType === "set" ? (
+                  <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                      Available Sets
+                    </label>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {product.setPricing?.map((set, index) => {
+                        const setId =
+                          set.id || set.uid || set._id || `set-${index}`;
+                        return (
+                          <button
+                            key={setId}
+                            onClick={() => {
+                              setSelectedSet(setId);
+                              setQuantity(1);
+                            }}
+                            className={`w-full p-3 rounded-lg border-2 text-left ${
+                              selectedSet === setId
+                                ? "border-emerald-500 bg-emerald-50 shadow-md"
+                                : "border-gray-300 bg-gray-50"
+                            }`}
+                          >
+                            <div className="flex justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {set.name}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {set.quantity} units
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <div className="text-right">
+                                  <p className="text-lg font-bold text-emerald-600">
+                                    ₹{parseFloat(set.price).toFixed(2)}
+                                  </p>
+                                </div>
+                                {selectedSet === setId && (
+                                  <CheckIcon className="w-5 h-5 text-emerald-600" />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : product?.pricingType === "variant" ? (
+                  <div className="mb-6">
+                    <label className="block text-sm font-semibold text-gray-900 mb-3">
+                      Select Variant
+                    </label>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {product.variants?.map((variant, index) => {
+                        const variantId = `variant-${index}`;
+                        return (
+                          <button
+                            key={variantId}
+                            onClick={() => {
+                              console.log(
+                                `Variant ${index} clicked:`,
+                                variant.name
+                              );
+                              setSelectedSet(variantId);
+                              setQuantity(1);
+                            }}
+                            className={`w-full p-3 rounded-lg border-2 text-left ${
+                              selectedSet === variantId
+                                ? "border-emerald-500 bg-emerald-50 shadow-md"
+                                : "border-gray-300 bg-gray-50"
+                            }`}
+                          >
+                            <div className="flex justify-between">
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {variant.name}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {variant.description || ""}
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <p className="text-lg font-bold text-emerald-600">
+                                  ₹{parseFloat(variant.price).toFixed(2)}
+                                </p>
+                                {selectedSet === variantId && (
+                                  <CheckIcon className="w-5 h-5 text-emerald-600" />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-6">
+                    <div className="flex items-center space-x-3 mb-2">
+                      {isOfferLive ? (
+                        <>
+                          <span className="text-3xl font-bold text-green-600">
+                            ₹{product.offerPrice}
+                          </span>
+                          <span className="text-xl text-gray-500 line-through">
+                            ₹{product.price}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-3xl font-bold text-gray-900">
                           ₹{product.price}
                         </span>
-                      </>
-                    ) : (
-                      <span className="text-3xl font-bold text-gray-900">
-                        ₹{product.price}
-                      </span>
+                      )}
+                    </div>
+                    {isOfferLive && product.offerEndDate && (
+                      <div className="mb-2 text-sm text-orange-700">
+                        🔥 Offer ends on {end.toLocaleDateString()}
+                      </div>
+                    )}
+                    {product.stock < 10 && product.stock > 0 && (
+                      <p className="text-orange-600 text-sm">
+                        ⚠️ Only {product.stock} left!
+                      </p>
+                    )}
+                    {product.stock > 0 && (
+                      <p className="text-green-600 text-sm">✔️ In stock</p>
+                    )}
+                    {product.stock === 0 && (
+                      <p className="text-red-600 text-sm">❌ Out of Stock</p>
                     )}
                   </div>
-
-                  {/* Offer End Date */}
-                  {isOfferLive && product.offerEndDate && (
-                    <div className="mb-2 text-sm text-orange-700">
-                      🔥 Offer ends on {end.toLocaleDateString()}
-                    </div>
-                  )}
-
-                  {product.stock < 10 && product.stock > 0 && (
-                    <p className="text-orange-600 text-sm font-medium">
-                      ⚠️ Only {product.stock} left in stock!
-                    </p>
-                  )}
-                  {product.stock > 0 && (
-                    <p className="text-green-600 text-sm font-medium">
-                      ✔️ In stock
-                    </p>
-                  )}
-                  {product.stock === 0 && (
-                    <p className="text-red-600 text-sm font-medium">
-                      ❌ Out of Stock
-                    </p>
-                  )}
-                </div>
+                )}
 
                 {/* Quantity */}
                 <div className="mb-6">
                   <div className="flex items-center justify-center border border-gray-300 rounded-lg">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      disabled={quantity <= 1}
-                      className="p-3 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-3"
                     >
                       <MinusIcon className="w-5 h-5" />
                     </button>
-                    <span className="px-6 py-3 font-medium min-w-[60px] text-center">
-                      {quantity}
-                    </span>
+                    <span className="px-6 py-3 font-medium">{quantity}</span>
                     <button
                       onClick={() =>
                         setQuantity(Math.min(product.stock, quantity + 1))
                       }
-                      disabled={quantity >= product.stock}
-                      className="p-3 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-3"
                     >
                       <PlusIcon className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Total Price */}
                 {quantity > 1 && (
                   <div className="mb-6 bg-emerald-50 p-3 rounded-lg">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-medium text-gray-900">
-                        Subtotal:
-                      </span>
+                    <div className="flex justify-between">
+                      <span className="text-lg font-medium">Subtotal:</span>
                       <span className="text-lg font-bold text-emerald-600">
                         ₹{calculateTotalPrice()}
                       </span>
@@ -667,19 +769,17 @@ export default function ProductDetails() {
                   </div>
                 )}
 
-                {/* Customization Panel */}
+                {/* Customization */}
                 <div className="mb-6">
                   <button
                     onClick={() =>
                       setShowCustomizationPanel(!showCustomizationPanel)
                     }
-                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-lg font-medium hover:from-emerald-700 hover:to-teal-700 transition-colors flex items-center justify-between"
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-between"
                   >
-                    <div className="flex items-center space-x-2">
-                      <span>Add Personal Touch</span>
-                    </div>
+                    <span>Add Personal Touch</span>
                     <ChevronDownIcon
-                      className={`w-5 h-5 transition-transform ${
+                      className={`w-5 h-5 ${
                         showCustomizationPanel ? "rotate-180" : ""
                       }`}
                     />
@@ -687,37 +787,32 @@ export default function ProductDetails() {
 
                   {showCustomizationPanel && (
                     <div className="bg-white border border-gray-200 rounded-lg mt-4 p-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-6 text-center">
-                        "Make Gift Special"
+                      <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                        Make Gift Special
                       </h3>
-
                       <div className="space-y-6">
-                        {/* Custom Text */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium mb-2">
                             Custom Text
                           </label>
                           <input
                             type="text"
-                            placeholder="Enter name, message, or text to display"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            placeholder="Enter name or message"
+                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-emerald-500"
                             value={customText}
                             onChange={(e) => setCustomText(e.target.value)}
                             maxLength={100}
                           />
-
                           <p className="text-xs text-gray-500 mt-1">
-                            {customText.length}/100 characters
+                            {customText.length}/100
                           </p>
                         </div>
 
-                        {/* Image Upload */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <label className="block text-sm font-medium mb-2">
                             Upload Images (Max 5)
                           </label>
-
-                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                             <input
                               type="file"
                               multiple
@@ -725,46 +820,35 @@ export default function ProductDetails() {
                               onChange={handleImageUpload}
                               className="hidden"
                               id="image-upload"
-                              disabled={customImages.length >= 5}
                             />
                             <label
                               htmlFor="image-upload"
-                              className="cursor-pointer block"
+                              className="cursor-pointer"
                             >
                               <PhotoIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                               <p className="text-sm text-gray-600">
                                 {uploadingImages
                                   ? "Uploading..."
-                                  : "Click to upload images"}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                JPG, PNG up to 10MB each
+                                  : "Click to upload"}
                               </p>
                             </label>
                           </div>
-
-                          {/* Image Preview */}
                           {customImages.length > 0 && (
                             <div className="mt-4">
-                              <p className="text-sm text-gray-700 mb-3">
-                                {customImages.length} image(s) uploaded
+                              <p className="text-sm mb-3">
+                                {customImages.length} image(s)
                               </p>
                               <div className="grid grid-cols-5 gap-2">
-                                {customImages.map((image) => (
-                                  <div
-                                    key={image.id}
-                                    className="relative group"
-                                  >
+                                {customImages.map((img) => (
+                                  <div key={img.id} className="relative">
                                     <img
-                                      src={image.url}
-                                      alt="Upload preview"
-                                      className="w-full h-16 object-cover rounded border"
+                                      src={img.url}
+                                      alt="preview"
+                                      className="w-full h-16 object-cover rounded"
                                     />
                                     <button
-                                      onClick={() =>
-                                        removeCustomImage(image.id)
-                                      }
-                                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={() => removeCustomImage(img.id)}
+                                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs"
                                     >
                                       ×
                                     </button>
@@ -775,50 +859,22 @@ export default function ProductDetails() {
                           )}
                         </div>
 
-                        {/* Special Instructions */}
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Special Instructions
-                            <span className="text-gray-500 font-normal">
-                              {" "}
-                              (Optional)
-                            </span>
+                          <label className="block text-sm font-medium mb-2">
+                            Special Instructions (Optional)
                           </label>
                           <textarea
                             rows="3"
-                            placeholder="Any specific requirements or notes for the seller..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+                            placeholder="Any notes..."
+                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-emerald-500 resize-none"
                             value={specialMessage}
                             onChange={(e) => setSpecialMessage(e.target.value)}
                             maxLength={300}
                           />
-
                           <p className="text-xs text-gray-500 mt-1">
-                            {specialMessage.length}/300 characters
+                            {specialMessage.length}/300
                           </p>
                         </div>
-
-                        {/* Summary */}
-                        {(customText ||
-                          customImages.length > 0 ||
-                          specialMessage) && (
-                          <div className="bg-gray-50 p-4 rounded-lg border">
-                            <h4 className="text-sm font-medium text-gray-900 mb-2">
-                              Customization Summary
-                            </h4>
-                            <div className="space-y-1 text-sm text-gray-600">
-                              {customText && (
-                                <p>• Custom text: "{customText}"</p>
-                              )}
-                              {customImages.length > 0 && (
-                                <p>• {customImages.length} image(s) uploaded</p>
-                              )}
-                              {specialMessage && (
-                                <p>• Special instructions provided</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -828,7 +884,7 @@ export default function ProductDetails() {
                 <button
                   onClick={handleBuyNow}
                   disabled={product.stock === 0}
-                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 px-6 rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed text-lg"
+                  className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 px-6 rounded-lg font-semibold hover:from-emerald-700 hover:to-teal-700 disabled:bg-gray-400 text-lg"
                 >
                   {product.stock === 0 ? "Out of Stock" : "Buy Now"}
                 </button>
@@ -840,24 +896,19 @@ export default function ProductDetails() {
           {relatedProducts.length > 0 && (
             <div className="mt-16">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold">
                   More from {product.businessName}
                 </h2>
                 <Link
                   href={`/store/${product.sellerId}`}
-                  className="inline-flex items-center px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-                  aria-label={`Visit ${product.businessName} Store`}
+                  className="px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-md"
                 >
                   Visit Store
-                  
                 </Link>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
-                {relatedProducts.map((relatedProduct) => (
-                  <ProductCard
-                    key={relatedProduct.id}
-                    product={relatedProduct}
-                  />
+                {relatedProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} />
                 ))}
               </div>
             </div>

@@ -1170,12 +1170,7 @@ export default function EditProduct() {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-white rounded-xl shadow-sm border p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Quick Actions
-                  </h3>
-                  
-                </div>
+                
               </div>
             </div>
           </div>

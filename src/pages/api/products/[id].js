@@ -207,11 +207,8 @@ async function handleDeleteProduct(req, res, productId) {
   // Check if user owns this product or is admin
 
   // Soft delete by setting isActive to false
-  await adminDb.collection("products").doc(productId).update({
-    isActive: false,
-    deletedAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  });
+  await adminDb.collection("products").doc(productId).delete();
+
   console.log("Product marked as inactive (soft deleted):", productId);
 
   // Update seller stats
