@@ -350,7 +350,7 @@ export default function SellerDashboard() {
                       <div className="flex-1 text-center sm:text-left">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
                           <h3 className="font-bold text-base sm:text-lg text-gray-900">
-                            Milestone Mega Celebration
+                            Bonus
                           </h3>
                         </div>
 
@@ -386,7 +386,7 @@ export default function SellerDashboard() {
                           🎁 Anniversary Special: Up to ₹12,500 total bonus
                         </span>
                         <span className="text-red-600 font-bold animate-pulse text-center sm:text-right">
-                          📅 Until Nov 2025
+                          📅 Until March 2026
                         </span>
                       </div>
                     </div>

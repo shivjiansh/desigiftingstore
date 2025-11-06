@@ -486,6 +486,8 @@ export default function ProductDetails() {
         <meta property="og:title" content={product.name} />
         <meta property="og:description" content={product.description} />
         <meta property="og:image" content={product.images?.[0]?.url} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
       </Head>
 
       <div className="min-h-screen bg-gray-50 pb-10">

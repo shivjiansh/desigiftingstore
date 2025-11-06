@@ -194,7 +194,7 @@ export default function SellerMilestones() {
                   <li className="flex items-start gap-2">
                     <span className="text-blue-500 mt-1">•</span>
                     <span>
-                      <strong>Duration:</strong> 12 months from enrollment
+                      <strong>Duration:</strong> 6 months from enrollment
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
@@ -545,7 +545,7 @@ export default function SellerMilestones() {
                     • Account must remain in good standing throughout program
                   </li>
                   <li>
-                    • Anniversary program active from Sept 2025 - Sept 2026
+                    • Anniversary program active from Sept 2025 - March 2026
                   </li>
                 </ul>
               </div>

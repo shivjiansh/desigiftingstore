@@ -87,7 +87,7 @@ export default function SellerLayout({ children }) {
     { name: "Orders", href: "/seller/orders", icon: "📋" },
     { name: "Analytics", href: "/seller/analytics", icon: "📊" },
     { name: "Profile", href: "/seller/profile", icon: "👨‍💼" },
-    { name: "Cashback", href: "/seller/milestones", icon: "🎉" },
+    { name: "Bonus", href: "/seller/milestones", icon: "🎉" },
     { name: "Payout", href: "/seller/payout", icon: "💰" },
   ];
 
@@ -212,7 +212,7 @@ export default function SellerLayout({ children }) {
                 router.pathname === item.href ||
                 (item.href !== "/seller/dashboard" &&
                   router.pathname.startsWith(item.href));
-                   if (item.name === "Cashback") {
+                   if (item.name === "Bonus") {
                      return (
                        <div key={item.name} className="relative">
                          {/* Anniversary Background */}
@@ -235,11 +235,9 @@ export default function SellerLayout({ children }) {
 
                            {/* Anniversary Badge */}
                            <div className="flex flex-col items-end">
-                             <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
-                               NEW
-                             </span>
+                             
                              <span className="text-xs text-amber-600 font-medium mt-0.5">
-                               1st Anniversary
+                               Limited
                              </span>
                            </div>
                          </Link>
