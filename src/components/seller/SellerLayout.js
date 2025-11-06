@@ -145,7 +145,7 @@ export default function SellerLayout({ children }) {
             <Link href="/seller/dashboard" className="flex items-center">
               <span className="text-2xl">🏪</span>
               <span className="ml-2 text-xl font-bold text-emerald-600">
-                Store Hub
+                Seller Studio
               </span>
             </Link>
             <button
