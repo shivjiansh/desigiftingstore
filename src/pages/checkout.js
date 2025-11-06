@@ -1038,15 +1038,15 @@ export default function Checkout() {
                     badgeColor: "bg-green-100 text-green-800",
                     available: "true",
                   },
-                  {
-                    id: "cod",
-                    icon: TruckIcon,
-                    title: "Cash on Delivery",
-                    desc: "Pay when you receive your gift",
-                    badge: "₹50 extra charges",
-                    badgeColor: "bg-orange-100 text-orange-800",
-                    available: "false",
-                  },
+                  // {
+                  //   id: "cod",
+                  //   icon: TruckIcon,
+                  //   title: "Cash on Delivery",
+                  //   desc: "Pay when you receive your gift",
+                  //   badge: "₹50 extra charges",
+                  //   badgeColor: "bg-orange-100 text-orange-800",
+                  //   available: "false",
+                  // },
                 ].map((opt) => (
                   <label
                     key={opt.id}
