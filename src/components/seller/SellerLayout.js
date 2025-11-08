@@ -15,7 +15,7 @@ export default function SellerLayout({ children }) {
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [localSellerData, setLocalSellerData] = useState(null);
-  const [hasLoadedProfile, setHasLoadedProfile] = useState(false); // Prevent duplicate calls
+  const [hasLoadedProfile, setHasLoadedProfile] = useState(false);
   const router = useRouter();
 
   const {
@@ -24,6 +24,30 @@ export default function SellerLayout({ children }) {
     getDashboardStats,
     isLoading: storeLoading,
   } = useSellerStore();
+
+  // Persist user's preference for sidebar
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("sellerSidebarOpen");
+      if (saved !== null) setSidebarOpen(saved === "1");
+    } catch (e) {
+      console.log("Could not read sidebar preference");
+    }
+  }, []);
+  useEffect(() => {
+    if (typeof window !== "undefined" && user) {
+      sessionStorage.setItem("isSeller", "1");
+      sessionStorage.setItem("lastWasSeller", "1");
+    }
+  }, [user]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sellerSidebarOpen", sidebarOpen ? "1" : "0");
+    } catch (e) {
+      console.log("Could not save sidebar preference");
+    }
+  }, [sidebarOpen]);
 
   // Only fetch once per user session
   useEffect(() => {
@@ -39,16 +63,17 @@ export default function SellerLayout({ children }) {
       setLoading(true);
       setError(null);
 
+      const idToken = user ? await user.getIdToken() : "";
+
       const [apiResponse] = await Promise.all([
-        fetch(`/api/seller?uid=${user.uid}`, {
+        fetch(`/api/seller?uid=${user?.uid}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${await user.getIdToken()}`,
+            Authorization: `Bearer ${idToken}`,
           },
         }),
-        // Only load profile if not already loaded
-        !profile ? loadProfile(user.uid) : Promise.resolve(),
+        !profile ? loadProfile(user?.uid) : Promise.resolve(),
       ]);
 
       if (!apiResponse.ok) {
@@ -62,7 +87,7 @@ export default function SellerLayout({ children }) {
       setHasLoadedProfile(true);
     } catch (err) {
       console.error("Error fetching seller data:", err);
-      setError(err.message);
+      setError(err?.message || "Failed to fetch seller data");
       toast.error("Failed to fetch seller data");
     } finally {
       setLoading(false);
@@ -73,7 +98,7 @@ export default function SellerLayout({ children }) {
     try {
       await signOut(auth);
       setLocalSellerData(null);
-      setHasLoadedProfile(false); // Reset on signout
+      setHasLoadedProfile(false);
       toast.success("Signed out successfully");
       router.push("/products");
     } catch {
@@ -122,21 +147,22 @@ export default function SellerLayout({ children }) {
   }
 
   if (!user) {
-    // router.push("/auth/seller/login");
     return null;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Backdrop for all breakpoints when sidebar is open */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-gray-600 bg-opacity-75 z-40 lg:hidden"
+          className="fixed inset-0 bg-gray-600/60 z-40"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
+      {/* Collapsible sidebar (same behavior on all screen sizes) */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -150,7 +176,8 @@ export default function SellerLayout({ children }) {
             </Link>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700"
+              aria-label="Close sidebar"
             >
               ✕
             </button>
@@ -212,45 +239,41 @@ export default function SellerLayout({ children }) {
                 router.pathname === item.href ||
                 (item.href !== "/seller/dashboard" &&
                   router.pathname.startsWith(item.href));
-                   if (item.name === "Bonus") {
-                     return (
-                       <div key={item.name} className="relative">
-                         {/* Anniversary Background */}
-                         <div className="absolute inset-0 bg-gradient-to-r from-amber-100 to-yellow-100 opacity-60 rounded-md animate-pulse"></div>
+              if (item.name === "Bonus") {
+                return (
+                  <div key={item.name} className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-100 to-yellow-100 opacity-60 rounded-md animate-pulse"></div>
 
-                         <Link
-                           href={item.href}
-                           className={`relative flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group ${
-                             isActive
-                               ? "bg-gradient-to-r from-amber-200 to-yellow-200 text-amber-800 shadow-md"
-                               : "text-amber-700 hover:bg-gradient-to-r hover:from-amber-100 hover:to-yellow-100"
-                           }`}
-                         >
-                           <div className="flex items-center">
-                             <span className="mr-3 text-lg animate-bounce">
-                               {item.icon}
-                             </span>
-                             <span className="font-semibold">{item.name}</span>
-                           </div>
+                    <Link
+                      href={item.href}
+                      className={`relative flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md transition-all duration-200 group ${
+                        isActive
+                          ? "bg-gradient-to-r from-amber-200 to-yellow-200 text-amber-800 shadow-md"
+                          : "text-amber-700 hover:bg-gradient-to-r hover:from-amber-100 hover:to-yellow-100"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <span className="mr-3 text-lg animate-bounce">
+                          {item.icon}
+                        </span>
+                        <span className="font-semibold">{item.name}</span>
+                      </div>
 
-                           {/* Anniversary Badge */}
-                           <div className="flex flex-col items-end">
-                             
-                             <span className="text-xs text-amber-600 font-medium mt-0.5">
-                               Limited
-                             </span>
-                           </div>
-                         </Link>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs text-amber-600 font-medium mt-0.5">
+                          Limited
+                        </span>
+                      </div>
+                    </Link>
 
-                         {/* Sparkle Effects */}
-                         <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
-                         <div
-                           className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-60"
-                           style={{ animationDelay: "1s" }}
-                         ></div>
-                       </div>
-                     );
-                   }
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
+                    <div
+                      className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping opacity-60"
+                      style={{ animationDelay: "1s" }}
+                    ></div>
+                  </div>
+                );
+              }
               return (
                 <Link
                   key={item.name}
@@ -287,35 +310,61 @@ export default function SellerLayout({ children }) {
         </div>
       </div>
 
-      <div className="lg:pl-64 flex flex-col min-h-screen">
+      {/* Right column: shift only when sidebar is open */}
+      <div
+        className={`${
+          sidebarOpen ? "pl-64" : ""
+        } flex flex-col min-h-screen transition-[padding] duration-300`}
+      >
+        {/* Header with universal toggle */}
         <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="flex items-center justify-between h-16 px-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
-            >
-              ☰
-            </button>
-            <div className="flex items-center gap-2 my-4">
-              <div className="w-10 h-10 relative overflow-hidden rounded-lg">
-                <Image
-                  src="/images/logo1.png"
-                  alt="DesiGifting Logo"
-                  width={100}
-                  height={100}
-                  style={{ objectFit: "contain" }}
-                />
-              </div>
-              <div className="text-left">
-                <h1 className="text-2xl font-bold text-gray-800 tracking-tight leading-none">
-                  DesiGifting
-                </h1>
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="flex items-center justify-between h-16">
+              <button
+                onClick={() => setSidebarOpen((o) => !o)}
+                className="inline-flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 font-medium"
+                aria-label="Toggle sidebar"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                </svg>
+                <span className="hidden sm:inline text-2xl">Seller Studio</span>
+              </button>
+
+              <div className="flex items-center gap-2 my-4">
+                <div className="w-10 h-10 relative overflow-hidden rounded-lg">
+                  <Image
+                    src="/images/logo1.png"
+                    alt="DesiGifting Logo"
+                    width={100}
+                    height={100}
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
+                <div className="text-left">
+                  <h1 className="text-2xl font-bold text-gray-800 tracking-tight leading-none">
+                    DesiGifting
+                  </h1>
+                </div>
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        {/* Main content area (centered & constrained) */}
+        <main className="flex-1">
+          <div className="max-w-7xl mx-auto px-4 py-6">{children}</div>
+        </main>
       </div>
     </div>
   );

@@ -344,18 +344,456 @@ export default function Products() {
         </Head>
         <div className="min-h-screen bg-gray-50">
           <Header />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-            <div className="flex items-center justify-center min-h-96">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-emerald-200 border-t-emerald-600 mx-auto mb-4 sm:mb-6"></div>
-                <p className="text-lg sm:text-xl font-medium text-gray-700 mb-2">
-                  Loading Products
-                </p>
-                <p className="text-sm text-gray-500">
-                  Discovering amazing personalized gifts for you...
-                </p>
-              </div>
-            </div>
+          <div className="fixed inset-0 flex justify-center items-center bg-white/95 z-50">
+            <svg
+              width="160"
+              height="110"
+              viewBox="0 0 160 110"
+              fill="none"
+              className="loader-multigift"
+              aria-label="loader showing animated moving gift boxes"
+              role="img"
+            >
+              {/* Soft ground shadow */}
+              <defs>
+                <filter
+                  id="dropShadow"
+                  x="-50%"
+                  y="-50%"
+                  width="200%"
+                  height="200%"
+                >
+                  <feDropShadow
+                    dx="0"
+                    dy="3"
+                    stdDeviation="4"
+                    floodOpacity="0.3"
+                  />
+                </filter>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+
+              {/* Soft shadow ellipse */}
+              <ellipse
+                cx="80"
+                cy="100"
+                rx="55"
+                ry="8"
+                fill="#000"
+                opacity="0.15"
+                className="loader-shadow"
+              />
+
+              {/* Main gift box - Blue */}
+              <g className="gift-main" filter="url(#dropShadow)">
+                {/* Left face */}
+                <path
+                  d="M 60 40 L 55 48 L 55 70 L 60 62 Z"
+                  fill="#0a5fbf"
+                  opacity="0.8"
+                />
+                {/* Front face */}
+                <rect
+                  x="60"
+                  y="40"
+                  width="28"
+                  height="26"
+                  rx="4"
+                  fill="url(#boxBlueGrad)"
+                />
+                {/* Top face */}
+                <path
+                  d="M 60 40 L 55 35 L 83 35 L 88 40 Z"
+                  fill="url(#boxBlueLight)"
+                  opacity="0.9"
+                />
+                {/* Vertical ribbon */}
+                <rect
+                  x="73"
+                  y="40"
+                  width="3"
+                  height="26"
+                  fill="url(#ribbonGoldGrad)"
+                />
+                {/* Horizontal ribbon */}
+                <rect
+                  x="60"
+                  y="51"
+                  width="28"
+                  height="3"
+                  fill="url(#ribbonGoldGrad)"
+                  opacity="0.95"
+                />
+                {/* Ribbon bow - left */}
+                <path
+                  d="M 74 40 Q 70 25 65 40"
+                  fill="url(#ribbonGoldGrad)"
+                  opacity="0.9"
+                  strokeWidth="1"
+                  stroke="rgba(251, 191, 36, 0.5)"
+                />
+                {/* Ribbon bow - right */}
+                <path
+                  d="M 74 40 Q 78 25 83 40"
+                  fill="url(#ribbonGoldGrad)"
+                  opacity="0.9"
+                  strokeWidth="1"
+                  stroke="rgba(251, 191, 36, 0.5)"
+                />
+                {/* Highlight on top */}
+                <ellipse
+                  cx="70"
+                  cy="37"
+                  rx="8"
+                  ry="4"
+                  fill="white"
+                  opacity="0.4"
+                />
+              </g>
+
+              {/* Side gift box 1 - Red */}
+              <g className="gift-side gift1" filter="url(#dropShadow)">
+                {/* Left face */}
+                <path
+                  d="M 23 62 L 20 67 L 20 82 L 23 77 Z"
+                  fill="#991b1b"
+                  opacity="0.75"
+                />
+                {/* Front face */}
+                <rect
+                  x="23"
+                  y="62"
+                  width="18"
+                  height="16"
+                  rx="3"
+                  fill="url(#boxRedGrad)"
+                />
+                {/* Top face */}
+                <path
+                  d="M 23 62 L 20 58 L 38 58 L 41 62 Z"
+                  fill="url(#boxRedLight)"
+                  opacity="0.85"
+                />
+                {/* Vertical ribbon */}
+                <rect
+                  x="31"
+                  y="62"
+                  width="2.5"
+                  height="16"
+                  fill="url(#ribbonWhiteGrad)"
+                />
+                {/* Horizontal ribbon */}
+                <rect
+                  x="23"
+                  y="69"
+                  width="18"
+                  height="2"
+                  fill="url(#ribbonWhiteGrad)"
+                  opacity="0.9"
+                />
+                {/* Ribbon bows */}
+                <path
+                  d="M 32 62 Q 29 52 26 62"
+                  fill="url(#ribbonWhiteGrad)"
+                  opacity="0.85"
+                />
+                <path
+                  d="M 32 62 Q 35 52 38 62"
+                  fill="url(#ribbonWhiteGrad)"
+                  opacity="0.85"
+                />
+                {/* Highlight */}
+                <ellipse
+                  cx="27"
+                  cy="59"
+                  rx="5"
+                  ry="2.5"
+                  fill="white"
+                  opacity="0.35"
+                />
+              </g>
+
+              {/* Side gift box 2 - Purple */}
+              <g className="gift-side gift2" filter="url(#dropShadow)">
+                {/* Left face */}
+                <path
+                  d="M 118 68 L 115 72 L 115 85 L 118 81 Z"
+                  fill="#5e21a1"
+                  opacity="0.75"
+                />
+                {/* Front face */}
+                <rect
+                  x="118"
+                  y="68"
+                  width="16"
+                  height="14"
+                  rx="2.5"
+                  fill="url(#boxPurpleGrad)"
+                />
+                {/* Top face */}
+                <path
+                  d="M 118 68 L 115 65 L 131 65 L 134 68 Z"
+                  fill="url(#boxPurpleLight)"
+                  opacity="0.85"
+                />
+                {/* Vertical ribbon */}
+                <rect
+                  x="125"
+                  y="68"
+                  width="2"
+                  height="14"
+                  fill="url(#ribbonPinkGrad)"
+                />
+                {/* Horizontal ribbon */}
+                <rect
+                  x="118"
+                  y="74"
+                  width="16"
+                  height="2"
+                  fill="url(#ribbonPinkGrad)"
+                  opacity="0.9"
+                />
+                {/* Ribbon bows */}
+                <path
+                  d="M 126 68 Q 123 60 121 68"
+                  fill="url(#ribbonPinkGrad)"
+                  opacity="0.85"
+                />
+                <path
+                  d="M 126 68 Q 129 60 132 68"
+                  fill="url(#ribbonPinkGrad)"
+                  opacity="0.85"
+                />
+                {/* Highlight */}
+                <ellipse
+                  cx="122"
+                  cy="65"
+                  rx="4"
+                  ry="2"
+                  fill="white"
+                  opacity="0.35"
+                />
+              </g>
+
+              {/* Enhanced sparkles */}
+              {[
+                [50, 30],
+                [110, 28],
+                [80, 95],
+              ].map(([cx, cy], i) => (
+                <g key={i}>
+                  <circle
+                    cx={cx}
+                    cy={cy}
+                    r={2.5}
+                    fill={["#fbbf24", "#a3e635", "#ec4899"][i % 3]}
+                    className="sparkle"
+                    style={{ animationDelay: `${i * 0.8}s` }}
+                    filter="url(#glow)"
+                  />
+                </g>
+              ))}
+
+              <defs>
+                {/* Blue gradient */}
+                <linearGradient
+                  id="boxBlueGrad"
+                  x1="60"
+                  y1="40"
+                  x2="88"
+                  y2="66"
+                >
+                  <stop offset="0%" stopColor="#60a5fa" />
+                  <stop offset="100%" stopColor="#1e40af" />
+                </linearGradient>
+                <linearGradient
+                  id="boxBlueLight"
+                  x1="60"
+                  y1="35"
+                  x2="88"
+                  y2="42"
+                >
+                  <stop offset="0%" stopColor="#93c5fd" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+
+                {/* Red gradient */}
+                <linearGradient id="boxRedGrad" x1="23" y1="62" x2="41" y2="78">
+                  <stop offset="0%" stopColor="#f87171" />
+                  <stop offset="100%" stopColor="#b91c1c" />
+                </linearGradient>
+                <linearGradient
+                  id="boxRedLight"
+                  x1="23"
+                  y1="58"
+                  x2="41"
+                  y2="65"
+                >
+                  <stop offset="0%" stopColor="#fca5a5" />
+                  <stop offset="100%" stopColor="#ef4444" />
+                </linearGradient>
+
+                {/* Purple gradient */}
+                <linearGradient
+                  id="boxPurpleGrad"
+                  x1="118"
+                  y1="68"
+                  x2="134"
+                  y2="82"
+                >
+                  <stop offset="0%" stopColor="#c084fc" />
+                  <stop offset="100%" stopColor="#6d28d9" />
+                </linearGradient>
+                <linearGradient
+                  id="boxPurpleLight"
+                  x1="118"
+                  y1="65"
+                  x2="134"
+                  y2="72"
+                >
+                  <stop offset="0%" stopColor="#d8b4fe" />
+                  <stop offset="100%" stopColor="#a78bfa" />
+                </linearGradient>
+
+                {/* Ribbon gradients */}
+                <linearGradient
+                  id="ribbonGoldGrad"
+                  x1="73"
+                  y1="40"
+                  x2="73"
+                  y2="66"
+                >
+                  <stop offset="0%" stopColor="#fbbf24" />
+                  <stop offset="100%" stopColor="#d97706" />
+                </linearGradient>
+                <linearGradient
+                  id="ribbonWhiteGrad"
+                  x1="31"
+                  y1="62"
+                  x2="31"
+                  y2="78"
+                >
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="100%" stopColor="#e5e7eb" />
+                </linearGradient>
+                <linearGradient
+                  id="ribbonPinkGrad"
+                  x1="125"
+                  y1="68"
+                  x2="125"
+                  y2="82"
+                >
+                  <stop offset="0%" stopColor="#f472b6" />
+                  <stop offset="100%" stopColor="#ec4899" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <style jsx>{`
+              .loader-multigift {
+                animation: loader-rise 1.6s cubic-bezier(0.55, 0, 0.45, 1)
+                  infinite;
+                will-change: transform;
+                filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
+              }
+
+              .gift-main {
+                animation: mainGiftMove 2s ease-in-out infinite;
+              }
+
+              .gift-side.gift1 {
+                animation: sideGift1Move 2.2s ease-in-out infinite alternate;
+              }
+
+              .gift-side.gift2 {
+                animation: sideGift2Move 2.2s ease-in-out infinite alternate;
+                animation-delay: 1s;
+              }
+
+              .loader-shadow {
+                animation: shadowScale 1.6s ease-in-out infinite;
+              }
+
+              .sparkle {
+                opacity: 0;
+                animation: sparkleFade 3s linear infinite;
+              }
+
+              @keyframes loader-rise {
+                0%,
+                100% {
+                  transform: translate3d(0, 0, 0);
+                }
+                50% {
+                  transform: translate3d(0, -15px, 0);
+                }
+              }
+
+              @keyframes mainGiftMove {
+                0%,
+                100% {
+                  transform: translateY(0) scale(1) rotateX(0deg);
+                }
+                50% {
+                  transform: translateY(-16px) scale(1.04) rotateX(5deg);
+                }
+              }
+
+              @keyframes sideGift1Move {
+                0%,
+                100% {
+                  transform: translateY(0) scale(1) rotateZ(-5deg);
+                }
+                50% {
+                  transform: translateY(-10px) scale(1.03) rotateZ(0deg);
+                }
+              }
+
+              @keyframes sideGift2Move {
+                0%,
+                100% {
+                  transform: translateY(0) scale(1) rotateZ(5deg);
+                }
+                50% {
+                  transform: translateY(-12px) scale(1.04) rotateZ(0deg);
+                }
+              }
+
+              @keyframes shadowScale {
+                0%,
+                100% {
+                  rx: 55;
+                  ry: 8;
+                  opacity: 0.15;
+                }
+                50% {
+                  rx: 45;
+                  ry: 6;
+                  opacity: 0.08;
+                }
+              }
+
+              @keyframes sparkleFade {
+                0%,
+                70%,
+                100% {
+                  opacity: 0;
+                }
+                10%,
+                30% {
+                  opacity: 1;
+                }
+                50% {
+                  opacity: 0.6;
+                }
+              }
+            `}</style>
           </div>
         </div>
       </>

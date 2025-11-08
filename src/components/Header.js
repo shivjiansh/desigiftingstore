@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -9,14 +9,21 @@ import Image from "next/image";
 import {
   Bars3Icon as MenuIcon,
   XMarkIcon as XIcon,
-  ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Header() {
   const [user] = useAuthState(auth);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isSeller, setIsSeller] = useState(false);
+  const [cameFromSeller, setCameFromSeller] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setCameFromSeller(sessionStorage.getItem("lastWasSeller") === "1");
+    setIsSeller(sessionStorage.getItem("isSeller") === "1");
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -27,6 +34,15 @@ export default function Header() {
       toast.error("Error signing out");
     }
   };
+
+  // Back to seller dashboard with fallback
+  const goBackToSeller = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/seller/dashboard");
+    }
+  }, [router]);
 
   return (
     <header className="bg-white border-b shadow-sm">
@@ -49,11 +65,33 @@ export default function Header() {
           </Link>
 
           {/* Desktop nav */}
-          {/* Desktop nav */}
-          <nav className="hidden md:flex space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
             {user ? (
-              // Logged in navigation
               <>
+                {/* Back to Dashboard - Only for sellers */}
+                {isSeller && cameFromSeller && (
+                  <button
+                    onClick={goBackToSeller}
+                    className="inline-flex items-center space-x-1 px-3 py-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium transition-colors text-sm"
+                    aria-label="Back to Seller Dashboard"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                      />
+                    </svg>
+                    <span>Back to Studio</span>
+                  </button>
+                )}
+
                 <Link
                   href="/wishlist"
                   className="text-gray-900 hover:text-emerald-600 font-semibold transition-colors duration-200"
@@ -80,7 +118,6 @@ export default function Header() {
                 </button>
               </>
             ) : (
-              // Logged out navigation
               <>
                 <Link
                   href="/products"
@@ -104,7 +141,7 @@ export default function Header() {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen((open) => !open)}
-                  className="flex items-center space-x-3 text-gray-600 hover:text-emerald-600 justify-between"
+                  className="flex items-center space-x-3 text-gray-600 hover:text-emerald-600 transition-colors"
                 >
                   {user.photoURL ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden">
@@ -126,13 +163,12 @@ export default function Header() {
                     </div>
                   )}
 
-                  <span className="font-medium">
+                  <span className="font-medium hidden sm:inline">
                     {user.displayName
                       ? user.displayName.split(" ")[0]
                       : "Buyer"}
                   </span>
                 </button>
-                
               </div>
             ) : (
               <div className="hidden md:flex space-x-4">
@@ -170,7 +206,34 @@ export default function Header() {
       {/* Mobile menu */}
       {mobileMenuOpen && (
         <nav className="md:hidden bg-white border-t">
-          <div className="px-10 py-2 space-y-1">
+          <div className="px-4 py-2 space-y-1">
+            {/* Back to Dashboard - Only for sellers (mobile) */}
+            {user && isSeller && cameFromSeller && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  goBackToSeller();
+                }}
+                className="flex items-center space-x-3 w-full px-3 py-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded text-left font-medium"
+                aria-label="Back to Seller Dashboard"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+                <span>Back to Studio</span>
+              </button>
+            )}
+
             <Link
               href="/products"
               className="flex items-center space-x-3 px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 rounded"
