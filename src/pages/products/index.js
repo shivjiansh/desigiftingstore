@@ -51,15 +51,15 @@ export default function Products() {
 
   // SEO Dynamic Title and Description Generator
   const generateSEOContent = () => {
-    let title = "Custom Gifts & Personalized Products";
-    let description =
-      "Discover thousands of customizable gifts and products from talented artisans";
+let title = "DesiGifting: India’s fastest‑growing personalized gifts";
+let description =
+  "Shop unique personalized gifts and custom products from verified creators. Fast shipping, secure payments, and 100% satisfaction guarantee on every order.";
 
     if (searchTerm) {
       title = `${searchTerm} - Custom Gifts | Desigifting`;
       description = `Find personalized ${searchTerm.toLowerCase()} gifts from talented sellers. Custom designs, fast delivery across India.`;
     } else if (filters.category) {
-      title = `Custom ${filters.category} - Personalized Gifts | Desigifting`;
+      title = `Custom ${filters.category} - Personalized Gifts | Desigifting | Gifting`;
       description = `Shop unique ${filters.category.toLowerCase()} gifts. Personalize with photos, text & custom designs. Made by talented artisans.`;
     }
 
@@ -335,7 +335,7 @@ export default function Products() {
     return (
       <>
         <Head>
-          <title>Loading Products - Desigifting</title>
+          <title>Products - Desigifting</title>
           <meta
             name="description"
             content="Loading personalized gifts and custom products..."
@@ -343,457 +343,467 @@ export default function Products() {
           <meta name="robots" content="noindex, nofollow" />
         </Head>
         <div className="min-h-screen bg-gray-50">
-          <Header />
-          <div className="fixed inset-0 flex justify-center items-center bg-white/95 z-50">
-            <svg
-              width="160"
-              height="110"
-              viewBox="0 0 160 110"
-              fill="none"
-              className="loader-multigift"
-              aria-label="loader showing animated moving gift boxes"
-              role="img"
-            >
-              {/* Soft ground shadow */}
-              <defs>
-                <filter
-                  id="dropShadow"
-                  x="-50%"
-                  y="-50%"
-                  width="200%"
-                  height="200%"
-                >
-                  <feDropShadow
-                    dx="0"
-                    dy="3"
-                    stdDeviation="4"
-                    floodOpacity="0.3"
+          <div className="sticky top-0 z-50 bg-white">
+            <Header />
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+            <div className="fixed inset-0 flex justify-center items-center bg-white/95 ">
+              <svg
+                width="160"
+                height="110"
+                viewBox="0 0 160 110"
+                fill="none"
+                className="loader-multigift"
+                aria-label="loader showing animated moving gift boxes"
+                role="img"
+              >
+                {/* Soft ground shadow */}
+                <defs>
+                  <filter
+                    id="dropShadow"
+                    x="-50%"
+                    y="-50%"
+                    width="200%"
+                    height="200%"
+                  >
+                    <feDropShadow
+                      dx="0"
+                      dy="3"
+                      stdDeviation="4"
+                      floodOpacity="0.3"
+                    />
+                  </filter>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                {/* Soft shadow ellipse */}
+                <ellipse
+                  cx="80"
+                  cy="100"
+                  rx="55"
+                  ry="8"
+                  fill="#000"
+                  opacity="0.15"
+                  className="loader-shadow"
+                />
+
+                {/* Main gift box - Blue */}
+                <g className="gift-main" filter="url(#dropShadow)">
+                  {/* Left face */}
+                  <path
+                    d="M 60 40 L 55 48 L 55 70 L 60 62 Z"
+                    fill="#0a5fbf"
+                    opacity="0.8"
                   />
-                </filter>
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                  <feMerge>
-                    <feMergeNode in="coloredBlur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-
-              {/* Soft shadow ellipse */}
-              <ellipse
-                cx="80"
-                cy="100"
-                rx="55"
-                ry="8"
-                fill="#000"
-                opacity="0.15"
-                className="loader-shadow"
-              />
-
-              {/* Main gift box - Blue */}
-              <g className="gift-main" filter="url(#dropShadow)">
-                {/* Left face */}
-                <path
-                  d="M 60 40 L 55 48 L 55 70 L 60 62 Z"
-                  fill="#0a5fbf"
-                  opacity="0.8"
-                />
-                {/* Front face */}
-                <rect
-                  x="60"
-                  y="40"
-                  width="28"
-                  height="26"
-                  rx="4"
-                  fill="url(#boxBlueGrad)"
-                />
-                {/* Top face */}
-                <path
-                  d="M 60 40 L 55 35 L 83 35 L 88 40 Z"
-                  fill="url(#boxBlueLight)"
-                  opacity="0.9"
-                />
-                {/* Vertical ribbon */}
-                <rect
-                  x="73"
-                  y="40"
-                  width="3"
-                  height="26"
-                  fill="url(#ribbonGoldGrad)"
-                />
-                {/* Horizontal ribbon */}
-                <rect
-                  x="60"
-                  y="51"
-                  width="28"
-                  height="3"
-                  fill="url(#ribbonGoldGrad)"
-                  opacity="0.95"
-                />
-                {/* Ribbon bow - left */}
-                <path
-                  d="M 74 40 Q 70 25 65 40"
-                  fill="url(#ribbonGoldGrad)"
-                  opacity="0.9"
-                  strokeWidth="1"
-                  stroke="rgba(251, 191, 36, 0.5)"
-                />
-                {/* Ribbon bow - right */}
-                <path
-                  d="M 74 40 Q 78 25 83 40"
-                  fill="url(#ribbonGoldGrad)"
-                  opacity="0.9"
-                  strokeWidth="1"
-                  stroke="rgba(251, 191, 36, 0.5)"
-                />
-                {/* Highlight on top */}
-                <ellipse
-                  cx="70"
-                  cy="37"
-                  rx="8"
-                  ry="4"
-                  fill="white"
-                  opacity="0.4"
-                />
-              </g>
-
-              {/* Side gift box 1 - Red */}
-              <g className="gift-side gift1" filter="url(#dropShadow)">
-                {/* Left face */}
-                <path
-                  d="M 23 62 L 20 67 L 20 82 L 23 77 Z"
-                  fill="#991b1b"
-                  opacity="0.75"
-                />
-                {/* Front face */}
-                <rect
-                  x="23"
-                  y="62"
-                  width="18"
-                  height="16"
-                  rx="3"
-                  fill="url(#boxRedGrad)"
-                />
-                {/* Top face */}
-                <path
-                  d="M 23 62 L 20 58 L 38 58 L 41 62 Z"
-                  fill="url(#boxRedLight)"
-                  opacity="0.85"
-                />
-                {/* Vertical ribbon */}
-                <rect
-                  x="31"
-                  y="62"
-                  width="2.5"
-                  height="16"
-                  fill="url(#ribbonWhiteGrad)"
-                />
-                {/* Horizontal ribbon */}
-                <rect
-                  x="23"
-                  y="69"
-                  width="18"
-                  height="2"
-                  fill="url(#ribbonWhiteGrad)"
-                  opacity="0.9"
-                />
-                {/* Ribbon bows */}
-                <path
-                  d="M 32 62 Q 29 52 26 62"
-                  fill="url(#ribbonWhiteGrad)"
-                  opacity="0.85"
-                />
-                <path
-                  d="M 32 62 Q 35 52 38 62"
-                  fill="url(#ribbonWhiteGrad)"
-                  opacity="0.85"
-                />
-                {/* Highlight */}
-                <ellipse
-                  cx="27"
-                  cy="59"
-                  rx="5"
-                  ry="2.5"
-                  fill="white"
-                  opacity="0.35"
-                />
-              </g>
-
-              {/* Side gift box 2 - Purple */}
-              <g className="gift-side gift2" filter="url(#dropShadow)">
-                {/* Left face */}
-                <path
-                  d="M 118 68 L 115 72 L 115 85 L 118 81 Z"
-                  fill="#5e21a1"
-                  opacity="0.75"
-                />
-                {/* Front face */}
-                <rect
-                  x="118"
-                  y="68"
-                  width="16"
-                  height="14"
-                  rx="2.5"
-                  fill="url(#boxPurpleGrad)"
-                />
-                {/* Top face */}
-                <path
-                  d="M 118 68 L 115 65 L 131 65 L 134 68 Z"
-                  fill="url(#boxPurpleLight)"
-                  opacity="0.85"
-                />
-                {/* Vertical ribbon */}
-                <rect
-                  x="125"
-                  y="68"
-                  width="2"
-                  height="14"
-                  fill="url(#ribbonPinkGrad)"
-                />
-                {/* Horizontal ribbon */}
-                <rect
-                  x="118"
-                  y="74"
-                  width="16"
-                  height="2"
-                  fill="url(#ribbonPinkGrad)"
-                  opacity="0.9"
-                />
-                {/* Ribbon bows */}
-                <path
-                  d="M 126 68 Q 123 60 121 68"
-                  fill="url(#ribbonPinkGrad)"
-                  opacity="0.85"
-                />
-                <path
-                  d="M 126 68 Q 129 60 132 68"
-                  fill="url(#ribbonPinkGrad)"
-                  opacity="0.85"
-                />
-                {/* Highlight */}
-                <ellipse
-                  cx="122"
-                  cy="65"
-                  rx="4"
-                  ry="2"
-                  fill="white"
-                  opacity="0.35"
-                />
-              </g>
-
-              {/* Enhanced sparkles */}
-              {[
-                [50, 30],
-                [110, 28],
-                [80, 95],
-              ].map(([cx, cy], i) => (
-                <g key={i}>
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={2.5}
-                    fill={["#fbbf24", "#a3e635", "#ec4899"][i % 3]}
-                    className="sparkle"
-                    style={{ animationDelay: `${i * 0.8}s` }}
-                    filter="url(#glow)"
+                  {/* Front face */}
+                  <rect
+                    x="60"
+                    y="40"
+                    width="28"
+                    height="26"
+                    rx="4"
+                    fill="url(#boxBlueGrad)"
+                  />
+                  {/* Top face */}
+                  <path
+                    d="M 60 40 L 55 35 L 83 35 L 88 40 Z"
+                    fill="url(#boxBlueLight)"
+                    opacity="0.9"
+                  />
+                  {/* Vertical ribbon */}
+                  <rect
+                    x="73"
+                    y="40"
+                    width="3"
+                    height="26"
+                    fill="url(#ribbonGoldGrad)"
+                  />
+                  {/* Horizontal ribbon */}
+                  <rect
+                    x="60"
+                    y="51"
+                    width="28"
+                    height="3"
+                    fill="url(#ribbonGoldGrad)"
+                    opacity="0.95"
+                  />
+                  {/* Ribbon bow - left */}
+                  <path
+                    d="M 74 40 Q 70 25 65 40"
+                    fill="url(#ribbonGoldGrad)"
+                    opacity="0.9"
+                    strokeWidth="1"
+                    stroke="rgba(251, 191, 36, 0.5)"
+                  />
+                  {/* Ribbon bow - right */}
+                  <path
+                    d="M 74 40 Q 78 25 83 40"
+                    fill="url(#ribbonGoldGrad)"
+                    opacity="0.9"
+                    strokeWidth="1"
+                    stroke="rgba(251, 191, 36, 0.5)"
+                  />
+                  {/* Highlight on top */}
+                  <ellipse
+                    cx="70"
+                    cy="37"
+                    rx="8"
+                    ry="4"
+                    fill="white"
+                    opacity="0.4"
                   />
                 </g>
-              ))}
 
-              <defs>
-                {/* Blue gradient */}
-                <linearGradient
-                  id="boxBlueGrad"
-                  x1="60"
-                  y1="40"
-                  x2="88"
-                  y2="66"
-                >
-                  <stop offset="0%" stopColor="#60a5fa" />
-                  <stop offset="100%" stopColor="#1e40af" />
-                </linearGradient>
-                <linearGradient
-                  id="boxBlueLight"
-                  x1="60"
-                  y1="35"
-                  x2="88"
-                  y2="42"
-                >
-                  <stop offset="0%" stopColor="#93c5fd" />
-                  <stop offset="100%" stopColor="#3b82f6" />
-                </linearGradient>
+                {/* Side gift box 1 - Red */}
+                <g className="gift-side gift1" filter="url(#dropShadow)">
+                  {/* Left face */}
+                  <path
+                    d="M 23 62 L 20 67 L 20 82 L 23 77 Z"
+                    fill="#991b1b"
+                    opacity="0.75"
+                  />
+                  {/* Front face */}
+                  <rect
+                    x="23"
+                    y="62"
+                    width="18"
+                    height="16"
+                    rx="3"
+                    fill="url(#boxRedGrad)"
+                  />
+                  {/* Top face */}
+                  <path
+                    d="M 23 62 L 20 58 L 38 58 L 41 62 Z"
+                    fill="url(#boxRedLight)"
+                    opacity="0.85"
+                  />
+                  {/* Vertical ribbon */}
+                  <rect
+                    x="31"
+                    y="62"
+                    width="2.5"
+                    height="16"
+                    fill="url(#ribbonWhiteGrad)"
+                  />
+                  {/* Horizontal ribbon */}
+                  <rect
+                    x="23"
+                    y="69"
+                    width="18"
+                    height="2"
+                    fill="url(#ribbonWhiteGrad)"
+                    opacity="0.9"
+                  />
+                  {/* Ribbon bows */}
+                  <path
+                    d="M 32 62 Q 29 52 26 62"
+                    fill="url(#ribbonWhiteGrad)"
+                    opacity="0.85"
+                  />
+                  <path
+                    d="M 32 62 Q 35 52 38 62"
+                    fill="url(#ribbonWhiteGrad)"
+                    opacity="0.85"
+                  />
+                  {/* Highlight */}
+                  <ellipse
+                    cx="27"
+                    cy="59"
+                    rx="5"
+                    ry="2.5"
+                    fill="white"
+                    opacity="0.35"
+                  />
+                </g>
 
-                {/* Red gradient */}
-                <linearGradient id="boxRedGrad" x1="23" y1="62" x2="41" y2="78">
-                  <stop offset="0%" stopColor="#f87171" />
-                  <stop offset="100%" stopColor="#b91c1c" />
-                </linearGradient>
-                <linearGradient
-                  id="boxRedLight"
-                  x1="23"
-                  y1="58"
-                  x2="41"
-                  y2="65"
-                >
-                  <stop offset="0%" stopColor="#fca5a5" />
-                  <stop offset="100%" stopColor="#ef4444" />
-                </linearGradient>
+                {/* Side gift box 2 - Purple */}
+                <g className="gift-side gift2" filter="url(#dropShadow)">
+                  {/* Left face */}
+                  <path
+                    d="M 118 68 L 115 72 L 115 85 L 118 81 Z"
+                    fill="#5e21a1"
+                    opacity="0.75"
+                  />
+                  {/* Front face */}
+                  <rect
+                    x="118"
+                    y="68"
+                    width="16"
+                    height="14"
+                    rx="2.5"
+                    fill="url(#boxPurpleGrad)"
+                  />
+                  {/* Top face */}
+                  <path
+                    d="M 118 68 L 115 65 L 131 65 L 134 68 Z"
+                    fill="url(#boxPurpleLight)"
+                    opacity="0.85"
+                  />
+                  {/* Vertical ribbon */}
+                  <rect
+                    x="125"
+                    y="68"
+                    width="2"
+                    height="14"
+                    fill="url(#ribbonPinkGrad)"
+                  />
+                  {/* Horizontal ribbon */}
+                  <rect
+                    x="118"
+                    y="74"
+                    width="16"
+                    height="2"
+                    fill="url(#ribbonPinkGrad)"
+                    opacity="0.9"
+                  />
+                  {/* Ribbon bows */}
+                  <path
+                    d="M 126 68 Q 123 60 121 68"
+                    fill="url(#ribbonPinkGrad)"
+                    opacity="0.85"
+                  />
+                  <path
+                    d="M 126 68 Q 129 60 132 68"
+                    fill="url(#ribbonPinkGrad)"
+                    opacity="0.85"
+                  />
+                  {/* Highlight */}
+                  <ellipse
+                    cx="122"
+                    cy="65"
+                    rx="4"
+                    ry="2"
+                    fill="white"
+                    opacity="0.35"
+                  />
+                </g>
 
-                {/* Purple gradient */}
-                <linearGradient
-                  id="boxPurpleGrad"
-                  x1="118"
-                  y1="68"
-                  x2="134"
-                  y2="82"
-                >
-                  <stop offset="0%" stopColor="#c084fc" />
-                  <stop offset="100%" stopColor="#6d28d9" />
-                </linearGradient>
-                <linearGradient
-                  id="boxPurpleLight"
-                  x1="118"
-                  y1="65"
-                  x2="134"
-                  y2="72"
-                >
-                  <stop offset="0%" stopColor="#d8b4fe" />
-                  <stop offset="100%" stopColor="#a78bfa" />
-                </linearGradient>
+                {/* Enhanced sparkles */}
+                {[
+                  [50, 30],
+                  [110, 28],
+                  [80, 95],
+                ].map(([cx, cy], i) => (
+                  <g key={i}>
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={2.5}
+                      fill={["#fbbf24", "#a3e635", "#ec4899"][i % 3]}
+                      className="sparkle"
+                      style={{ animationDelay: `${i * 0.8}s` }}
+                      filter="url(#glow)"
+                    />
+                  </g>
+                ))}
 
-                {/* Ribbon gradients */}
-                <linearGradient
-                  id="ribbonGoldGrad"
-                  x1="73"
-                  y1="40"
-                  x2="73"
-                  y2="66"
-                >
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="100%" stopColor="#d97706" />
-                </linearGradient>
-                <linearGradient
-                  id="ribbonWhiteGrad"
-                  x1="31"
-                  y1="62"
-                  x2="31"
-                  y2="78"
-                >
-                  <stop offset="0%" stopColor="#ffffff" />
-                  <stop offset="100%" stopColor="#e5e7eb" />
-                </linearGradient>
-                <linearGradient
-                  id="ribbonPinkGrad"
-                  x1="125"
-                  y1="68"
-                  x2="125"
-                  y2="82"
-                >
-                  <stop offset="0%" stopColor="#f472b6" />
-                  <stop offset="100%" stopColor="#ec4899" />
-                </linearGradient>
-              </defs>
-            </svg>
+                <defs>
+                  {/* Blue gradient */}
+                  <linearGradient
+                    id="boxBlueGrad"
+                    x1="60"
+                    y1="40"
+                    x2="88"
+                    y2="66"
+                  >
+                    <stop offset="0%" stopColor="#60a5fa" />
+                    <stop offset="100%" stopColor="#1e40af" />
+                  </linearGradient>
+                  <linearGradient
+                    id="boxBlueLight"
+                    x1="60"
+                    y1="35"
+                    x2="88"
+                    y2="42"
+                  >
+                    <stop offset="0%" stopColor="#93c5fd" />
+                    <stop offset="100%" stopColor="#3b82f6" />
+                  </linearGradient>
 
-            <style jsx>{`
-              .loader-multigift {
-                animation: loader-rise 1.6s cubic-bezier(0.55, 0, 0.45, 1)
-                  infinite;
-                will-change: transform;
-                filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
-              }
+                  {/* Red gradient */}
+                  <linearGradient
+                    id="boxRedGrad"
+                    x1="23"
+                    y1="62"
+                    x2="41"
+                    y2="78"
+                  >
+                    <stop offset="0%" stopColor="#f87171" />
+                    <stop offset="100%" stopColor="#b91c1c" />
+                  </linearGradient>
+                  <linearGradient
+                    id="boxRedLight"
+                    x1="23"
+                    y1="58"
+                    x2="41"
+                    y2="65"
+                  >
+                    <stop offset="0%" stopColor="#fca5a5" />
+                    <stop offset="100%" stopColor="#ef4444" />
+                  </linearGradient>
 
-              .gift-main {
-                animation: mainGiftMove 2s ease-in-out infinite;
-              }
+                  {/* Purple gradient */}
+                  <linearGradient
+                    id="boxPurpleGrad"
+                    x1="118"
+                    y1="68"
+                    x2="134"
+                    y2="82"
+                  >
+                    <stop offset="0%" stopColor="#c084fc" />
+                    <stop offset="100%" stopColor="#6d28d9" />
+                  </linearGradient>
+                  <linearGradient
+                    id="boxPurpleLight"
+                    x1="118"
+                    y1="65"
+                    x2="134"
+                    y2="72"
+                  >
+                    <stop offset="0%" stopColor="#d8b4fe" />
+                    <stop offset="100%" stopColor="#a78bfa" />
+                  </linearGradient>
 
-              .gift-side.gift1 {
-                animation: sideGift1Move 2.2s ease-in-out infinite alternate;
-              }
+                  {/* Ribbon gradients */}
+                  <linearGradient
+                    id="ribbonGoldGrad"
+                    x1="73"
+                    y1="40"
+                    x2="73"
+                    y2="66"
+                  >
+                    <stop offset="0%" stopColor="#fbbf24" />
+                    <stop offset="100%" stopColor="#d97706" />
+                  </linearGradient>
+                  <linearGradient
+                    id="ribbonWhiteGrad"
+                    x1="31"
+                    y1="62"
+                    x2="31"
+                    y2="78"
+                  >
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="100%" stopColor="#e5e7eb" />
+                  </linearGradient>
+                  <linearGradient
+                    id="ribbonPinkGrad"
+                    x1="125"
+                    y1="68"
+                    x2="125"
+                    y2="82"
+                  >
+                    <stop offset="0%" stopColor="#f472b6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
 
-              .gift-side.gift2 {
-                animation: sideGift2Move 2.2s ease-in-out infinite alternate;
-                animation-delay: 1s;
-              }
-
-              .loader-shadow {
-                animation: shadowScale 1.6s ease-in-out infinite;
-              }
-
-              .sparkle {
-                opacity: 0;
-                animation: sparkleFade 3s linear infinite;
-              }
-
-              @keyframes loader-rise {
-                0%,
-                100% {
-                  transform: translate3d(0, 0, 0);
+              <style jsx>{`
+                .loader-multigift {
+                  animation: loader-rise 1.6s cubic-bezier(0.55, 0, 0.45, 1)
+                    infinite;
+                  will-change: transform;
+                  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
                 }
-                50% {
-                  transform: translate3d(0, -15px, 0);
-                }
-              }
 
-              @keyframes mainGiftMove {
-                0%,
-                100% {
-                  transform: translateY(0) scale(1) rotateX(0deg);
+                .gift-main {
+                  animation: mainGiftMove 2s ease-in-out infinite;
                 }
-                50% {
-                  transform: translateY(-16px) scale(1.04) rotateX(5deg);
-                }
-              }
 
-              @keyframes sideGift1Move {
-                0%,
-                100% {
-                  transform: translateY(0) scale(1) rotateZ(-5deg);
+                .gift-side.gift1 {
+                  animation: sideGift1Move 2.2s ease-in-out infinite alternate;
                 }
-                50% {
-                  transform: translateY(-10px) scale(1.03) rotateZ(0deg);
-                }
-              }
 
-              @keyframes sideGift2Move {
-                0%,
-                100% {
-                  transform: translateY(0) scale(1) rotateZ(5deg);
+                .gift-side.gift2 {
+                  animation: sideGift2Move 2.2s ease-in-out infinite alternate;
+                  animation-delay: 1s;
                 }
-                50% {
-                  transform: translateY(-12px) scale(1.04) rotateZ(0deg);
-                }
-              }
 
-              @keyframes shadowScale {
-                0%,
-                100% {
-                  rx: 55;
-                  ry: 8;
-                  opacity: 0.15;
+                .loader-shadow {
+                  animation: shadowScale 1.6s ease-in-out infinite;
                 }
-                50% {
-                  rx: 45;
-                  ry: 6;
-                  opacity: 0.08;
-                }
-              }
 
-              @keyframes sparkleFade {
-                0%,
-                70%,
-                100% {
+                .sparkle {
                   opacity: 0;
+                  animation: sparkleFade 3s linear infinite;
                 }
-                10%,
-                30% {
-                  opacity: 1;
+
+                @keyframes loader-rise {
+                  0%,
+                  100% {
+                    transform: translate3d(0, 0, 0);
+                  }
+                  50% {
+                    transform: translate3d(0, -15px, 0);
+                  }
                 }
-                50% {
-                  opacity: 0.6;
+
+                @keyframes mainGiftMove {
+                  0%,
+                  100% {
+                    transform: translateY(0) scale(1) rotateX(0deg);
+                  }
+                  50% {
+                    transform: translateY(-16px) scale(1.04) rotateX(5deg);
+                  }
                 }
-              }
-            `}</style>
+
+                @keyframes sideGift1Move {
+                  0%,
+                  100% {
+                    transform: translateY(0) scale(1) rotateZ(-5deg);
+                  }
+                  50% {
+                    transform: translateY(-10px) scale(1.03) rotateZ(0deg);
+                  }
+                }
+
+                @keyframes sideGift2Move {
+                  0%,
+                  100% {
+                    transform: translateY(0) scale(1) rotateZ(5deg);
+                  }
+                  50% {
+                    transform: translateY(-12px) scale(1.04) rotateZ(0deg);
+                  }
+                }
+
+                @keyframes shadowScale {
+                  0%,
+                  100% {
+                    rx: 55;
+                    ry: 8;
+                    opacity: 0.15;
+                  }
+                  50% {
+                    rx: 45;
+                    ry: 6;
+                    opacity: 0.08;
+                  }
+                }
+
+                @keyframes sparkleFade {
+                  0%,
+                  70%,
+                  100% {
+                    opacity: 0;
+                  }
+                  10%,
+                  30% {
+                    opacity: 1;
+                  }
+                  50% {
+                    opacity: 0.6;
+                  }
+                }
+              `}</style>
+            </div>
           </div>
         </div>
       </>
@@ -936,40 +946,69 @@ export default function Products() {
           </nav>
 
           {/* Hero Section */}
-          <header className="text-center mb-8 sm:mb-12">
-            <div className="mb-4 sm:mb-6">
-              <div className="inline-flex items-center space-x-2 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
+          <header className="relative text-center mb-10 sm:mb-14">
+            {/* Decorative background gradient glow */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 -z-10"
+            >
+              <div className="mx-auto h-40 sm:h-56 max-w-5xl blur-3xl opacity-30 bg-gradient-to-r from-emerald-200 via-teal-200 to-cyan-200" />
+            </div>
+
+            {/* Badge */}
+            <div className="mb-5 sm:mb-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/70 px-4 py-2 text-sm font-medium text-emerald-700 shadow-sm">
                 <SparklesIcon className="h-4 w-4" />
                 <span>Premium Personalized Gifts</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 sm:mb-4">
-                Create Custom{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
-                  Gifts
-                </span>
-              </h1>
-
-              <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed px-4">
-                {searchTerm
-                  ? `Showing ${filteredProducts.length} results for "${searchTerm}"`
-                  : "Find your perfect personalized gift from collection of heartcrafted products made with love"}
-              </p>
             </div>
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+
+            {/* Headline */}
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-gray-900 mb-3 sm:mb-4">
+              Create Your{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600">
+                Gifts
+              </span>
+            </h1>
+
+            {/* Subcopy */}
+            <p className="text-base font-bold sm:text-xl md:text-2xl text-gray-600 max-w-2xl sm:max-w-3xl mx-auto leading-relaxed px-4">
+              {searchTerm
+                ? `Showing ${filteredProducts.length} personalized results`
+                : "India’s fastest-growing marketplace for handcrafted, personalized gifts."}
+            </p>
+
+            {/* CTAs */}
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <button
                 onClick={() => router.push("/products")}
-                className="w-full sm:w-auto bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-3 rounded-xl font-semibold text-lg hover:from-emerald-700 hover:to-teal-700 transform hover:scale-105 transition-all duration-200 shadow-lg"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 sm:px-8 py-3 rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:from-emerald-700 hover:to-teal-700 active:scale-[0.98] transition-all"
                 aria-label="Browse all products"
               >
-                Start Shopping
+                <span>Start Shopping</span>
               </button>
+
               <button
                 onClick={() => router.push("/seller/auth/register")}
-                className="w-full sm:w-auto border-2 border-emerald-600 text-emerald-600 px-8 py-3 rounded-xl font-semibold text-lg hover:bg-emerald-50 transition-all duration-200"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-emerald-600 text-emerald-700 bg-white px-6 sm:px-8 py-3 rounded-xl font-semibold text-base sm:text-lg hover:bg-emerald-50 active:scale-[0.98] transition-all"
                 aria-label="Register as a seller"
               >
-                Start Selling
+                <span>Start Selling</span>
               </button>
+            </div>
+
+            {/* Trust bar (optional, boosts credibility) */}
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-500">
+              
+              <div className="inline-flex items-center gap-2">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
+                  <path
+                    fill="currentColor"
+                    d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
+                  />
+                </svg>
+                <span>Trusted by 10k+ shoppers</span>
+              </div>
             </div>
           </header>
 

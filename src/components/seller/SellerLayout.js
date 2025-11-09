@@ -44,6 +44,7 @@ export default function SellerLayout({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem("sellerSidebarOpen", sidebarOpen ? "1" : "0");
+      localStorage.setItem("isSeller","1");
     } catch (e) {
       console.log("Could not save sidebar preference");
     }

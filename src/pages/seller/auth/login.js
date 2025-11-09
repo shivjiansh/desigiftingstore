@@ -224,7 +224,7 @@ export default function SellerLogin() {
                               <div className="flex items-center space-x-2 mt-0.5">
                                 <div className="w-5 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
                                 <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
-                                  Store Dashboard
+                                  Seller Studio
                                 </span>
                               </div>
                             </div>
