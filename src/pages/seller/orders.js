@@ -159,7 +159,6 @@ function CustomizationsView({
 
                     {/* Image Info & Download Button */}
                     <div className="mt-2 flex items-center justify-between">
-                      
                       <button
                         onClick={() =>
                           downloadImage(
@@ -184,7 +183,6 @@ function CustomizationsView({
   );
 }
 
-
 export default function SellerOrders() {
   const [user, setUser] = useState(null);
   const [orders, setOrders] = useState([]);
@@ -199,9 +197,15 @@ export default function SellerOrders() {
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
 
-    const scrollToTop = () => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    };
+  // Local shipping/fulfillment input state
+  const [carrier, setCarrier] = useState("");
+  const [trackingId, setTrackingId] = useState("");
+  const [buyerMessage, setBuyerMessage] = useState("");
+  const [expectedDelivery, setExpectedDelivery] = useState("");
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const statusOptions = [
     {
@@ -264,6 +268,15 @@ export default function SellerOrders() {
     setPage(1);
   }, [orders, search, statusFilter]);
 
+  // Hydrate local state when modal opens or selected changes
+  useEffect(() => {
+    if (!modalOpen || !selected) return;
+    setCarrier(selected.carrier || "");
+    setTrackingId(selected.trackingId || "");
+    setBuyerMessage(selected.buyerMessage || "");
+    setExpectedDelivery(selected.expectedDelivery || "");
+  }, [modalOpen, selected]);
+
   const fetchOrders = async (sellerId) => {
     setLoading(true);
     try {
@@ -316,6 +329,169 @@ export default function SellerOrders() {
     }
   };
 
+  const updateExpectedDate = async (id, expectedDate) => {
+    // Validate date
+    const dateObj = new Date(expectedDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateObj < today) {
+      toast.error("Expected delivery cannot be in the past");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`/api/orders/${id}/delivery`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ expectedDelivery: expectedDate }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update delivery date");
+
+      const result = await res.json();
+      if (result.success) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === id ? { ...o, expectedDelivery: expectedDate } : o
+          )
+        );
+        if (selected?.id === id) {
+          setSelected({ ...selected, expectedDelivery: expectedDate });
+        }
+        toast.success("Expected delivery date updated");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error(error.message || "Failed to update delivery date");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const updateShipping = async (id, { carrier, trackingId, buyerMessage }) => {
+    if (!trackingId.trim()) {
+      toast.error("Tracking ID is required");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`/api/orders/${id}/shipping`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          carrier: carrier || "other",
+          trackingId: trackingId.trim(),
+         
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update shipping");
+
+      const result = await res.json();
+      if (result.success) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === id
+              ? {
+                  ...o,
+                  carrier,
+                  trackingId: trackingId.trim(),
+                  
+                }
+              : o
+          )
+        );
+        if (selected?.id === id) {
+          setSelected({
+            ...selected,
+            carrier,
+            trackingId: trackingId.trim(),
+            
+          });
+        }
+        toast.success("Shipping updated");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast.error(error.message || "Failed to update shipping");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const carrierTrackUrl = (carrier, trackingId) => {
+    const urls = {
+      shiprocket: `https://shiprocket.co/tracking/${trackingId}`,
+      delhivery: `https://www.delhivery.com/track/package/${trackingId}`,
+      bluedart: `https://www.bluedart.com/tracking/${trackingId}`,
+      fedex: `https://www.fedex.com/fedextrack/?trknbr=${trackingId}`,
+      ups: `https://www.ups.com/track?tracknum=${trackingId}`,
+    };
+    return urls[carrier] || `https://www.google.com/search?q=${trackingId}`;
+  };
+
+  const saveBuyerMessage = async (orderId, message) => {
+    const text = (message || "").trim();
+    if (!text) {
+      toast.error("Message cannot be empty");
+      return;
+    }
+    if (text.length > 500) {
+      toast.error("Message is too long");
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const token = await auth.currentUser.getIdToken();
+      const res = await fetch(`/api/orders/${orderId}/buyer-message`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ buyerMessage: text }),
+      });
+
+      if (!res.ok) throw new Error("Failed to save message");
+
+      const result = await res.json();
+      if (result.success) {
+        // update local orders and selected
+        setOrders((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, buyerMessage: text } : o))
+        );
+        if (selected?.id === orderId) {
+          setSelected({ ...selected, buyerMessage: text });
+        }
+        toast.success("Message saved for buyer");
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err) {
+      console.error("Save message failed:", err);
+      toast.error(err.message || "Failed to save message");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+
   const getStatusColor = (status) => {
     const statusOption = statusOptions.find((opt) => opt.value === status);
     return statusOption ? statusOption.color : "bg-gray-100 text-gray-800";
@@ -328,7 +504,7 @@ export default function SellerOrders() {
     return (
       <SellerLayout>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin h-10 w-10 border-4 border-blue-600 rounded-full"></div>
+          <div className="animate-spin h-10 w-10 border-4 border-blue-600 rounded-full border-t-transparent"></div>
         </div>
       </SellerLayout>
     );
@@ -545,35 +721,200 @@ export default function SellerOrders() {
               </div>
 
               <div className="space-y-6">
-                {/* Order Status */}
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">
-                    Order Status
-                  </h4>
-                  <div className="flex items-center gap-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(
-                        selected.status
-                      )}`}
-                    >
-                      {selected.status}
-                    </span>
-                    <select
-                      value={selected.status}
-                      onChange={(e) =>
-                        updateOrderStatus(selected.id, e.target.value)
-                      }
-                      disabled={updating}
-                      className="px-3 py-1 border rounded-md text-sm focus:ring-2 focus:ring-blue-500"
-                    >
-                      {statusOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                {/* Fulfillment Section */}
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Fulfillment
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Update order status and expected delivery date.
+                    </p>
                   </div>
-                </div>
+
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* Order Status */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Order status
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${getStatusColor(
+                              selected.status
+                            )}`}
+                          >
+                            {selected.status}
+                          </span>
+                          <select
+                            value={selected.status}
+                            onChange={(e) =>
+                              updateOrderStatus(selected.id, e.target.value)
+                            }
+                            disabled={updating}
+                            className="w-full md:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {statusOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Notify the buyer when status changes.
+                        </p>
+                      </div>
+
+                      {/* Expected Delivery */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Expected delivery
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="date"
+                            value={expectedDelivery}
+                            onChange={(e) =>
+                              updateExpectedDate(selected.id, e.target.value)
+                            }
+                            disabled={updating}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Buyers see this on their order timeline.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-5">
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Message to buyer
+                      </label>
+                      <textarea
+                        value={buyerMessage}
+                        onChange={(e) => setBuyerMessage(e.target.value)}
+                        disabled={updating}
+                        placeholder="e.g., 'Your order has been shipped! It will arrive within 2-3 business days. Thank you!'"
+                        maxLength={500}
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                      />
+                      <div className="mt-2 flex items-center justify-between">
+                        <p className="text-xs text-gray-500">
+                          This message will be sent to the buyer via email/SMS.
+                        </p>
+                        <span className="text-xs text-gray-400">
+                          {buyerMessage.length || 0}/500
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            saveBuyerMessage(selected.id, buyerMessage)
+                          }
+                          disabled={updating || !buyerMessage.trim()}
+                          className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          Save message
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Shipping Section */}
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Shipping
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Add carrier details and send updates to the buyer.
+                    </p>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {/* Carrier Name */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Carrier name
+                        </label>
+                        <select
+                          value={carrier}
+                          onChange={(e) => setCarrier(e.target.value)}
+                          disabled={updating}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          <option value="">Select carrier</option>
+                          <option value="shiprocket">Shiprocket</option>
+                          <option value="delhivery">Delhivery</option>
+                          <option value="bluedart">Blue Dart</option>
+                          <option value="fedex">FedEx</option>
+                          <option value="ups">UPS</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Select the courier service handling this order.
+                        </p>
+                      </div>
+
+                      {/* Tracking ID */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Tracking ID
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="text"
+                            value={trackingId}
+                            onChange={(e) => setTrackingId(e.target.value)}
+                            disabled={updating}
+                            placeholder="e.g., SRKT-123456 or AWB"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          Provide the AWB or tracking number from your courier.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Message to Buyer */}
+
+                    {/* Save Button */}
+                    <div className="mt-5 flex items-center justify-end gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCarrier("");
+                          setTrackingId("");
+                        }}
+                        disabled={updating}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          updateShipping(selected.id, {
+                            carrier,
+                            trackingId,
+                          })
+                        }
+                        disabled={updating || !trackingId}
+                        className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        Save & Notify
+                      </button>
+                    </div>
+                  </div>
+                </section>
 
                 {/* Customer Information */}
                 <div>

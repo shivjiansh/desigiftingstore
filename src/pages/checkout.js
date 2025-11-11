@@ -143,20 +143,10 @@ export default function Checkout() {
   useEffect(() => {
     if (user) {
       loadCheckoutData();
-      setCodData();
       loadUserAddresses();
+      
     }
   }, [user]);
-
-   useEffect(() => {
-     if (paymentMethod === "cod" && isCod === "false") {
-       setPaymentMethod("razorpay");
-       notify?.info?.(
-         "COD not available for this order. Switched to Online Payment."
-       );
-     }
-   }, [ paymentMethod, setPaymentMethod]);
-
 
   function loadCheckoutData() {
     try {
@@ -170,6 +160,8 @@ export default function Checkout() {
       setOrderItems(data || []);
       setLoading(false);
       console.log("******",data);
+      setCodData(data.items[0].cod);
+     
      
     } catch {
       notify.error("Failed to load checkout data");
@@ -198,9 +190,14 @@ export default function Checkout() {
   function calculateTotals() {
     const subtotal =
       orderItems.items?.reduce((sum, i) => sum + i.price * i.quantity, 0) || 0;
-    const shipping = subtotal < 500 ? 100 : 0;
-    const tax = subtotal * 0.18;
-    return { subtotal, shipping, tax, total: subtotal + shipping + tax };
+    const shipping = 0;     //shippint always zero
+    const platformFee = 0;  //platform fee till dec
+    return {
+      subtotal,
+      shipping,
+      platformFee,
+      total: subtotal + shipping + platformFee,
+    };
   }
 
   async function handleAddAddress() {
@@ -586,7 +583,7 @@ export default function Checkout() {
     setEmailStatus({ buyer: "pending", seller: "pending" });
 
     try {
-      const { subtotal, shipping, tax, total } = calculateTotals();
+      const { subtotal, shipping, platformFee, total } = calculateTotals();
       const selectedAddress = addresses.find((a) => a.id === selectedAddressId);
 
       const orderPayload = {
@@ -598,15 +595,16 @@ export default function Checkout() {
         businessName: orderItems.items?.[0]?.businessName || "",
         sellerId: orderItems.items?.[0]?.sellerId,
         subtotal: subtotal,
-        shipping: shipping,
-        taxAmount: tax,
-        totalAmount: total + (paymentMethod === "cod" ? 50 : 0),
+        platformFee: platformFee,
+        totalAmount: total + (paymentMethod === "cod" ? 60 : 0),
         paymentMethod,
+        isCod:orderItems.items[0].cod,
         customizations: orderItems.customizations || {
           customText: "custom text",
           customImages: [],
           specialMessage: "custom message",
         },
+       
       };
 
       console.log("Placing order with payload:", orderPayload);
@@ -711,7 +709,7 @@ export default function Checkout() {
     );
   }
 
-  const { subtotal, shipping, tax, total } = calculateTotals();
+  const { subtotal, shipping, platformFee, total } = calculateTotals();
 
   return (
     <>
@@ -1028,6 +1026,7 @@ export default function Checkout() {
                   <CreditCardIcon className="w-5 h-5 mr-2" />
                   Payment Method
                 </h2>
+
                 {[
                   {
                     id: "razorpay",
@@ -1036,57 +1035,95 @@ export default function Checkout() {
                     desc: "UPI, Cards, NetBanking via Razorpay",
                     badge: "Recommended",
                     badgeColor: "bg-green-100 text-green-800",
-                    available: "true",
+                    available: true,
                   },
-                  // {
-                  //   id: "cod",
-                  //   icon: TruckIcon,
-                  //   title: "Cash on Delivery",
-                  //   desc: "Pay when you receive your gift",
-                  //   badge: "₹50 extra charges",
-                  //   badgeColor: "bg-orange-100 text-orange-800",
-                  //   available: "false",
-                  // },
-                ].map((opt) => (
-                  <label
-                    key={opt.id}
-                    className={`block border p-4 rounded-lg mb-3 cursor-pointer transition-all ${
-                      paymentMethod === opt.id
-                        ? "border-emerald-600 bg-emerald-50 shadow-sm"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      value={opt.id}
-                      checked={paymentMethod === opt.id}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="sr-only"
-                    />
-                    <div className="flex justify-between items-center">
-                      <div className="flex items-center">
-                        <opt.icon className="w-6 h-6 text-emerald-600 mr-3" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium">{opt.title}</p>
-                            {opt.badge && (
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full ${opt.badgeColor}`}
+                  {
+                    id: "cod",
+                    icon: TruckIcon,
+                    title: "Cash on Delivery",
+                    desc: "Pay when you receive your gift",
+                    badge: "₹60 extra charges",
+                    badgeColor: "bg-orange-100 text-orange-800",
+                    available: isCod,
+                  },
+                ].map((opt) => {
+                  const disabled = !opt.available;
+                  const selected = paymentMethod === opt.id;
+
+                  return (
+                    <label
+                      key={opt.id}
+                      className={[
+                        "block border p-4 rounded-lg mb-3 transition-all",
+                        disabled
+                          ? "border-gray-200 opacity-60 cursor-not-allowed"
+                          : "cursor-pointer",
+                        selected && !disabled
+                          ? "border-emerald-600 bg-emerald-50 shadow-sm"
+                          : !disabled
+                          ? "border-gray-200 hover:border-gray-300"
+                          : "",
+                      ].join(" ")}
+                      aria-disabled={disabled}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        value={opt.id}
+                        checked={selected}
+                        onChange={(e) =>
+                          !disabled && setPaymentMethod(e.target.value)
+                        }
+                        className="sr-only"
+                        disabled={disabled}
+                        aria-label={opt.title}
+                      />
+
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <opt.icon
+                            className={`w-6 h-6 mr-3 ${
+                              disabled ? "text-gray-400" : "text-emerald-600"
+                            }`}
+                          />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p
+                                className={`font-medium ${
+                                  disabled ? "text-gray-500" : ""
+                                }`}
                               >
-                                {opt.badge}
-                              </span>
+                                {opt.title}
+                              </p>
+                              {opt.badge && (
+                                <span
+                                  className={`text-xs px-2 py-1 rounded-full ${opt.badgeColor}`}
+                                >
+                                  {opt.badge}
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-sm text-gray-600">{opt.desc}</p>
+
+                            {disabled && (
+                              <p className="mt-1 text-xs text-red-600">
+                                {opt.id === "cod"
+                                  ? "COD is not available for this product"
+                                  : "This payment option is not available"}
+                              </p>
                             )}
                           </div>
-                          <p className="text-sm text-gray-600">{opt.desc}</p>
                         </div>
+
+                        {selected && !disabled && (
+                          <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
+                        )}
                       </div>
-                      {paymentMethod === opt.id && (
-                        <CheckCircleIcon className="w-5 h-5 text-emerald-600" />
-                      )}
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  );
+                })}
+
                 <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center text-sm text-gray-600">
                     <ShieldCheckIcon className="w-4 h-4 mr-2 text-emerald-600" />
@@ -1102,13 +1139,11 @@ export default function Checkout() {
                 <h2 className="font-semibold mb-4">Order Summary</h2>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span>
-                      Subtotal ({orderItems?.items[0]?.quantity || 0} items)
-                    </span>
+                    <span>Subtotal (Inclusive of GST)</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Shipping</span>
+                    <span>Shipping Fee</span>
                     <span>
                       {shipping === 0 ? (
                         <span className="text-green-600 font-medium">FREE</span>
@@ -1120,18 +1155,26 @@ export default function Checkout() {
                   {paymentMethod === "cod" && (
                     <div className="flex justify-between">
                       <span>COD Charges</span>
-                      <span>₹50.00</span>
+                      <span>₹60.00</span>
                     </div>
                   )}
+
                   <div className="flex justify-between">
-                    <span>GST (18%)</span>
-                    <span>₹{tax.toFixed(2)}</span>
+                    <span>Platform Fee</span>
+                    <span>
+                      {platformFee === 0 ? (
+                        <span className="text-green-600 font-medium">FREE</span>
+                      ) : (
+                        `₹${shipping.toFixed(2)}`
+                      )}
+                    </span>
                   </div>
+
                   <hr className="my-3" />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
                     <span>
-                      ₹{(total + (paymentMethod === "cod" ? 50 : 0)).toFixed(2)}
+                      ₹{(total + (paymentMethod === "cod" ? 60 : 0)).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1163,7 +1206,7 @@ export default function Checkout() {
                     </>
                   ) : (
                     `Place Order - ₹${(
-                      total + (paymentMethod === "cod" ? 50 : 0)
+                      total + (paymentMethod === "cod" ? 60 : 0)
                     ).toFixed(2)}`
                   )}
                 </button>
