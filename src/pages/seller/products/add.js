@@ -267,13 +267,13 @@
 //     return (setPrice / quantity).toFixed(2);
 //   };
 
-//   const calculateOfferPrice = () => {
-//     if (!product.hasOffer || !product.price || !product.offerPercentage)
-//       return 0;
-//     const discount =
-//       (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
-//     return (parseFloat(product.price) - discount).toFixed(2);
-//   };
+  // const calculateOfferPrice = () => {
+  //   if (!product.hasOffer || !product.price || !product.offerPercentage)
+  //     return 0;
+  //   const discount =
+  //     (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
+  //   return (parseFloat(product.price) - discount).toFixed(2);
+  // };
 
 //   const scrollToTop = () => {
 //     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -463,9 +463,9 @@
 //       if (product.pricingType === "simple") {
 //         productData.price = parseFloat(product.price);
 //         productData.setPricing = [];
-//         if (product.hasOffer) {
-//           productData.offerPrice = parseFloat(calculateOfferPrice());
-//         }
+        // if (product.hasOffer) {
+        //   productData.offerPrice = parseFloat(calculateOfferPrice());
+        // }
 //       } else {
 //         // For set pricing, remove simple price
 //         productData.price = 0;
@@ -1642,6 +1642,7 @@ export default function AddProduct() {
     price: "",
     setPricing: [],
     variants: [],
+    offerPrice: "",
     hasOffer: false,
     offerPercentage: "",
     offerStartDate: "",
@@ -1800,6 +1801,14 @@ export default function AddProduct() {
       tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
+
+   const calculateOfferPrice = () => {
+     if (!product.hasOffer || !product.price || !product.offerPercentage)
+       return 0;
+     const discount =
+       (parseFloat(product.price) * parseFloat(product.offerPercentage)) / 100;
+     return (parseFloat(product.price) - discount).toFixed(2);
+   };
 
   const addSetPricing = () => {
     if (!newSet.quantity || !newSet.price) {
@@ -1991,6 +2000,9 @@ export default function AddProduct() {
         productData.price = parseFloat(product.price);
         productData.setPricing = [];
         productData.variants = [];
+        if (product.hasOffer) {
+          productData.offerPrice = parseFloat(calculateOfferPrice());
+        }
       } else if (product.pricingType === "set") {
         productData.price = 0;
         productData.variants = [];
