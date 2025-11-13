@@ -196,12 +196,15 @@ export default function SellerOrders() {
   const [modalOpen, setModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
+  const [sellerLatestReplyMessage,setLatestSellerMsg] = useState("");
 
   // Local shipping/fulfillment input state
   const [carrier, setCarrier] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const [buyerMessage, setBuyerMessage] = useState("");
   const [expectedDelivery, setExpectedDelivery] = useState("");
+const [sellerReplyMessage, setSellerReplyMessage] = useState("");
+
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -277,6 +280,8 @@ export default function SellerOrders() {
     setExpectedDelivery(selected.expectedDelivery || "");
   }, [modalOpen, selected]);
 
+
+  //arrange in desc order
   const fetchOrders = async (sellerId) => {
     setLoading(true);
     try {
@@ -445,51 +450,44 @@ export default function SellerOrders() {
     return urls[carrier] || `https://www.google.com/search?q=${trackingId}`;
   };
 
-  const saveBuyerMessage = async (orderId, message) => {
-    const text = (message || "").trim();
-    if (!text) {
-      toast.error("Message cannot be empty");
-      return;
-    }
-    if (text.length > 500) {
-      toast.error("Message is too long");
+  async function saveSellerMessage(orderId, message) {
+    if (!message.trim()) {
+      toast.error("Please enter a message");
       return;
     }
 
     setUpdating(true);
     try {
-      const token = await auth.currentUser.getIdToken();
-      const res = await fetch(`/api/orders/${orderId}/buyer-message`, {
-        method: "PATCH",
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/orders/${orderId}/savesellermsg`, {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ buyerMessage: text }),
+        body: JSON.stringify({
+          message: message.trim(),
+        }),
       });
 
-      if (!res.ok) throw new Error("Failed to save message");
-
-      const result = await res.json();
-      if (result.success) {
-        // update local orders and selected
-        setOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, buyerMessage: text } : o))
-        );
-        if (selected?.id === orderId) {
-          setSelected({ ...selected, buyerMessage: text });
-        }
-        toast.success("Message saved for buyer");
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Message sent to customer!");
+        setLatestSellerMsg(sellerReplyMessage);
+        setSellerReplyMessage("");
+        // Refresh orders to show updated message
+        fetchOrders();
       } else {
-        throw new Error(result.error);
+        toast.error(data.error || "Failed to send message");
       }
-    } catch (err) {
-      console.error("Save message failed:", err);
-      toast.error(err.message || "Failed to save message");
+    } catch (error) {
+      toast.error("Error sending message");
+      console.error(error);
     } finally {
       setUpdating(false);
     }
-  };
+  }
+
 
 
   const getStatusColor = (status) => {
@@ -763,7 +761,7 @@ export default function SellerOrders() {
                           </select>
                         </div>
                         <p className="mt-2 text-xs text-gray-500">
-                          Notify the buyer when status changes.
+                          Notify the customer when status changes.
                         </p>
                       </div>
 
@@ -784,43 +782,8 @@ export default function SellerOrders() {
                           />
                         </div>
                         <p className="mt-2 text-xs text-gray-500">
-                          Buyers see this on their order timeline.
+                          customers see this on their order timeline.
                         </p>
-                      </div>
-                    </div>
-                    <div className="mt-5">
-                      <label className="block text-sm font-medium text-gray-900 mb-2">
-                        Message to buyer
-                      </label>
-                      <textarea
-                        value={buyerMessage}
-                        onChange={(e) => setBuyerMessage(e.target.value)}
-                        disabled={updating}
-                        placeholder="e.g., 'Your order has been shipped! It will arrive within 2-3 business days. Thank you!'"
-                        maxLength={500}
-                        rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                      />
-                      <div className="mt-2 flex items-center justify-between">
-                        <p className="text-xs text-gray-500">
-                          This message will be sent to the buyer via email/SMS.
-                        </p>
-                        <span className="text-xs text-gray-400">
-                          {buyerMessage.length || 0}/500
-                        </span>
-                      </div>
-
-                      <div className="mt-3 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            saveBuyerMessage(selected.id, buyerMessage)
-                          }
-                          disabled={updating || !buyerMessage.trim()}
-                          className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
-                        >
-                          Save message
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -833,7 +796,7 @@ export default function SellerOrders() {
                       Shipping
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Add carrier details and send updates to the buyer.
+                      Add carrier details and send updates to the customer.
                     </p>
                   </div>
 
@@ -884,8 +847,6 @@ export default function SellerOrders() {
                       </div>
                     </div>
 
-                    {/* Message to Buyer */}
-
                     {/* Save Button */}
                     <div className="mt-5 flex items-center justify-end gap-3">
                       <button
@@ -912,6 +873,96 @@ export default function SellerOrders() {
                       >
                         Save & Notify
                       </button>
+                    </div>
+                  </div>
+                </section>
+
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
+                  <div className="px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Messages
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Communication with customer
+                    </p>
+                  </div>
+
+                  <div className="p-5">
+                    <div className="mt-5">
+                      {/* Display customer's Latest Message */}
+                      <div className="mb-6">
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Message from customer
+                        </label>
+                        {selected.buyerLatestMessage ? (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-800">
+                              {selected.buyerLatestMessage}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-500 italic">
+                              No messages from customer yet
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Seller's Reply */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-900 mb-2">
+                          Your Reply to customer
+                        </label>
+                        <textarea
+                          value={sellerReplyMessage}
+                          onChange={(e) =>
+                            setSellerReplyMessage(e.target.value)
+                          }
+                          disabled={updating}
+                          placeholder="e.g., 'Thank you for reaching out! Your order has been dispatched and will arrive within 2-3 business days. Track your package using the link above.'"
+                          maxLength={500}
+                          rows={3}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
+                        />
+                        <div className="mt-2 flex items-center justify-between">
+                          <p className="text-xs text-gray-500">
+                            This message will be visible to the customer in their
+                            order details.
+                          </p>
+                          <span className="text-xs text-gray-400">
+                            {sellerReplyMessage.length || 0}/500
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              saveSellerMessage(selected.id, sellerReplyMessage)
+                            }
+                            disabled={updating || !sellerReplyMessage.trim()}
+                            className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            Send Reply
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Display Your Latest Message */}
+                      {selected.sellerLatestMessage && (
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                          <label className="block text-sm font-medium text-gray-900 mb-2">
+                            Your Latest Message
+                          </label>
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-800">
+                              {sellerLatestReplyMessage ||
+                                selected.sellerLatestMessage}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </section>

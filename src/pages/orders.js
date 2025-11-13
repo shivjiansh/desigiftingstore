@@ -14,6 +14,7 @@ import {
   TruckIcon,
   CalendarIcon,
   LinkIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -82,6 +83,105 @@ function CustomizationsView({
   );
 }
 
+function StatusTimeline({ currentStatus }) {
+  const statuses = [
+    { key: "pending", label: "Placed", icon: "📋" },
+    { key: "confirmed", label: "Confirmed", icon: "✓" },
+    { key: "processing", label: "Processing", icon: "⏳" },
+    { key: "shipped", label: "Shipped", icon: "📦" },
+    { key: "delivered", label: "Delivered", icon: "✅" },
+  ];
+
+  const statusIndex = statuses.findIndex((s) => s.key === currentStatus);
+
+  if (currentStatus === "cancelled") {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+        <p className="text-center text-red-700 font-medium text-sm">
+          ❌ Order Cancelled
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-lg p-4">
+      <h3 className="text-xs font-semibold text-gray-600 uppercase mb-4">
+        Progress
+      </h3>
+
+      {/* Timeline */}
+      <div className="relative flex items-start justify-between gap-0">
+        {/* Progress Line */}
+        <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200 -z-10">
+          <div
+            className="h-full bg-emerald-500 transition-all duration-500"
+            style={{
+              width: `${
+                statusIndex >= 0
+                  ? (statusIndex / (statuses.length - 1)) * 100
+                  : 0
+              }%`,
+            }}
+          />
+        </div>
+
+        {/* Status Nodes with Arrows */}
+        {statuses.map((status, index) => {
+          const isActive = index <= statusIndex;
+          const isCurrent = index === statusIndex;
+          const showArrow = index < statuses.length - 1;
+
+          return (
+            <div
+              key={status.key}
+              className="flex-1 basis-0 flex flex-col items-center relative"
+            >
+              {/* Node */}
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-base font-bold border-2 transition-all z-10 ${
+                  isActive
+                    ? "bg-emerald-100 border-emerald-500 text-emerald-700"
+                    : "bg-gray-100 border-gray-300 text-gray-400"
+                } ${isCurrent ? "ring-3 ring-emerald-200" : ""}`}
+              >
+                {status.icon}
+              </div>
+
+              {/* Arrow to next node */}
+              {showArrow && (
+                <div className="absolute top-4 -right-2 text-gray-300 text-sm font-bold">
+                  →
+                </div>
+              )}
+
+              {/* Label */}
+              <span
+                className={`text-[10px] font-medium mt-3 text-center leading-tight max-w-[50px] ${
+                  isActive ? "text-gray-900" : "text-gray-400"
+                }`}
+              >
+                {status.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Status Info */}
+      <div className="mt-6 pt-4 border-t border-gray-200">
+        <p className="text-sm text-gray-600">
+          <span className="font-semibold text-gray-900">Current Status: </span>
+          <span className="capitalize font-medium text-emerald-700">
+            {statuses[statusIndex]?.label || currentStatus}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
 export default function MyOrders() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -91,6 +191,9 @@ export default function MyOrders() {
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+const [buyerReplyMessage, setBuyerReplyMessage] = useState("");
+const [sendingReply, setSendingReply] = useState(false);
+
 
   useEffect(() => {
     if (!loading && !user) {
@@ -147,11 +250,7 @@ export default function MyOrders() {
         icon: "📦",
         label: "Shipped",
       },
-      "in-transit": {
-        color: "bg-teal-100 text-teal-800",
-        icon: "🚚",
-        label: "In Transit",
-      },
+
       delivered: {
         color: "bg-emerald-100 text-emerald-800",
         icon: "✅",
@@ -194,7 +293,50 @@ export default function MyOrders() {
     };
     return urls[carrier] || `https://www.google.com/search?q=${trackingId}`;
   };
+
   const hasMessage = (msg) => typeof msg === "string" && msg.trim().length > 0;
+
+  async function handleSendMessage() {
+    if (!buyerReplyMessage.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+
+    setSendingReply(true);
+    try {
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/orders/${selectedOrder.id}/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: buyerReplyMessage,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Message sent!");
+        setBuyerReplyMessage("");
+        // Update local state
+        setSelectedOrder({
+          ...selectedOrder,
+          buyerLatestMessage: buyerReplyMessage,
+          buyerMessageTime: new Date().toISOString(),
+        });
+      } else {
+        toast.error(data.error || "Failed to send message");
+      }
+    } catch (error) {
+      toast.error("Error sending message");
+      console.error(error);
+    } finally {
+      setSendingReply(false);
+    }
+  }
+
 
   const viewOrderDetails = (order) => {
     setSelectedOrder(order);
@@ -382,15 +524,27 @@ export default function MyOrders() {
               <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    Order #
+                    Order #{" "}
                     {selectedOrder.orderNumber || selectedOrder.id.slice(0, 8)}
                   </h2>
+
                   <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
                     Placed on{" "}
                     {formatDate(
                       selectedOrder.createdAt || selectedOrder.orderDate
                     )}
                   </p>
+
+                  {selectedOrder?.expectedDelivery ? (
+                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                      Arriving by {formatDate(selectedOrder.expectedDelivery)}
+                    </p>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
+                      Expected delivery will be updated once the seller provides
+                      an ETA.
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={closeOrderDetails}
@@ -403,94 +557,10 @@ export default function MyOrders() {
 
               {/* Content */}
               <div className="px-6 py-5 space-y-6 overflow-y-auto max-h-[calc(90vh-130px)]">
-                {/* Status Card */}
-                <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 font-medium">
-                      Current status
-                    </p>
-                    <div className="mt-2">
-                      {getStatusBadge(selectedOrder.status)}
-                    </div>
-                  </div>
-                  <div className="hidden sm:block text-4xl">📋</div>
-                </div>
-
-                {/* Shipping & Delivery */}
-                {(selectedOrder.trackingId ||
-                  selectedOrder.expectedDelivery ||
-                  selectedOrder.buyerMessage ||
-                  selectedOrder.carrier) && (
-                  <section>
-                    <div className="flex items-center mb-3">
-                      <div className="h-9 w-9 rounded-lg bg-emerald-100 text-emerald-700 grid place-items-center mr-3">
-                        <svg
-                          className="w-5 h-5"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path d="M3 7a2 2 0 012-2h9a2 2 0 012 2v1h1.586A2 2 0 0119 8.586L21.414 11A2 2 0 0122 12.414V17a2 2 0 01-2 2h-1a3 3 0 01-6 0H8a3 3 0 01-6 0H2a1 1 0 01-1-1v-1h1v-8z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Shipping & Delivery
-                      </h3>
-                    </div>
-
-                    <div className="bg-white rounded-xl border border-emerald-200/60 p-4 sm:p-5 space-y-4">
-                      {/* Carrier + Tracking */}
-                      {selectedOrder.carrier && selectedOrder.trackingId && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="rounded-lg border border-gray-100 p-3">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                              Carrier
-                            </p>
-                            <p className="text-gray-900 font-semibold capitalize mt-1.5">
-                              {selectedOrder.carrier}
-                            </p>
-                          </div>
-                          <div className="rounded-lg border border-gray-100 p-3">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                              Tracking ID
-                            </p>
-                            <p className="text-gray-900 font-mono font-semibold mt-1.5 break-all">
-                              {selectedOrder.trackingId}
-                            </p>
-                          </div>
-                          <div className="sm:col-span-2">
-                            <a
-                              href={getCarrierTrackingUrl(
-                                selectedOrder.carrier,
-                                selectedOrder.trackingId
-                              )}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition"
-                            >
-                              <LinkIcon className="w-4 h-4 mr-2" />
-                              Track your package
-                            </a>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Expected Delivery */}
-                      {selectedOrder.expectedDelivery && (
-                        <div className="rounded-lg border border-gray-100 p-3 flex items-center justify-between">
-                          <div>
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                              Expected delivery
-                            </p>
-                            <p className="text-gray-900 font-semibold mt-1.5">
-                              {formatDate(selectedOrder.expectedDelivery)}
-                            </p>
-                          </div>
-                          <CalendarIcon className="w-8 h-8 text-emerald-400/70" />
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                )}
+                {/* Status Timeline */}
+                <section>
+                  <StatusTimeline currentStatus={selectedOrder.status} />
+                </section>
 
                 {/* Items */}
                 <section>
@@ -534,13 +604,36 @@ export default function MyOrders() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs text-gray-500">Total</p>
-                          <p className="font-bold text-emerald-700">
+                          <p className="text-emerald-700">
                             ₹{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </li>
                     ))}
                   </ul>
+
+                  {/* Order Summary */}
+                  <div className="mt-4 pt-2 border-t border-gray-200">
+                    <ul className="space-y-1">
+                      <li className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600">
+                          Order Total
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">
+                          ₹{selectedOrder.totalAmount?.toFixed(2)}
+                        </span>
+                      </li>
+
+                      <li className="flex items-center justify-between pt-1">
+                        <span className="text-sm text-gray-600">
+                          Payment Method
+                        </span>
+                        <span className="text-sm font-medium text-gray-900">
+                          {selectedOrder.paymentMethod || "N/A"}
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
                 </section>
 
                 {/* Customizations */}
@@ -582,48 +675,155 @@ export default function MyOrders() {
                   </div>
                 </section>
 
-                {/* Order Total */}
+                {/* Shipping */}
                 <section>
-                  <div className="rounded-xl p-4 border border-emerald-200 bg-emerald-50">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1.5">
-                      Order Total
-                    </h3>
-                    <p className="text-2xl font-bold text-emerald-700">
-                      ₹
-                      {(
-                        selectedOrder.orderSummary?.total ??
-                        selectedOrder.totalAmount
-                      )?.toFixed(2)}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Payment Method: {selectedOrder.paymentMethod || "N/A"}
-                    </p>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    Shipping
+                  </h3>
+
+                  <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+                    {selectedOrder?.carrier && selectedOrder?.trackingId ? (
+                      <>
+                        {/* Carrier and Tracking Info */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          {selectedOrder?.carrier && (
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                Carrier
+                              </p>
+                              <p className="text-gray-900 font-medium capitalize mt-1">
+                                {selectedOrder.carrier}
+                              </p>
+                            </div>
+                          )}
+                          {selectedOrder?.trackingId && (
+                            <div className="flex-1">
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                Tracking ID
+                              </p>
+                              <p className="text-gray-900 font-mono mt-1 break-all">
+                                {selectedOrder.trackingId}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Track Link */}
+                        <a
+                          href={getCarrierTrackingUrl(
+                            selectedOrder.carrier,
+                            selectedOrder.trackingId
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center w-full rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition"
+                        >
+                          <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M13.5 4.5L21 12l-7.5 7.5M21 12H3"
+                            />
+                          </svg>
+                          Track package
+                        </a>
+                      </>
+                    ) : (
+                      <div className="flex items-start gap-3 py-2">
+                        <div className="text-2xl">📦</div>
+                        <div>
+                          <p className="font-medium text-gray-900 text-sm">
+                            Shipping details coming soon
+                          </p>
+                          <p className="text-xs text-gray-600 mt-1">
+                            The seller will update tracking information as soon
+                            as your product is shipped.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </section>
 
                 {/* Message from Seller */}
-                {hasMessage(selectedOrder.buyerMessage) && (
+                {selectedOrder && (
                   <section>
                     <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Message from Seller
+                      Messages
                     </h3>
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-4">
-                      <p className="text-gray-800 italic text-center">
-                        "{selectedOrder.buyerMessage}"
-                      </p>
+
+                    <div className="space-y-4">
+                      {/* Seller Message */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                          From Seller
+                        </p>
+                        {selectedOrder.sellerLatestMessage ? (
+                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-800">
+                              {selectedOrder.sellerLatestMessage}
+                            </p>
+                            
+                          </div>
+                        ) : (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-500 italic">
+                              No messages from seller yet
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Buyer Reply */}
+                      <div>
+                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                          Your Message
+                        </p>
+                        <div className="space-y-3">
+                          <textarea
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                            placeholder="Type your message..."
+                            rows="3"
+                            value={buyerReplyMessage}
+                            onChange={(e) =>
+                              setBuyerReplyMessage(e.target.value)
+                            }
+                            disabled={sendingReply}
+                          />
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!buyerReplyMessage.trim() || sendingReply}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium text-sm transition"
+                          >
+                            {sendingReply ? "Sending..." : "Send Message"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Buyer's Latest Message Display */}
+                      {selectedOrder.buyerLatestMessage && (
+                        <div>
+                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                            Your Latest Message
+                          </p>
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+                            <p className="text-sm text-gray-800">
+                              {selectedOrder.buyerLatestMessage}
+                            </p>
+                            
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </section>
                 )}
-              </div>
-
-              {/* Sticky Footer */}
-              <div className="sticky bottom-0 z-10 bg-white/90 backdrop-blur border-t px-6 py-3 flex justify-end">
-                <button
-                  onClick={closeOrderDetails}
-                  className="px-5 py-2 rounded-lg bg-gray-100 text-gray-800 hover:bg-gray-200 transition font-medium"
-                >
-                  Close
-                </button>
               </div>
             </div>
           </div>
