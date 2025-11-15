@@ -5,6 +5,7 @@ import Image from "next/image";
 import Header from "../../components/Header";
 import ProductCard from "../../components/ProductCard";
 import Footer from "../../components/Footer";
+import SwipeHint from "../../components/SwipeHint";
 import {
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
@@ -35,6 +36,7 @@ export default function Products() {
   const [sortBy, setSortBy] = useState("featured");
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -142,6 +144,19 @@ let description =
   useEffect(() => {
     fetchProducts();
   }, []);
+
+   useEffect(() => {
+     const seen = localStorage.getItem("seenSwipeTutorial");
+     const isMobile = window.matchMedia("(max-width: 640px)").matches;
+     if (!seen && isMobile) {
+       setShowTutorial(true);
+     }
+   }, []);
+
+   const closeTutorial = () => {
+     localStorage.setItem("seenSwipeTutorial", "1");
+     setShowTutorial(false);
+   };
 
   useEffect(() => {
     filterAndSortProducts();
@@ -999,7 +1014,6 @@ let description =
 
             {/* Trust bar (optional, boosts credibility) */}
             <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-500">
-              
               <div className="inline-flex items-center gap-2">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
                   <path
@@ -1151,7 +1165,6 @@ let description =
                       onChange={(e) => setSortBy(e.target.value)}
                       className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     >
-                      <option value="featured">Featured</option>
                       <option value="newest">Newest</option>
                       <option value="popular">Popular</option>
                       <option value="rating">Highest Rated</option>
@@ -1159,21 +1172,6 @@ let description =
                       <option value="price-high">Price: High to Low</option>
                       <option value="alphabetical">Name: A to Z</option>
                     </select>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2">
-                    {/* Results Count */}
-                    <span
-                      className="text-xs sm:text-sm text-gray-500"
-                      role="status"
-                      aria-live="polite"
-                    >
-                      {paginationInfo.total > 0
-                        ? `${paginationInfo.from}-${paginationInfo.to} of ${paginationInfo.total} products`
-                        : "No products found"}
-                    </span>
-
-                    {/* View Mode Toggle - Hidden on mobile */}
                   </div>
                 </div>
               </div>
@@ -1225,6 +1223,10 @@ let description =
                       ))}
                     </div>
                   </section>
+
+                  {showTutorial && (
+                    <SwipeHint onClose={closeTutorial} />
+                  )}
 
                   {/* Pagination */}
                   {totalPages > 1 && (

@@ -215,15 +215,7 @@ export default function BuyerLogin() {
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Sign in to your account
               </h2>
-              <p className="text-gray-600 mb-2">
-                Want to sell custom gifts?{" "}
-                <Link
-                  href="/seller/auth/login"
-                  className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
-                >
-                  Seller Login
-                </Link>
-              </p>
+
               {/* <p className="text-sm text-gray-600">
                 Don't have an account?{" "}
                 <Link
@@ -307,28 +299,6 @@ export default function BuyerLogin() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
-                      checked={formData.rememberMe}
-                      onChange={(e) =>
-                        handleInputChange("rememberMe", e.target.checked)
-                      }
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      Keep me signed in
-                    </span>
-                  </label>
-                  <Link
-                    href="/buyer/auth/forgot-password"
-                    className="text-sm text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -395,6 +365,15 @@ export default function BuyerLogin() {
 
             {/* Footer Links */}
             <div className="mt-8 text-center space-y-2">
+              <p className="text-gray-600 mb-2">
+                Want to sell custom gifts?{" "}
+                <Link
+                  href="/seller/auth/login"
+                  className="text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
+                >
+                  Seller Login
+                </Link>
+              </p>
               <p className="text-xs text-gray-500">
                 By signing in, you agree to our{" "}
                 <Link

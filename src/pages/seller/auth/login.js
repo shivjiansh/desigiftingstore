@@ -119,28 +119,28 @@ export default function SellerLogin() {
           <div className="relative z-10 max-w-md">
             {/* Logo */}
             <div className="flex items-center justify-center space-x-3 mb-4 group px-4">
-                          <div className="relative">
-                            <Image
-                              src="/images/logo1.png"
-                              alt="DesiGifting Logo"
-                              width={54}
-                              height={54}
-                              className="rounded-2xl shadow-lg object-contain transition-all duration-300 group-hover:scale-105"
-                            />
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/8 to-purple-600/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          </div>
-                          <div className="text-left">
-                            <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">
-                              DesiGifting
-                            </h1>
-                            <div className="flex items-center space-x-2 mt-0.5">
-                              <div className="w-4 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
-                              <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
-                                Make It Personal
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+              <div className="relative">
+                <Image
+                  src="/images/logo1.png"
+                  alt="DesiGifting Logo"
+                  width={54}
+                  height={54}
+                  className="rounded-2xl shadow-lg object-contain transition-all duration-300 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/8 to-purple-600/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              </div>
+              <div className="text-left">
+                <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">
+                  DesiGifting
+                </h1>
+                <div className="flex items-center space-x-2 mt-0.5">
+                  <div className="w-4 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
+                  <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
+                    Make It Personal
+                  </span>
+                </div>
+              </div>
+            </div>
 
             {/* Hero Content */}
             <h1 className="text-4xl font-bold text-white mb-6 leading-tight">
@@ -207,43 +207,38 @@ export default function SellerLogin() {
             {/* Mobile Logo */}
             <div className="lg:hidden text-center mb-8">
               <div className="flex items-center justify-center space-x-3 mb-4 group px-4">
-                            <div className="relative">
-                              <Image
-                                src="/images/logo1.png"
-                                alt="DesiGifting Logo"
-                                width={54}
-                                height={54}
-                                className="rounded-2xl shadow-lg object-contain transition-all duration-300 group-hover:scale-105"
-                              />
-                              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/8 to-purple-600/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            </div>
-                            <div className="text-left">
-                              <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">
-                                DesiGifting
-                              </h1>
-                              <div className="flex items-center space-x-2 mt-0.5">
-                                <div className="w-5 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
-                                <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
-                                  Seller Studio
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                <div className="relative">
+                  <Image
+                    src="/images/logo1.png"
+                    alt="DesiGifting Logo"
+                    width={54}
+                    height={54}
+                    className="rounded-2xl shadow-lg object-contain transition-all duration-300 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/8 to-purple-600/8 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div className="text-left">
+                  <h1 className="text-2xl font-black text-gray-800 tracking-tight leading-none">
+                    DesiGifting
+                  </h1>
+                  <div className="flex items-center space-x-2 mt-0.5">
+                    <div className="w-5 h-0.5 bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full"></div>
+                    <span className="text-xs text-gray-500 font-semibold tracking-wide uppercase">
+                      Seller Studio
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                Sign in to your account
-              </h2>
-              <p className="text-gray-600">
-                Don't have a seller account?{" "}
-                <Link
-                  href="/seller/auth/register"
-                  className="text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
-                >
-                  Start selling today 
-                </Link>
+            <div className="text-center mb-10">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+                Sign in to your seller account
+              </h1>
+
+              <p className="mt-2 text-sm text-gray-600">
+                Manage products, orders, and payouts in one place.
               </p>
             </div>
 
@@ -317,27 +312,7 @@ export default function SellerLogin() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      checked={formData.rememberMe}
-                      onChange={(e) =>
-                        handleInputChange("rememberMe", e.target.checked)
-                      }
-                    />
-                    <span className="ml-2 text-sm text-gray-700">
-                      Keep me signed in
-                    </span>
-                  </label>
-                  <Link
-                    href="/seller/auth/forgot-password"
-                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
+                
 
                 <button
                   type="submit"
@@ -356,11 +331,20 @@ export default function SellerLogin() {
               </form>
 
               {/* Divider */}
-            
             </div>
 
             {/* Footer Links */}
+
             <div className="mt-8 text-center space-y-2">
+              <p className="mt-4 text-sm text-gray-600">
+                Don’t have a seller account?
+                <Link
+                  href="/seller/auth/register"
+                  className="ml-1 text-indigo-600 hover:text-indigo-700 font-semibold transition-colors"
+                >
+                  Start selling today
+                </Link>
+              </p>
               <p className="text-sm text-gray-600">
                 Looking to buy gifts?{" "}
                 <Link
