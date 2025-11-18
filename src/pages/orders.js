@@ -811,7 +811,7 @@ const [sendingReply, setSendingReply] = useState(false);
                       {selectedOrder.buyerLatestMessage && (
                         <div>
                           <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                            Your Latest Message
+                            Your Last Message
                           </p>
                           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                             <p className="text-sm text-gray-800">

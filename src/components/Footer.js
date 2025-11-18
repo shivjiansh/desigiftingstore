@@ -75,7 +75,7 @@ export default function Footer() {
                 Free Shipping
               </h3>
               <p className="text-xs sm:text-sm text-teal-700">
-                On orders over 500 Rs
+                On orders over 199 Rs
               </p>
             </div>
 
@@ -99,7 +99,7 @@ export default function Footer() {
                 4.9★ Rating
               </h3>
               <p className="text-xs sm:text-sm text-yellow-700">
-                53K+ happy customers
+                10K+ happy customers
               </p>
             </div>
           </div>
@@ -113,7 +113,7 @@ export default function Footer() {
             {/* Company Info */}
             <div className="lg:col-span-2">
               <div className="mb-6">
-                <Link href="/" className="flex items-center gap-2 mb-4">
+                <Link href="/products" className="flex items-center gap-2 mb-4">
                   <div className="w-10 h-10 relative overflow-hidden rounded-lg">
                     <Image
                       src="/images/logo1.png"

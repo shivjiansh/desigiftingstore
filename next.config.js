@@ -4,10 +4,12 @@ const nextConfig = {
   images: {
     domains: [
       "res.cloudinary.com",
+      "lh3.googleusercontent.com",
       "firebasestorage.googleapis.com",
       "images.unsplash.com",
       "via.placeholder.com",
     ],
+    minimumCacheTTL: 2592000,
     unoptimized: false,
   },
   env: {
@@ -21,6 +23,11 @@ const nextConfig = {
         permanent: true,
       },
       {
+        source: "/register",
+        destination: "/buyer/auth/register",
+        permanent: true,
+      },
+      {
         source: "/",
         destination: "/products", // your new home page path
         permanent: true,
@@ -31,12 +38,6 @@ const nextConfig = {
         permanent: true,
       },
     ];
-  },
-  images: {
-    domains: [
-      "lh3.googleusercontent.com", // for Google profile images
-      "res.cloudinary.com", // for your Cloudinary uploads
-    ],
   },
   compiler: {
     removeConsole: false,

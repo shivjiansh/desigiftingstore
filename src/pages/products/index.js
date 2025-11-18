@@ -935,30 +935,6 @@ let description =
 
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           {/* Breadcrumb Navigation */}
-          <nav aria-label="Breadcrumb" className="mb-6">
-            <ol className="flex items-center space-x-2 text-sm text-gray-500">
-              <li>
-                <a
-                  href="/"
-                  className="hover:text-emerald-600 transition-colors"
-                >
-                  Home
-                </a>
-              </li>
-              <li>/</li>
-              <li className="text-gray-900 font-medium" aria-current="page">
-                Products
-              </li>
-              {searchTerm && (
-                <>
-                  <li>/</li>
-                  <li className="text-gray-900 font-medium">
-                    Search: "{searchTerm}"
-                  </li>
-                </>
-              )}
-            </ol>
-          </nav>
 
           {/* Hero Section */}
           <header className="relative text-center mb-10 sm:mb-14">
@@ -990,7 +966,7 @@ let description =
             <p className="text-base font-bold sm:text-xl md:text-2xl text-gray-600 max-w-2xl sm:max-w-3xl mx-auto leading-relaxed px-4">
               {searchTerm
                 ? `Showing ${filteredProducts.length} personalized results`
-                : "India’s fastest-growing marketplace for handcrafted, personalized gifts."}
+                : "India’s fastest-growing marketplace for handcrafted gifts."}
             </p>
 
             {/* CTAs */}
@@ -1014,7 +990,7 @@ let description =
 
             {/* Trust bar (optional, boosts credibility) */}
             <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-500">
-              <div className="inline-flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 justify-between">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
                   <path
                     fill="currentColor"
@@ -1022,6 +998,24 @@ let description =
                   />
                 </svg>
                 <span>Trusted by 10k+ shoppers</span>
+              </div>
+              <div className="inline-flex items-center gap-2 justify-between">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
+                  <path
+                    fill="currentColor"
+                    d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
+                  />
+                </svg>
+                <span>Completed over 18k orders successfully</span>
+              </div>
+              <div className="inline-flex items-center gap-2 justify-between">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
+                  <path
+                    fill="currentColor"
+                    d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
+                  />
+                </svg>
+                <span>24/7 support for order tracking and delivery</span>
               </div>
             </div>
           </header>
@@ -1217,16 +1211,14 @@ let description =
                             product={product}
                             viewMode="grid"
                             className="h-full hover:shadow-lg sm:hover:shadow-xl transition-all duration-300 sm:transform sm:hover:-translate-y-1"
-                            loading={index < 8 ? "eager" : "lazy"}
+                            priority={index === 0}
                           />
                         </article>
                       ))}
                     </div>
                   </section>
 
-                  {showTutorial && (
-                    <SwipeHint onClose={closeTutorial} />
-                  )}
+                  {showTutorial && <SwipeHint onClose={closeTutorial} />}
 
                   {/* Pagination */}
                   {totalPages > 1 && (

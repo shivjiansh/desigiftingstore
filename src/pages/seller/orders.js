@@ -953,7 +953,7 @@ const [sellerReplyMessage, setSellerReplyMessage] = useState("");
                       {selected.sellerLatestMessage && (
                         <div className="mt-6 pt-6 border-t border-gray-200">
                           <label className="block text-sm font-medium text-gray-900 mb-2">
-                            Your Latest Message
+                            Your Last Message
                           </label>
                           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                             <p className="text-sm text-gray-800">
