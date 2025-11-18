@@ -1,19 +1,21 @@
-import { adminDb } from '../../../lib/firebaseAdmin';
-import admin from 'firebase-admin';
-import { 
-  verifyAuthToken, 
-  getUserRole,
-  handleError, 
-  sendSuccess, 
-  validateRequiredFields, 
-  sanitizeInput, 
-  methodNotAllowed,
-  getPaginatedResults 
-} from '../utils';
-import { Console } from 'console';
+import { adminDb } from "../../../lib/firebaseAdmin";
+import admin from "firebase-admin";
+import { withAxiom } from "next-axiom";
 
-export default async function handler(req, res) {
+import {
+  verifyAuthToken,
+  getUserRole,
+  handleError,
+  sendSuccess,
+  validateRequiredFields,
+  sanitizeInput,
+  methodNotAllowed,
+  getPaginatedResults,
+} from "../utils";
+
+async function handler(req, res) {
   const { method, query } = req;
+  const log = req.log || console;
 
   try {
     if (method === "GET" && query.all === "true") {
@@ -31,17 +33,27 @@ export default async function handler(req, res) {
       }
     }
   } catch (error) {
+    log.error("Handler error", { error: error.message, stack: error.stack });
     handleError(res, error);
   }
 }
 
+// Wrap handler with withAxiom before exporting
+export default process.env.NODE_ENV === "production"
+  ? withAxiom(handler)
+  : handler;
+  
 // GET /api/products/all - Return full array of all active products
 async function handleFetchAllProducts(req, res) {
-  console.log("Fetching all active products");
+  const log = req.log || console;
+  const start = Date.now();
+
+  log.info("Fetching all active products", {
+    method: req.method,
+    query: req.query,
+  });
 
   try {
-    console.log("alllllllll");
-
     // Query all active products from Firestore
     const snapshot = await adminDb
       .collection("products")
@@ -61,7 +73,10 @@ async function handleFetchAllProducts(req, res) {
       };
     });
 
-    console.log(`Fetched ${allProducts.length} active products`);
+    log.info("Products fetched successfully", {
+      count: allProducts.length,
+      duration: Date.now() - start,
+    });
 
     // ✅ FIXED: Wrap response in same format as handleGetProducts
     const result = {
@@ -75,8 +90,10 @@ async function handleFetchAllProducts(req, res) {
     // Return success response with unified format
     return sendSuccess(res, result, "All products fetched successfully");
   } catch (error) {
-    console.error("Error fetching all products:", error);
-
+    log.error("Error fetching products", {
+      error: error.message,
+      stack: error.stack,
+    });
     // Return error response
     return res.status(500).json({
       success: false,
@@ -86,10 +103,11 @@ async function handleFetchAllProducts(req, res) {
   }
 }
 
-
-
 // GET /api/products - Get products with filtering and pagination
 async function handleGetProducts(req, res) {
+  const log = req.log || console;
+  const start = Date.now();
+
   const {
     id,
     sellerId,
@@ -104,13 +122,24 @@ async function handleGetProducts(req, res) {
     orderDirection = "desc",
   } = req.query;
 
+  log.info("Getting products", {
+    id,
+    sellerId,
+    search,
+    page,
+    limit,
+    orderBy,
+    orderDirection,
+  });
+
   try {
-    console.log("HHHHHHHHHHH");
     // Get single product by ID
     if (id) {
+      log.info("Fetching single product", { id });
       const productDoc = await adminDb.collection("products").doc(id).get();
 
       if (!productDoc.exists) {
+        log.warn("Product not found", { id });
         return res.status(404).json({
           success: false,
           error: "Product not found",
@@ -118,24 +147,25 @@ async function handleGetProducts(req, res) {
       }
 
       const productData = { id: productDoc.id, ...productDoc.data() };
+      log.info("Product retrieved", { id, duration: Date.now() - start });
       return sendSuccess(res, productData, "Product retrieved successfully");
     }
 
     // Build query - only filter by sellerId
-    console.log("Building product query");
-    console.log("Requested sellerId:", sellerId);
+    log.info("Building product query");
+    log.info("Requested sellerId:", sellerId);
 
     let query = adminDb.collection("products");
 
     // ONLY filter by sellerId if provided
     if (sellerId) {
-      console.log("Filtering by sellerId:", sellerId);
+      log.info("Filtering by sellerId:", sellerId);
       query = query.where("sellerId", "==", sellerId);
     } else {
-      console.log("⚠️ WARNING: No sellerId provided");
+      log.warn("⚠️ WARNING: No sellerId provided");
     }
 
-    console.log("Query built successfully");
+    log.info("Query built successfully");
 
     // Apply ordering
     const validOrderFields = [
@@ -150,7 +180,7 @@ async function handleGetProducts(req, res) {
       : "createdAt";
     const orderDir = orderDirection === "asc" ? "asc" : "desc";
 
-    console.log("Ordering by:", orderField, orderDir);
+    log.info("Ordering by:", { orderField, orderDir });
     query = query.orderBy(orderField, orderDir);
 
     // Apply pagination
@@ -164,10 +194,10 @@ async function handleGetProducts(req, res) {
 
     query = query.limit(limitNum);
 
-    console.log("Executing query...");
+    log.info("Executing query...");
     const snapshot = await query.get();
 
-    console.log("Query returned", snapshot.size, "documents");
+    log.info("Query returned", { documentsCount: snapshot.size });
 
     const products = [];
 
@@ -192,7 +222,10 @@ async function handleGetProducts(req, res) {
       }
     });
 
-    console.log("Final product count:", products.length);
+    log.info("Final product count:", {
+      count: products.length,
+      duration: Date.now() - start,
+    });
 
     const result = {
       results: products,
@@ -204,8 +237,11 @@ async function handleGetProducts(req, res) {
 
     return sendSuccess(res, result, "Products retrieved successfully");
   } catch (error) {
-    console.error("❌ ERROR in handleGetProducts:", error);
-    console.error("Error stack:", error.stack);
+    log.error("❌ ERROR in handleGetProducts:", {
+      error: error.message,
+      stack: error.stack,
+      duration: Date.now() - start,
+    });
 
     return res.status(500).json({
       success: false,
@@ -217,16 +253,26 @@ async function handleGetProducts(req, res) {
 
 // POST /api/products - Create new product
 async function handleCreateProduct(req, res) {
+  const log = req.log || console;
+  const start = Date.now();
+
   try {
     const decoded = await verifyAuthToken(req);
     const body = req.body;
 
-    if (!body.name ) {
+    log.info("Creating product", {
+      sellerId: decoded.uid,
+      productName: body.name,
+    });
+
+    if (!body.name) {
+      log.warn("Product creation failed - missing name", {
+        sellerId: decoded.uid,
+      });
       return res
         .status(400)
         .json({ success: false, error: "Name is required" });
     }
- 
 
     const now = new Date().toISOString();
     const newProduct = {
@@ -241,6 +287,12 @@ async function handleCreateProduct(req, res) {
 
     const ref = await adminDb.collection("products").add(newProduct);
 
+    log.info("Product created", {
+      productId: ref.id,
+      sellerId: decoded.uid,
+      duration: Date.now() - start,
+    });
+
     // Update seller stats
     try {
       await adminDb
@@ -250,15 +302,22 @@ async function handleCreateProduct(req, res) {
           "sellerStats.totalProducts": admin.firestore.FieldValue.increment(1),
           updatedAt: now,
         });
-      console.log("Seller stats updated");
+      log.info("Seller stats updated", { sellerId: decoded.uid });
     } catch (err) {
-      console.log("Error updating seller stats:", err.message);
+      log.error("Error updating seller stats:", {
+        sellerId: decoded.uid,
+        error: err.message,
+      });
     }
 
     const created = { id: ref.id, ...newProduct };
     return sendSuccess(res, created, "Product created successfully", 201);
   } catch (err) {
-    console.error("Error creating product:", err);
+    log.error("Error creating product", {
+      error: err.message,
+      stack: err.stack,
+      duration: Date.now() - start,
+    });
     return res
       .status(500)
       .json({ success: false, error: "Failed to create product" });

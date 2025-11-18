@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+import { withAxiom } from "next-axiom";
+
 const nextConfig = {
   reactStrictMode: true,
   images: {
@@ -29,12 +31,7 @@ const nextConfig = {
       },
       {
         source: "/",
-        destination: "/products", // your new home page path
-        permanent: true,
-      },
-      {
-        source: "/register",
-        destination: "/buyer/auth/register",
+        destination: "/products",
         permanent: true,
       },
     ];
@@ -46,9 +43,8 @@ const nextConfig = {
     optimizeCss: true,
   },
   eslint: {
-    // Allow builds to succeed even if ESLint errors exist
     ignoreDuringBuilds: true,
   },
 };
 
-export default nextConfig;
+export default withAxiom(nextConfig);

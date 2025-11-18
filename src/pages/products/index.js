@@ -6,6 +6,7 @@ import Header from "../../components/Header";
 import ProductCard from "../../components/ProductCard";
 import Footer from "../../components/Footer";
 import SwipeHint from "../../components/SwipeHint";
+import { useLogger } from "next-axiom";
 import {
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
@@ -37,6 +38,7 @@ export default function Products() {
   const [viewMode, setViewMode] = useState("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const log = useLogger();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -166,29 +168,26 @@ let description =
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log("Fetching All products from API...");
+      log.info("Fetching All products from API...");
       const response = await fetch("/api/products?all=true");
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched ok products:", data);
+        log.info("Fetched all products");
         setProducts(data.data?.results || []);
       } else {
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
+      log.error("Error fetching products:", error);
       setProducts([]);
     } finally {
-      console.log("Finished fetching products.");
       setLoading(false);
     }
   };
 
   const filterAndSortProducts = () => {
     let filtered = [...products];
-
-    console.log("Starting with products:", filtered.length);
-
+   
     // Enhanced search functionality
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase().trim();
@@ -283,7 +282,6 @@ let description =
         break;
     }
 
-    console.log("Filtered and sorted products:", filtered.length);
     setFilteredProducts(filtered);
   };
 
@@ -350,10 +348,10 @@ let description =
     return (
       <>
         <Head>
-          <title>Products - Desigifting</title>
+          <title>Desigifting</title>
           <meta
             name="description"
-            content="Loading personalized gifts and custom products..."
+            content="Loading personalized gifts and custom products"
           />
           <meta name="robots" content="noindex, nofollow" />
         </Head>
@@ -829,7 +827,7 @@ let description =
     <>
       <Head>
         {/* Primary SEO Meta Tags */}
-        <title>{seoTitle} - Desigifting</title>
+        <title>Desigifting</title>
         <meta name="title" content={`${seoTitle} - Desigifting`} />
         <meta name="description" content={seoDescription} />
         <meta
