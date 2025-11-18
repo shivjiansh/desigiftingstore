@@ -73,6 +73,8 @@ export default function SellerRegister() {
       setErrors((prev) => ({ ...prev, [field]: null }));
     }
   };
+  const canSubmit = formData.agreeToTerms && !isLoading;
+
 
   const validateFormData = () => {
     const newErrors = {};
@@ -409,22 +411,12 @@ export default function SellerRegister() {
             </div>
 
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Your Art. Your Business. Your Success.
+              Sell More. Keep 100%.
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Transform your creative talents into a thriving income stream with
-              India's fastest-growing personalized gifts marketplace.
-            </p>
-          </div>
-          <div className="mt-8 text-center mb-4">
-            <p className="text-sm text-gray-600">
-              Already have an account?{" "}
-              <Link
-                href="/seller/auth/login"
-                className="text-accent-600 hover:text-accent-700 font-medium"
-              >
-                Sign in to your seller account
-              </Link>
+              
+              <span className="text-red-600 font-bold">Zero Commission</span>{" "}-
+              Limited Time Offer!!!
             </p>
           </div>
 
@@ -841,8 +833,8 @@ export default function SellerRegister() {
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className="btn bg-accent-600 hover:bg-accent-700 text-white w-full btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!canSubmit}
+                className="btn bg-accent-500 hover:bg-accent-700 text-white w-full btn-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-2">
@@ -850,51 +842,108 @@ export default function SellerRegister() {
                     <span>Creating seller account...</span>
                   </div>
                 ) : (
-                  "Start Selling on Desigifting"
+                  "Start Selling with Desigifting"
                 )}
               </button>
             </form>
           </div>
 
+          <div className="mt-8 text-center mb-4">
+            <p className="text-sm text-gray-600">
+              Already have an account?{" "}
+              <Link
+                href="/seller/auth/login"
+                className="text-accent-600 hover:text-accent-700 font-medium"
+              >
+                Sign in to your seller account
+              </Link>
+            </p>
+          </div>
+
           {/* Benefits Section */}
-          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Column 1 */}
+            <div className="text-center px-4">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🎨</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Your Art, Your Rules
+
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Your Art, Your Earnings
               </h3>
-              <p className="text-sm text-gray-600">
-                Zero restrictions. Design anything. Sell everything. Complete
-                creative ownership of your custom product empire.
-              </p>
+
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>Zero joining fee</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>Zero commission & zero platform margin</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>You keep 100% of your profit</span>
+                </li>
+              </ul>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            {/* Column 2 */}
+            <div className="text-center px-4">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">💰</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Keep More, Earn More
+
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Weekly Payouts, Full Control
               </h3>
-              <p className="text-sm text-gray-600">
-                upto 99% profit share. Set premium prices. No hidden fees. Your
-                creativity = Your income.
-              </p>
+
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>Fast weekly payouts directly to your bank</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>No hidden charges or deductions</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>Total transparency & financial freedom</span>
+                </li>
+              </ul>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-accent-100 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            {/* Column 3 */}
+            <div className="text-center px-4">
+              <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl">🚀</span>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">
-                Instant Customer Access
+
+              <h3 className="font-semibold text-gray-900 mb-3">
+                Promote & Grow Faster
               </h3>
-              <p className="text-sm text-gray-600">
-                50,000+ ready buyers. Built-in SEO. Social media tools. Your
-                products, amplified 10x.
-              </p>
+
+              <ul className="text-sm text-gray-600 space-y-2">
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>Share your store link to reach more buyers</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>More visibility = more orders & sales</span>
+                </li>
+
+                <li className="flex items-start justify-center gap-2">
+                  <span>✔</span>
+                  <span>We support your growth at every step</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>

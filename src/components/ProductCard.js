@@ -5,9 +5,12 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from "@heroicons/react/24/solid";
+import cloudinaryLoader from "../lib/cloudinaryLoader";
 
 export default function ProductCard({ product, className = "" }) {
   const router = useRouter();
+  const cardRef = useRef(null);
+  const [inView, setInView] = useState(false);
   const [idx, setIdx] = useState(0);
   const sliderRef = useRef(null);
   const touchStartX = useRef(null);
@@ -74,24 +77,59 @@ export default function ProductCard({ product, className = "" }) {
       : null;
 
   // ---------------------------------------
-  // AUTO PLAY SLIDER (ONLY IF MULTIPLE IMAGES)
+  // INTERSECTION OBSERVER (Visibility Detection)
   // ---------------------------------------
   useEffect(() => {
-    if (images.length <= 1) return;
+    const el = cardRef.current;
+    if (!el) return;
 
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        // Card is considered "in view" if at least 50% is visible
+        setInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
+      },
+      { root: null, rootMargin: "0px", threshold: [0, 0.5, 1] }
+    );
+
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // ---------------------------------------
+  // AUTO PLAY SLIDER (Only when in view & multiple images)
+  // ---------------------------------------
+  useEffect(() => {
+    // Stop autoplay if card is off-screen or only one image
+    if (!inView || images.length <= 1) {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+        autoPlayRef.current = null;
+      }
+      return;
+    }
+
+    // Start autoplay when card is visible
     autoPlayRef.current = setInterval(() => {
       setIdx((prev) => (prev + 1) % images.length);
     }, 3000);
 
-    return () => clearInterval(autoPlayRef.current);
-  }, [images.length]);
+    return () => {
+      if (autoPlayRef.current) {
+        clearInterval(autoPlayRef.current);
+        autoPlayRef.current = null;
+      }
+    };
+  }, [inView, images.length]);
 
   // ---------------------------------------
   // SWIPE HANDLING
   // ---------------------------------------
   const onTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
-    clearInterval(autoPlayRef.current);
+    if (autoPlayRef.current) {
+      clearInterval(autoPlayRef.current);
+      autoPlayRef.current = null;
+    }
   };
 
   const onTouchEnd = (e) => {
@@ -109,7 +147,8 @@ export default function ProductCard({ product, className = "" }) {
 
     touchStartX.current = null;
 
-    if (images.length > 1) {
+    // Resume autoplay only if card is still in view and has multiple images
+    if (inView && images.length > 1 && !autoPlayRef.current) {
       autoPlayRef.current = setInterval(() => {
         setIdx((prev) => (prev + 1) % images.length);
       }, 3000);
@@ -123,6 +162,7 @@ export default function ProductCard({ product, className = "" }) {
   // ---------------------------------------
   return (
     <div
+      ref={cardRef}
       className={`flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition shadow-sm overflow-hidden ${className}`}
     >
       {/* IMAGE SLIDER */}
@@ -133,14 +173,18 @@ export default function ProductCard({ product, className = "" }) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        <Image
-          src={images[idx].url}
-          alt={product.name}
-          fill
-          loading="lazy" // default for non-priority
-          decoding="async"
-          sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, (max-width:1280px) 25vw, 20vw"
-        />
+        {/* Only render Image when card is in view */}
+        {inView && (
+          <Image
+            loader={cloudinaryLoader}
+            src={images[idx].url}
+            alt={product.name}
+            fill
+            loading="lazy"
+            decoding="async"
+            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, (max-width:1280px) 25vw, 20vw"
+          />
+        )}
 
         {/* DOTS */}
         {images.length > 1 && (
