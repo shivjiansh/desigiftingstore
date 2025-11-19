@@ -420,7 +420,7 @@ export default function ProductDetails() {
       });
       const result = await response.json();
       if (result.success) {
-        log.info("user added product in wishlist "+ user.uid); //user uid
+        log.info("user added product in wishlist "+ user.uid.slice(0,5)); //user uid
         setIsWishlisted(!isWishlisted);
         notify.success(
           isWishlisted ? "Removed from wishlist" : "Added to wishlist"
