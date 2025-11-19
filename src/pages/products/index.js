@@ -51,6 +51,7 @@ export default function Products() {
     inStock: false,
     hasCustomization: false,
   });
+  const log = new useLogger();
 
   // SEO Dynamic Title and Description Generator
   const generateSEOContent = () => {
@@ -167,28 +168,26 @@ let description =
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log("Fetching All products from API...");
+      log.info("Fetching All products from API...");
       const response = await fetch("/api/products?all=true");
       if (response.ok) {
         const data = await response.json();
-        console.log("Fetched all products");
+        log.info("Fetched all products");
         setProducts(data.data?.results || []);
       } else {
         setProducts([]);
       }
     } catch (error) {
-      console.error("Error fetching products:", error);
+      log.error("Error fetching products:", error);
       setProducts([]);
     } finally {
-      console.log("Finished fetching products.");
+      log.info("Finished fetching products.");
       setLoading(false);
     }
   };
 
   const filterAndSortProducts = () => {
     let filtered = [...products];
-
-    console.log("Starting with products:", filtered.length);
 
     // Enhanced search functionality
     if (searchTerm.trim()) {
@@ -284,7 +283,7 @@ let description =
         break;
     }
 
-    console.log("Filtered and sorted products:", filtered.length);
+    log.info("Filtered and sorted products:", filtered.length);
     setFilteredProducts(filtered);
   };
 

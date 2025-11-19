@@ -169,6 +169,8 @@ export default function SellerRegister() {
         phone: formData.phone.trim(),
         isPhoneVerified: false,
         role: "seller",
+        logo: "",
+        banner: "",
 
         // Seller-specific fields
         businessInfo: {
@@ -194,8 +196,7 @@ export default function SellerRegister() {
             isBestSeller: false,
             isCustomerFav: false,
           },
-          logo: "",
-          banner: "",
+
           gstNumber: formData.gstNumber.trim(),
         },
 
