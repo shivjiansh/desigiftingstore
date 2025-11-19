@@ -9,6 +9,7 @@ import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import ProductCard from "../../components/ProductCard";
 import { notify } from "../../lib/notifications";
+import { useLogger } from "next-axiom";
 import {
   StarIcon,
   HeartIcon,
@@ -34,6 +35,7 @@ import {
 import { getAuth } from "firebase/auth";
 
 export default function ProductDetails() {
+  const log = new useLogger();
   const router = useRouter();
   const { uid } = router.query;
 
@@ -119,11 +121,9 @@ export default function ProductDetails() {
         const selected = product.variants[index];
         if (selected && selected.price) {
           const price = parseFloat(selected.price);
-          console.log(`✅ Variant ${index}: "${selected.name}" - ₹${price}`);
           return price;
         }
       }
-      console.warn("⚠️ Variant not found for:", selectedSet);
       return getMinPrice();
     }
 
@@ -169,6 +169,7 @@ export default function ProductDetails() {
           return;
         }
         const idToken = await user.getIdToken();
+        log.info("fetching wishlist ");
         const res = await fetch(`/api/user/wishlist?productId=${uid}`, {
           headers: {
             "Content-Type": "application/json",
@@ -181,7 +182,7 @@ export default function ProductDetails() {
           setIsWishlisted(result.data.isWishlisted);
         }
       } catch (err) {
-        console.error(err);
+        log.error(err);
       }
     }
     checkWishlist();
@@ -195,7 +196,7 @@ export default function ProductDetails() {
 
       if (productResult.success) {
         setProduct(productResult.data);
-
+        log.info('Product fetched '+uid.slice(0,5));
         const initialCustomizations = {};
         productResult.data.customizationOptions?.forEach((option) => {
           if (option.required) {
@@ -222,7 +223,7 @@ export default function ProductDetails() {
         router.push("/products");
       }
     } catch (error) {
-      console.error("Error loading product:", error);
+      log.error("Error loading product:", error);
       notify.error("Failed to load product");
       router.push("/products");
     } finally {
@@ -242,7 +243,7 @@ export default function ProductDetails() {
         setRelatedProducts(related.slice(0, 4));
       }
     } catch (error) {
-      console.error("Error loading related products:", error);
+      log.error("Error loading related products:", error);
     }
   };
 
@@ -286,7 +287,7 @@ export default function ProductDetails() {
       setCustomImages((prev) => [...prev, ...uploadedImages]);
       notify.success(`${uploadedImages.length} image(s) uploaded successfully`);
     } catch (error) {
-      console.error("Error uploading images:", error);
+      log.error("Error uploading images:", error);
       notify.error(error.message || "Failed to upload images");
     } finally {
       setUploadingImages(false);
@@ -396,13 +397,14 @@ export default function ProductDetails() {
       totalAmount: parseFloat(calculateTotalPrice()),
     };
 
-    console.log("Checkout Data:", checkoutData);
+    log.info("Checkout Data:", checkoutData);
     sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData));
     router.push("/checkout");
   };
 
   const toggleWishlist = async () => {
     if (!user) {
+      log.info("Random checkout tried");
       notify.error("Please login to add to wishlist");
       return;
     }
@@ -418,13 +420,14 @@ export default function ProductDetails() {
       });
       const result = await response.json();
       if (result.success) {
+        log.info("user added product in wishlist"+ user);
         setIsWishlisted(!isWishlisted);
         notify.success(
           isWishlisted ? "Removed from wishlist" : "Added to wishlist"
         );
       }
     } catch (error) {
-      console.error("Error updating wishlist:", error);
+      log.error("Error updating wishlist:", error);
       notify.error("Failed to update wishlist");
     }
   };
@@ -438,7 +441,7 @@ export default function ProductDetails() {
           url: window.location.href,
         });
       } catch (error) {
-        console.error("Error sharing:", error);
+        log.error("Error sharing:", error);
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
@@ -666,10 +669,7 @@ export default function ProductDetails() {
                           <button
                             key={variantId}
                             onClick={() => {
-                              console.log(
-                                `Variant ${index} clicked:`,
-                                variant.name
-                              );
+                              
                               setSelectedSet(variantId);
                               setQuantity(1);
                             }}
