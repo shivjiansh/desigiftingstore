@@ -196,7 +196,7 @@ export default function ProductDetails() {
 
       if (productResult.success) {
         setProduct(productResult.data);
-        log.info('Product fetched '+uid.slice(0,5));
+        log.info('Product fetched ');
         const initialCustomizations = {};
         productResult.data.customizationOptions?.forEach((option) => {
           if (option.required) {
@@ -420,7 +420,7 @@ export default function ProductDetails() {
       });
       const result = await response.json();
       if (result.success) {
-        log.info("user added product in wishlist"+ user);
+        log.info("user added product in wishlist "+ user.uid); //user uid
         setIsWishlisted(!isWishlisted);
         notify.success(
           isWishlisted ? "Removed from wishlist" : "Added to wishlist"

@@ -20,6 +20,7 @@ import {
   ChevronUpIcon,
   EnvelopeIcon,
 } from "@heroicons/react/24/outline";
+import { useLogger } from "next-axiom";
 
 function CustomizationsView({
   customImages = [],
@@ -86,6 +87,7 @@ function CustomizationsView({
 }
 
 export default function Checkout() {
+  const log = new useLogger();
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -131,7 +133,7 @@ export default function Checkout() {
       if (typeof window !== "undefined" && window.Razorpay) {
         setRazorpayLoaded(true);
       } else if (!razorpayLoaded) {
-        console.log("Razorpay script load timeout, checking manually...");
+        log.info("Razorpay script load timeout, checking manually...");
         if (typeof window !== "undefined" && window.Razorpay) {
           setRazorpayLoaded(true);
         }
@@ -159,7 +161,7 @@ export default function Checkout() {
       const data = JSON.parse(checkoutData);
       setOrderItems(data || []);
       setLoading(false);
-      console.log("******",data);
+      
       setCodData(data.items[0].cod);
      
      
@@ -183,7 +185,7 @@ export default function Checkout() {
         if (def) setSelectedAddressId(def.id);
       }
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
   }
 
@@ -283,16 +285,16 @@ export default function Checkout() {
 
       if (result.success) {
         setEmailStatus((prev) => ({ ...prev, buyer: "sent" }));
-        console.log("✅ Buyer confirmation email sent");
+        log.info("✅ Buyer confirmation email sent");
         return true;
       } else {
         setEmailStatus((prev) => ({ ...prev, buyer: "failed" }));
-        console.error("❌ Buyer email failed:", result.error);
+        log.error("❌ Buyer email failed:", result.error);
         return false;
       }
     } catch (error) {
       setEmailStatus((prev) => ({ ...prev, buyer: "failed" }));
-      console.error("❌ Buyer email service error:", error);
+      log.error("❌ Buyer email service error:", error);
       return false;
     }
   }
@@ -301,7 +303,6 @@ export default function Checkout() {
   async function sendSellerOrderAlert(orderData) {
     try {
       setEmailStatus((prev) => ({ ...prev, seller: "sending" }));
-      console.log("oder dat#########",orderData);
       const sellerEmailPayload = {
         sellerEmail: orderData.items?.[0]?.sellerEmail || "sellerEmail@example.com",
         sellerName: orderData.items?.[0]?.businessName || "Seller",
@@ -326,16 +327,16 @@ export default function Checkout() {
 
       if (result.success) {
         setEmailStatus((prev) => ({ ...prev, seller: "sent" }));
-        console.log("✅ Seller alert email sent");
+        log.info("✅ Seller alert email sent");
         return true;
       } else {
         setEmailStatus((prev) => ({ ...prev, seller: "failed" }));
-        console.error("❌ Seller email failed:", result.error);
+        log.error("❌ Seller email failed:", result.error);
         return false;
       }
     } catch (error) {
       setEmailStatus((prev) => ({ ...prev, seller: "failed" }));
-      console.error("❌ Seller email service error:", error);
+      log.error("❌ Seller email service error:", error);
       return false;
     }
   }
@@ -455,7 +456,7 @@ export default function Checkout() {
 
               if (orderResult.success) {
                 // 📧 Send emails after successful order creation
-                console.log("🎉 Order created successfully, sending emails...");
+                log.info("🎉 Order created successfully for user "+user.uid+" with details "+orderResult.data);
 
                 // Send emails in parallel (non-blocking)
                 Promise.allSettled([
@@ -543,7 +544,7 @@ export default function Checkout() {
 
       if (result.success) {
         // 📧 Send emails for COD order
-        console.log("🎉 COD Order created successfully, sending emails...");
+        log.info("🎉 COD Order created successfully, sending emails...");
 
         // Send emails in parallel
         Promise.allSettled([
@@ -566,7 +567,7 @@ export default function Checkout() {
         notify.error(result.error || "Order failed");
       }
     } catch (error) {
-      console.error("COD order error:", error);
+      log.error("COD order error:", error);
       notify.error("Order failed");
     }
   }
@@ -607,7 +608,7 @@ export default function Checkout() {
        
       };
 
-      console.log("Placing order with payload:", orderPayload);
+      log.info("Placing order with payload:", orderPayload);
 
       // Route to appropriate payment handler
       if (paymentMethod === "razorpay") {
