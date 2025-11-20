@@ -14,11 +14,7 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-console.log("Firebase config check:", {
-  apiKey: firebaseConfig.apiKey ? "Set" : "Missing",
-  projectId: firebaseConfig.projectId,
-  appId: firebaseConfig.appId,
-});
+
 
 // Safe initialization - prevents duplicate app error
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

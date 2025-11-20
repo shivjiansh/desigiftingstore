@@ -356,6 +356,10 @@ let description =
             content="Loading personalized gifts and custom products"
           />
           <meta name="robots" content="noindex, nofollow" />
+          <meta
+            name="google-site-verification"
+            content="ITLkXQqGM9n5geek51wmWh799vqLtPiMgKa1ygedtog"
+          />
         </Head>
         <div className="min-h-screen bg-gray-50">
           <div className="sticky top-0 z-50 bg-white">
@@ -927,6 +931,10 @@ let description =
               },
             }),
           }}
+        />
+        <meta
+          name="google-site-verification"
+          content="ITLkXQqGM9n5geek51wmWh799vqLtPiMgKa1ygedtog"
         />
       </Head>
 
