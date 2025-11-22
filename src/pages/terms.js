@@ -7,7 +7,13 @@ import Header from "../components/Header"; // Adjust if needed
 export default function BuyerTerms() {
   const today = new Date().toLocaleDateString();
   const router = useRouter();
-
+  function handleBack() {
+    if (window.history.length > 2) {
+      router.back();
+    } else {
+      router.push("/help");
+    }
+  }
                       
 
   return (
