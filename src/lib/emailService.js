@@ -162,7 +162,7 @@ class EmailService {
 
     const mailOptions = {
       to: customerEmail,
-      subject: `🎉 Order Confirmed - DesiGifting #${orderId.slice(0, 8)}`,
+      subject: `🎉 Order Confirmed - DesiGifting DG-${orderId.slice(0, 8)}`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -272,7 +272,7 @@ class EmailService {
               
               <div class="order-box">
                 <h3>📦 Order Details</h3>
-                <p><strong>Order ID:</strong> #${orderId}</p>
+                <p><strong>Order ID:</strong> DG-${orderId}</p>
                 <p><strong>Product:</strong> ${productName}</p>
                 <p><strong>Artisan Partner:</strong> ${sellerName}</p>
                 <p><strong>Personalization:</strong> ${
@@ -346,7 +346,7 @@ class EmailService {
 
     const mailOptions = {
       to: sellerEmail,
-      subject: `🎉 New Order Received - #${orderId}`,
+      subject: `🎉 New Order Received - DG-${orderId}`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -380,7 +380,7 @@ class EmailService {
               
               <div class="order-box">
                 <h3>📋 New Order Details</h3>
-                <p><strong>Order ID:</strong> #${orderId}</p>
+                <p><strong>Order ID:</strong> DG-${orderId}</p>
                 <p><strong>Customer:</strong> ${customerName}</p>
                 <p><strong>Product:</strong> ${productName}</p>
                 <p><strong>Customization Required:</strong> ${
@@ -563,7 +563,7 @@ class EmailService {
 
     const mailOptions = {
       to: customerEmail,
-      subject: `💰 Payment Confirmed - Order #${orderId}`,
+      subject: `💰 Payment Confirmed - Order DG-${orderId}`,
       html: `
         <!DOCTYPE html>
         <html lang="en">
@@ -586,7 +586,7 @@ class EmailService {
             </div>
             <div class="content">
               <p>Hi <strong>${customerName}</strong>,</p>
-              <p>We've successfully received your payment for order <strong>#${orderId}</strong>.</p>
+              <p>We've successfully received your payment for order <strong>DG-${orderId}</strong>.</p>
               
               <div class="payment-box">
                 <h3>💳 Payment Details</h3>

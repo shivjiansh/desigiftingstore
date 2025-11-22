@@ -1,8 +1,19 @@
 import Head from "next/head";
 import Link from "next/link";
+import Header from "../components/Header";
+import { useRouter } from "next/router";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 export default function SellerTerms() {
   const today = new Date().toLocaleDateString();
+    const router = useRouter();
+  function handleBack() {
+    if (window.history.length > 2) {
+      router.back();
+    } else {
+      router.push("/help");
+    }
+  }
 
   return (
     <>
@@ -23,11 +34,22 @@ export default function SellerTerms() {
           content="Legal terms for sellers on DesiGifting, including policies on listings, orders, fees, payouts, and dispute resolution."
         />
       </Head>
-
+      <Header />
       <main className="min-h-screen bg-gray-50">
         {/* Hero */}
         <section className="bg-white border-b">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2 flex items-center">
+            <button
+              type="button"
+              onClick={handleBack}
+              className="inline-flex items-center gap-2 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm border border-emerald-100 focus:outline-none"
+              aria-label="Back"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+              Back
+            </button>
+          </div>
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
             <div className="flex items-start justify-between gap-6">
               <div>
                 <p className="text-emerald-700 font-semibold">

@@ -63,7 +63,7 @@ export default function SellersPage() {
       setLoading(false);
     }
   };
-console.log("###### fetched seller",sellers);
+
   const filterSellers = () => {
     let filtered = sellers;
     if (searchTerm) {
@@ -317,7 +317,7 @@ console.log("###### fetched seller",sellers);
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-gray-100">
+                    {/* <div className="grid grid-cols-3 gap-4 mb-4 py-3 border-t border-gray-100">
                       <div className="text-center">
                         <div className="text-lg font-bold text-gray-900">
                           {seller.productCount || 0}
@@ -336,7 +336,7 @@ console.log("###### fetched seller",sellers);
                         </div>
                         <div className="text-xs text-gray-500">Years</div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Categories */}
 

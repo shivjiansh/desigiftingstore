@@ -410,7 +410,7 @@ const [sendingReply, setSendingReply] = useState(false);
                     {/* Left: Order summary */}
                     <div className="md:flex-1">
                       <p className="text-lg font-semibold text-gray-900 break-words">
-                        Order #{order.orderNumber || order.id.slice(0, 8)}
+                        Order DG-{order.orderNumber || order.id.slice(0, 8)}
                       </p>
 
                       <p className="mt-1 text-sm text-gray-700">
@@ -524,7 +524,7 @@ const [sendingReply, setSendingReply] = useState(false);
               <div className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                    Order #{" "}
+                    Order DG-{" "}
                     {selectedOrder.orderNumber || selectedOrder.id.slice(0, 8)}
                   </h2>
 

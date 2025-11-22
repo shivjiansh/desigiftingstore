@@ -71,7 +71,7 @@ export default function OrderSuccess() {
               </h1>
               <p className="text-gray-600 mb-4">
                 Your order{" "}
-                <span className="font-medium">#{orderId.slice(0, 8)}</span> is
+                <span className="font-medium">DG-{orderId.slice(0, 8)}</span> is
                 now <span className="font-medium">{order.status}</span>.
               </p>
               <div className="space-y-3 text-left mb-6">

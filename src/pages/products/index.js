@@ -41,7 +41,7 @@ export default function Products() {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(12);
+  const [productsPerPage] = useState(6);
 
   const [filters, setFilters] = useState({
     category: "",

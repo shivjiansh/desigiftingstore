@@ -502,7 +502,7 @@ export default function SellerDashboard() {
                       >
                         <div>
                           <p className="font-medium text-gray-900">
-                            #{order.id.slice(0, 8)}
+                            DG-{order.id.slice(0, 8)}
                           </p>
                           <p className="text-sm text-gray-600">
                             Customer: {order.customerName}

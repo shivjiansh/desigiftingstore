@@ -1,5 +1,6 @@
 import Head from "next/head";
 import Link from "next/link";
+import Header from "../components/Header";
 
 export default function PrivacyPolicy() {
   const today = new Date().toLocaleDateString();
@@ -20,10 +21,11 @@ export default function PrivacyPolicy() {
           content="Our practices for data collection, use, sharing, security, international transfers, and user rights."
         />
       </Head>
-
+      <Header/>
       <main className="min-h-screen bg-gray-50">
         {/* Hero */}
         <section className="bg-white border-b">
+          
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex items-start justify-between gap-6">
               <div>

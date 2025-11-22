@@ -202,7 +202,7 @@ export default function ProductCard({ product, className = "" }) {
 
         {/* OFFER BADGE */}
         {isOfferLive && (
-          <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-semibold px-2 py-1 rounded">
+          <div className="absolute top-2 left-2 bg-red-600/60 text-white text-[10px] font-semibold px-2 py-1 rounded">
             {product.offerPercentage}% OFF
           </div>
         )}
