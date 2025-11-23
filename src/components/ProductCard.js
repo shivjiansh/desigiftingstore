@@ -22,9 +22,9 @@ export default function ProductCard({ product, className = "" }) {
   // PREPARE IMAGES
   // ---------------------------------------
   const images =
-    product.images?.filter((i) => i.url).length > 0
-      ? product.images
-      : [{ url: "/images/placeholder.jpg" }];
+    product.images?.filter((i) => i.url).length > 0 ? product.images : [];
+
+  const hasImages = images.length > 0;
 
   // ---------------------------------------
   // PRICING HELPERS
@@ -85,7 +85,6 @@ export default function ProductCard({ product, className = "" }) {
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        // Card is considered "in view" if at least 50% is visible
         setInView(entry.isIntersecting && entry.intersectionRatio >= 0.5);
       },
       { root: null, rootMargin: "0px", threshold: [0, 0.5, 1] }
@@ -99,7 +98,6 @@ export default function ProductCard({ product, className = "" }) {
   // AUTO PLAY SLIDER (Only when in view & multiple images)
   // ---------------------------------------
   useEffect(() => {
-    // Stop autoplay if card is off-screen or only one image
     if (!inView || images.length <= 1) {
       if (autoPlayRef.current) {
         clearInterval(autoPlayRef.current);
@@ -108,7 +106,6 @@ export default function ProductCard({ product, className = "" }) {
       return;
     }
 
-    // Start autoplay when card is visible
     autoPlayRef.current = setInterval(() => {
       setIdx((prev) => (prev + 1) % images.length);
     }, 3000);
@@ -147,7 +144,6 @@ export default function ProductCard({ product, className = "" }) {
 
     touchStartX.current = null;
 
-    // Resume autoplay only if card is still in view and has multiple images
     if (inView && images.length > 1 && !autoPlayRef.current) {
       autoPlayRef.current = setInterval(() => {
         setIdx((prev) => (prev + 1) % images.length);
@@ -163,9 +159,9 @@ export default function ProductCard({ product, className = "" }) {
   return (
     <div
       ref={cardRef}
-      className={`flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition shadow-sm overflow-hidden ${className}`}
+      className={`flex flex-col bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden ${className}`}
     >
-      {/* IMAGE SLIDER */}
+      {/* IMAGE SLIDER OR PLACEHOLDER */}
       <div
         ref={sliderRef}
         className="relative w-full pb-[100%] bg-gray-100 cursor-pointer"
@@ -173,37 +169,168 @@ export default function ProductCard({ product, className = "" }) {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {/* Only render Image when card is in view */}
-        {inView && (
-          <Image
-            loader={cloudinaryLoader}
-            src={images[idx].url}
-            alt={product.name}
-            fill
-            loading="lazy"
-            decoding="async"
-            sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, (max-width:1280px) 25vw, 20vw"
-          />
-        )}
+        {hasImages && inView ? (
+          <>
+            {/* Actual Image when in view */}
+            <Image
+              loader={cloudinaryLoader}
+              src={images[idx].url}
+              alt={product.name}
+              fill
+              loading="lazy"
+              decoding="async"
+              sizes="(max-width:640px) 50vw, (max-width:1024px) 33vw, (max-width:1280px) 25vw, 20vw"
+              style={{ objectFit: "cover" }}
+            />
 
-        {/* DOTS */}
-        {images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1">
-            {images.map((_, i) => (
-              <span
-                key={i}
-                className={`w-2 h-2 rounded-full ${
-                  i === idx ? "bg-white" : "bg-white/40"
-                }`}
-              />
-            ))}
-          </div>
-        )}
+            {/* DOTS */}
+            {images.length > 1 && (
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1 z-10">
+                {images.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-2 h-2 rounded-full ${
+                      i === idx ? "bg-white" : "bg-white/40"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
 
-        {/* OFFER BADGE */}
-        {isOfferLive && (
-          <div className="absolute top-2 left-2 bg-red-600/60 text-white text-[10px] font-semibold px-2 py-1 rounded">
-            {product.offerPercentage}% OFF
+            {/* OFFER BADGE */}
+            {isOfferLive && (
+              <div className="absolute top-2 left-2 bg-red-600/80 text-white text-[10px] font-semibold px-2 py-1 rounded z-10">
+                {product.offerPercentage}% OFF
+              </div>
+            )}
+          </>
+        ) : (
+          // SVG LOADING ANIMATION (shown when not in view OR no images)
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 100 100"
+              preserveAspectRatio="xMidYMid"
+              width="80"
+              height="80"
+              style={{
+                shapeRendering: "auto",
+                display: "block",
+                background: "transparent",
+              }}
+            >
+              <g>
+                <circle fill="#e15b64" r="10" cy="50" cx="84">
+                  <animate
+                    begin="0s"
+                    keySplines="0 0.5 0.5 1"
+                    values="10;0"
+                    keyTimes="0;1"
+                    calcMode="spline"
+                    dur="0.4166666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="r"
+                  />
+                  <animate
+                    begin="0s"
+                    values="#e15b64;#abbd81;#f8b26a;#f47e60;#e15b64"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="discrete"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="fill"
+                  />
+                </circle>
+                <circle fill="#e15b64" r="10" cy="50" cx="16">
+                  <animate
+                    begin="0s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="0;0;10;10;10"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="r"
+                  />
+                  <animate
+                    begin="0s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="16;16;16;50;84"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="cx"
+                  />
+                </circle>
+                <circle fill="#f47e60" r="10" cy="50" cx="50">
+                  <animate
+                    begin="-0.4166666666666667s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="0;0;10;10;10"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="r"
+                  />
+                  <animate
+                    begin="-0.4166666666666667s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="16;16;16;50;84"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="cx"
+                  />
+                </circle>
+                <circle fill="#f8b26a" r="10" cy="50" cx="84">
+                  <animate
+                    begin="-0.8333333333333334s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="0;0;10;10;10"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="r"
+                  />
+                  <animate
+                    begin="-0.8333333333333334s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="16;16;16;50;84"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="cx"
+                  />
+                </circle>
+                <circle fill="#abbd81" r="10" cy="50" cx="16">
+                  <animate
+                    begin="-1.25s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="0;0;10;10;10"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="r"
+                  />
+                  <animate
+                    begin="-1.25s"
+                    keySplines="0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1;0 0.5 0.5 1"
+                    values="16;16;16;50;84"
+                    keyTimes="0;0.25;0.5;0.75;1"
+                    calcMode="spline"
+                    dur="1.6666666666666667s"
+                    repeatCount="indefinite"
+                    attributeName="cx"
+                  />
+                </circle>
+              </g>
+            </svg>
           </div>
         )}
       </div>

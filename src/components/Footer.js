@@ -16,17 +16,17 @@ import {
 const socials = [
   {
     name: "Instagram",
-    href: "https://instagram.com/yourbrand",
+    href: "https://instagram.com/desigifting",
     icon: "/icons/instagram.svg",
   },
   {
     name: "Facebook",
-    href: "https://facebook.com/yourbrand",
+    href: "https://facebook.com/desigifting",
     icon: "/icons/facebook.svg",
   },
   {
     name: "LinkedIn",
-    href: "https://linkedin.com/company/yourbrand",
+    href: "https://linkedin.com/company/desigifting",
     icon: "/icons/linkedin.svg",
   },
 ];
