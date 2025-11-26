@@ -7,6 +7,8 @@ import { useAuth } from "../../hooks/useAuth";
 import SellerLayout from "../../components/seller/SellerLayout";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { notify } from "../../lib/notifications";
+import { Disclosure } from "@headlessui/react";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import {
   BanknotesIcon,
   CreditCardIcon,
@@ -14,58 +16,80 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
   PlusIcon,
-  EyeIcon,
   CalendarIcon,
   InformationCircleIcon,
   ShieldCheckIcon,
   XMarkIcon,
-  TrendingUpIcon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  setDoc,
+} from "firebase/firestore";
 
 export default function SellerPayout() {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
-    const [showComingSoon, setShowComingSoon] = useState(true);
+  const db = getFirestore();
+  const [showAddMethod, setShowAddMethod] = useState(false);
+  const [addMethodType, setAddMethodType] = useState("bank");
+  const [addMethodLoading, setAddMethodLoading] = useState(false);
+  const [deletingMethodId, setDeletingMethodId] = useState(null);
+  const [settingActiveId, setSettingActiveId] = useState(null);
+  const [addFormFields, setAddFormFields] = useState({
+    bankName: "",
+    accountNumber: "",
+    ifsc: "",
+    accountHolderName: "",
+    upiId: "",
+  });
   const [payoutData, setPayoutData] = useState({
     currentWeekEarnings: 0,
     lastWeekPayout: 0,
+    lastPayoutDate: null,
     totalEarned: 0,
     payoutMethods: [],
     recentPayouts: [],
     dailyBreakdown: [],
     nextPayoutDate: null,
     daysUntilPayout: 0,
+    weeklyStats: { totalOrders: 0 },
+    totalSales: 0,
+    cod: 0,
+    totalOrders: 0,
+    online: 0,
   });
-  const [showAddMethod, setShowAddMethod] = useState(false);
   const router = useRouter();
 
-  // Get current week dates (Monday to Sunday)
+  // Get current week dates (Sunday to Saturday)
   const getCurrentWeekDates = () => {
     const today = new Date();
     const currentDay = today.getDay();
-    const mondayDate = new Date(today);
-
-    // Adjust to get Monday (0 = Sunday, 1 = Monday, etc.)
-    const daysFromMonday = currentDay === 0 ? 6 : currentDay - 1;
-    mondayDate.setDate(today.getDate() - daysFromMonday);
+    const sundayDate = new Date(today);
+    sundayDate.setDate(today.getDate() - currentDay);
 
     const weekDates = [];
     const dayNames = [
+      "Sunday",
       "Monday",
       "Tuesday",
       "Wednesday",
       "Thursday",
       "Friday",
       "Saturday",
-      "Sunday",
     ];
 
     for (let i = 0; i < 7; i++) {
-      const date = new Date(mondayDate);
-      date.setDate(mondayDate.getDate() + i);
+      const date = new Date(sundayDate);
+      date.setDate(sundayDate.getDate() + i);
       weekDates.push({
-        day: dayNames[i],
-        date: date,
+        dayIndex: i,
+        dayName: dayNames[i],
+        date,
         dateString: date.toLocaleDateString("en-IN", {
           month: "short",
           day: "numeric",
@@ -75,188 +99,233 @@ export default function SellerPayout() {
         isFuture: date > today,
       });
     }
-
     return weekDates;
   };
 
-  // Calculate next Sunday
-  const getNextSunday = () => {
+  const getNextFriday = () => {
     const today = new Date();
-    const nextSunday = new Date(today);
-    nextSunday.setDate(today.getDate() + (7 - today.getDay()));
-    nextSunday.setHours(10, 0, 0, 0);
-    return nextSunday;
+    const nextFriday = new Date(today);
+    const dayOfWeek = today.getDay();
+    let diff = (5 - dayOfWeek + 7) % 7;
+    if (diff === 0 && today.getHours() >= 18) diff = 7;
+    nextFriday.setDate(today.getDate() + diff);
+    nextFriday.setHours(18, 0, 0, 0);
+    return nextFriday;
   };
 
-  const getDaysUntilSunday = () => {
+  const getDaysUntilFriday = () => {
     const today = new Date();
-    const nextSunday = getNextSunday();
-    const diffTime = nextSunday - today;
+    const nextFriday = getNextFriday();
+    const diffTime = nextFriday - today;
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
   useEffect(() => {
     if (!authLoading) {
-      if (!isAuthenticated) {
+      if (!isAuthenticated || !user?.role || user.role !== "seller") {
         router.push("/seller/auth/login");
         return;
       }
-      if (!user?.role || user.role !== "seller") {
-        router.push("/seller/auth/login");
-        return;
+      if (user?.uid) {
+        fetchPayoutData(user.uid);
       }
-      fetchPayoutData();
     }
   }, [authLoading, isAuthenticated, user, router]);
 
-
-
-  const fetchPayoutData = async () => {
+  const fetchPayoutData = async (sellerId) => {
     try {
       setLoading(true);
+      const paymentDocRef = doc(db, "payments", sellerId);
+      const paymentDocSnap = await getDoc(paymentDocRef);
+
+      if (!paymentDocSnap.exists()) {
+        throw new Error("Payment data not found for seller: " + sellerId);
+      }
+
+      const paymentData = paymentDocSnap.data();
+      const dailyStats = paymentData.dailyStats || [];
+      const totalSales = paymentData.totalSales || 0;
+      const cod = paymentData.cod || 0;
 
       const weekDates = getCurrentWeekDates();
 
-      // Mock daily earnings data
-      const mockDailyBreakdown = weekDates.map((day, index) => {
-        let earnings = 0;
-        let orders = 0;
-        let views = 0;
-
-        // Generate realistic data based on day
-        if (day.isPast || day.isToday) {
-          // Past days have actual earnings
-          if (day.day === "Monday") {
-            earnings = 450.75;
-            orders = 3;
-            views = 28;
-          } else if (day.day === "Tuesday") {
-            earnings = 620.5;
-            orders = 4;
-            views = 35;
-          } else if (day.day === "Wednesday") {
-            earnings = 380.25;
-            orders = 2;
-            views = 22;
-          } else if (day.day === "Thursday") {
-            earnings = 890.0;
-            orders = 6;
-            views = 42;
-          } else if (day.day === "Friday") {
-            earnings = 1250.75;
-            orders = 8;
-            views = 58;
-          } else if (day.day === "Saturday" && day.isPast) {
-            earnings = 720.5;
-            orders = 5;
-            views = 38;
-          } else if (day.day === "Sunday" && day.isPast) {
-            earnings = 560.25;
-            orders = 4;
-            views = 31;
-          } else if (day.isToday) {
-            // Today's partial earnings
-            const hour = new Date().getHours();
-            const progressRatio = hour / 24;
-            earnings = Math.round(450 * progressRatio * 100) / 100;
-            orders = Math.floor(3 * progressRatio);
-            views = Math.floor(30 * progressRatio);
-          }
-        }
+      const payoutDailyBreakdown = weekDates.map((day) => {
+        const dayStat = dailyStats.find((ds) => ds.day === day.dayIndex) || {
+          orders: [],
+          sales: 0,
+        };
+        const earnings = dayStat.sales || 0;
+        const orders = dayStat.orders.length || 0;
 
         return {
           ...day,
           earnings,
           orders,
-          views,
-          netEarnings: earnings * 0.9, // After 10% platform fee
+          netEarnings: earnings * 0.95,
         };
       });
 
-      const totalWeekEarnings = mockDailyBreakdown.reduce(
-        (sum, day) => sum + day.netEarnings,
-        0
-      );
-
-
-      const mockData = {
-        currentWeekEarnings: totalWeekEarnings,
-        lastWeekPayout: 2450.75,
-        totalEarned: 15670.5,
-        nextPayoutDate: getNextSunday(),
-        daysUntilPayout: getDaysUntilSunday(),
-        dailyBreakdown: mockDailyBreakdown,
+      setPayoutData({
+        sellerId,
+        currentWeekEarnings: totalSales * 0.95,
+        lastWeekPayout: 0,
+        lastPayoutDate: null,
+        totalEarned: totalSales,
+        nextPayoutDate: getNextFriday(),
+        daysUntilPayout: getDaysUntilFriday(),
+        dailyBreakdown: payoutDailyBreakdown,
+        payoutMethods: paymentData.payoutMethods || [],
+        recentPayouts: paymentData.paymentHistory || [],
+        codAmount: cod,
+        totalSales,
+        cod,
+        totalOrders: payoutDailyBreakdown.reduce((sum, d) => sum + d.orders, 0),
+        online: totalSales - cod,
         weeklyStats: {
-          totalOrders: mockDailyBreakdown.reduce(
-            (sum, day) => sum + day.orders,
+          totalOrders: payoutDailyBreakdown.reduce(
+            (sum, d) => sum + d.orders,
             0
           ),
-          totalViews: mockDailyBreakdown.reduce(
-            (sum, day) => sum + day.views,
-            0
-          ),
-          avgOrderValue:
-            totalWeekEarnings > 0
-              ? (totalWeekEarnings /
-                  mockDailyBreakdown.reduce(
-                    (sum, day) => sum + day.orders,
-                    0
-                  )) *
-                1.11
-              : 0, // Gross AOV
         },
-        payoutMethods: [
-          {
-            id: "1",
-            type: "bank",
-            accountNumber: "**** **** 1234",
-            bankName: "State Bank of India",
-            isDefault: true,
-          },
-          {
-            id: "2",
-            type: "upi",
-            upiId: "seller@paytm",
-            isDefault: false,
-          },
-        ],
-        recentPayouts: [
-          {
-            id: "p1",
-            amount: 2450.75,
-            status: "completed",
-            date: "2025-08-25",
-            method: "Bank Transfer",
-            transactionId: "WEEKLY_240825_001",
-            weekEnding: "Week ending Aug 25, 2025",
-            dailyBreakdown: [
-              { day: "Mon", earnings: 420.5 },
-              { day: "Tue", earnings: 380.25 },
-              { day: "Wed", earnings: 510.75 },
-              { day: "Thu", earnings: 290.0 },
-              { day: "Fri", earnings: 450.25 },
-              { day: "Sat", earnings: 250.0 },
-              { day: "Sun", earnings: 149.0 },
-            ],
-          },
-          {
-            id: "p2",
-            amount: 1890.5,
-            status: "completed",
-            date: "2025-08-18",
-            method: "Bank Transfer",
-            transactionId: "WEEKLY_240818_001",
-            weekEnding: "Week ending Aug 18, 2025",
-          },
-        ],
-      };
-
-      setPayoutData(mockData);
+      });
     } catch (error) {
       console.error("Error fetching payout data:", error);
-      notify.error("Failed to load payout data");
+      notify.error("Failed to load payout data",{ duration: 3000 });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Submit Add Payment Method
+  const submitAddPaymentMethod = async (e) => {
+    e.preventDefault();
+    if (!user?.uid) return;
+
+    if (
+      addMethodType === "bank" &&
+      (!addFormFields.bankName ||
+        !addFormFields.accountNumber ||
+        !addFormFields.ifsc ||
+        !addFormFields.accountHolderName)
+    ) {
+      notify.error("Please fill all bank details.");
+      return;
+    }
+    if (addMethodType === "upi" && !addFormFields.upiId) {
+      notify.error("Please enter UPI ID.");
+      return;
+    }
+
+    setAddMethodLoading(true);
+
+    const newMethod = {
+      id: Date.now().toString(),
+      type: addMethodType,
+      isDefault: payoutData.payoutMethods.length === 0,
+      createdAt: new Date().toISOString(),
+      ...(addMethodType === "bank"
+        ? {
+            bankName: addFormFields.bankName,
+            accountNumber: addFormFields.accountNumber,
+            ifsc: addFormFields.ifsc.toUpperCase(),
+            accountHolderName: addFormFields.accountHolderName,
+          }
+        : {
+            upiId: addFormFields.upiId,
+          }),
+    };
+
+    try {
+      const paymentDocRef = doc(db, "payments", user.uid);
+      await updateDoc(paymentDocRef, {
+        payoutMethods: arrayUnion(newMethod),
+      });
+
+      notify.success("Payout method added successfully!");
+      setShowAddMethod(false);
+      setAddFormFields({
+        bankName: "",
+        accountNumber: "",
+        ifsc: "",
+        accountHolderName: "",
+        upiId: "",
+      });
+      fetchPayoutData(user.uid);
+    } catch (err) {
+      console.error(err);
+      notify.error("Could not add payout method. Please try again.");
+    } finally {
+      setAddMethodLoading(false);
+    }
+  };
+
+  // Set Active Payment Method
+  const setActivePaymentMethod = async (methodId) => {
+    if (!user?.uid) return;
+    setSettingActiveId(methodId);
+
+    try {
+      const paymentDocRef = doc(db, "payments", user.uid);
+      const updatedMethods = payoutData.payoutMethods.map((method) => ({
+        ...method,
+        isDefault: method.id === methodId,
+      }));
+
+      await updateDoc(paymentDocRef, {
+        payoutMethods: updatedMethods,
+      });
+
+      notify.success("Active payout method updated!");
+      fetchPayoutData(user.uid);
+    } catch (err) {
+      console.error(err);
+      notify.error("Could not set active method. Please try again.");
+    } finally {
+      setSettingActiveId(null);
+    }
+  };
+
+  // Delete Payment Method
+  const deletePaymentMethod = async (methodId) => {
+    if (!user?.uid) return;
+
+    const methodToDelete = payoutData.payoutMethods.find(
+      (m) => m.id === methodId
+    );
+    if (methodToDelete?.isDefault && payoutData.payoutMethods.length > 1) {
+      notify.error(
+        "Cannot delete active method. Please set another method as active first."
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this payout method? This action cannot be undone."
+      )
+    ) {
+      return;
+    }
+
+    setDeletingMethodId(methodId);
+
+    try {
+      const paymentDocRef = doc(db, "payments", user.uid);
+      const updatedMethods = payoutData.payoutMethods.filter(
+        (method) => method.id !== methodId
+      );
+
+      await updateDoc(paymentDocRef, {
+        payoutMethods: updatedMethods,
+      });
+
+      notify.success("Payout method deleted successfully!");
+      fetchPayoutData(user.uid);
+    } catch (err) {
+      console.error(err);
+      notify.error("Could not delete payout method. Please try again.");
+    } finally {
+      setDeletingMethodId(null);
     }
   };
 
@@ -296,9 +365,7 @@ export default function SellerPayout() {
     );
   }
 
-  if (!isAuthenticated || !user || user.role !== "seller") {
-    return null;
-  }
+  if (!isAuthenticated || !user || user.role !== "seller") return null;
 
   return (
     <>
@@ -315,13 +382,9 @@ export default function SellerPayout() {
                 Weekly Payouts
               </h1>
               <p className="text-gray-600 mt-1">
-                Automatic payouts every Sunday at 10 AM
+                Automatic payouts every Friday at 11:50 PM
               </p>
             </div>
-            <Link href="/seller/payout-info" className="btn btn-outline btn-sm">
-              <InformationCircleIcon className="w-4 h-4 mr-2" />
-              How It Works
-            </Link>
           </div>
 
           {/* Weekly Payout Schedule Banner */}
@@ -342,12 +405,14 @@ export default function SellerPayout() {
                       month: "long",
                       day: "numeric",
                     })}{" "}
-                    at 10:00 AM
+                    at 11:50 PM
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">This Week's Earnings</p>
+                <p className="text-sm text-gray-600">
+                  This Week&apos;s Earnings
+                </p>
                 <p className="text-2xl font-bold text-green-600">
                   ₹{payoutData.currentWeekEarnings.toLocaleString()}
                 </p>
@@ -357,9 +422,9 @@ export default function SellerPayout() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-green-200">
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-900">
-                  {payoutData.daysUntilPayout}
+                  ₹{payoutData.totalSales.toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-600">Days until payout</div>
+                <div className="text-xs text-gray-600">Gross Sales</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-900">
@@ -369,215 +434,132 @@ export default function SellerPayout() {
               </div>
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-900">
-                  ₹
-                  {(
-                    payoutData.weeklyStats?.avgOrderValue || 0
-                  ).toLocaleString()}
+                  ₹{payoutData.online.toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-600">Avg order value</div>
+                <div className="text-xs text-gray-600">Digital Transactions</div>
               </div>
               <div className="text-center">
                 <div className="text-lg font-semibold text-gray-900">
-                  ₹{payoutData.lastWeekPayout.toLocaleString()}
+                  ₹{payoutData.cod.toLocaleString()}
                 </div>
-                <div className="text-xs text-gray-600">Last payout</div>
+                <div className="text-xs text-gray-600">COD Transactions</div>
               </div>
             </div>
           </div>
 
           {/* Daily Breakdown */}
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex justify-between items-center">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <h2 className="text-lg font-semibold text-gray-900">
-                  This Week's Daily Breakdown
+                  This Week&apos;s Daily Breakdown
                 </h2>
-                <span className="text-sm text-gray-500">Monday - Sunday</span>
+                <span className="text-sm text-gray-500">Sunday - Saturday</span>
               </div>
             </div>
 
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                {payoutData.dailyBreakdown.map((day, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      day.isToday
-                        ? "border-blue-300 bg-blue-50"
-                        : day.isPast
-                        ? "border-green-200 bg-green-50"
-                        : "border-gray-200 bg-gray-50"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <div className="flex items-center justify-center mb-2">
-                        <div
-                          className={`text-sm font-medium ${
-                            day.isToday
-                              ? "text-blue-700"
-                              : day.isPast
-                              ? "text-green-700"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {day.day}
-                        </div>
-                        {day.isToday && (
-                          <div className="ml-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        )}
-                      </div>
+            {!payoutData?.dailyBreakdown ||
+            payoutData.dailyBreakdown.length === 0 ? (
+              <div className="p-4 sm:p-6">
+                <div className="text-center py-6 text-gray-600 text-sm italic">
+                  <ul class="list-disc list-inside">
+                    <li>
+                      Promote your store regularly to increase visibility.
+                    </li>
+                    <li>
+                      Run timely offers to attract buyers and boost sales.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 sm:p-6">
+                <div className="space-y-3">
+                  {payoutData.dailyBreakdown.map((day, index) => {
+                    const grossSales = day.earnings;
+                    const platformFee = grossSales * 0.05;
+                    const netEarnings = day.netEarnings;
 
-                      <div className="text-xs text-gray-500 mb-2">
-                        {day.dateString}
-                      </div>
-
-                      {day.isPast || day.isToday ? (
-                        <>
-                          <div
-                            className={`text-lg font-bold mb-1 ${
-                              day.isToday ? "text-blue-700" : "text-green-700"
-                            }`}
-                          >
-                            ₹{day.netEarnings.toLocaleString()}
+                    return (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          day.isToday
+                            ? "border-blue-300 bg-blue-50"
+                            : day.isPast
+                            ? "border-green-200 bg-white"
+                            : "border-gray-200 bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <span
+                              className={`text-base font-semibold ${
+                                day.isToday
+                                  ? "text-blue-700"
+                                  : day.isPast
+                                  ? "text-gray-900"
+                                  : "text-gray-400"
+                              }`}
+                            >
+                              {day.dayName}
+                            </span>
+                            {day.isToday && (
+                              <span className="ml-2 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+                            )}
+                            <span className="ml-2 text-sm text-gray-500">
+                              {day.dateString}
+                            </span>
                           </div>
 
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Orders:</span>
-                              <span className="font-medium">{day.orders}</span>
-                            </div>
-                            <div className="flex justify-between text-xs">
-                              <span className="text-gray-600">Views:</span>
-                              <span className="font-medium">{day.views}</span>
-                            </div>
-                            {day.orders > 0 && (
-                              <div className="flex justify-between text-xs">
-                                <span className="text-gray-600">AOV:</span>
-                                <span className="font-medium">
-                                  ₹
-                                  {Math.round(
-                                    (day.earnings / day.orders) * 1.11
-                                  )}
-                                </span>
-                              </div>
+                          <div>
+                            {day.isToday ? (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full mr-1.5 animate-pulse"></span>
+                                Live
+                              </span>
+                            ) : day.isPast ? (
+                              <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                            ) : (
+                              <ClockIcon className="w-5 h-5 text-gray-300" />
                             )}
                           </div>
-
-                          {day.isToday && (
-                            <div className="mt-2 px-2 py-1 bg-blue-100 rounded text-xs text-blue-700 font-medium">
-                              Live
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="text-gray-400">
-                          <ClockIcon className="w-6 h-6 mx-auto mb-2" />
-                          <div className="text-xs">Pending</div>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Week Summary */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-700">
-                      ₹{payoutData.currentWeekEarnings.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-green-600 font-medium">
-                      Net Earnings
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      After 10% platform fee
-                    </div>
-                  </div>
-
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-700">
-                      {payoutData.weeklyStats?.totalOrders || 0}
-                    </div>
-                    <div className="text-sm text-blue-600 font-medium">
-                      Total Orders
-                    </div>
-                    <div className="text-xs text-gray-500">This week</div>
-                  </div>
-
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-700">
-                      {payoutData.weeklyStats?.totalViews || 0}
-                    </div>
-                    <div className="text-sm text-purple-600 font-medium">
-                      Total Views
-                    </div>
-                    <div className="text-xs text-gray-500">Product views</div>
-                  </div>
-
-                  <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-700">
-                      {payoutData.weeklyStats?.totalOrders > 0
-                        ? `${(
-                            (payoutData.weeklyStats.totalOrders /
-                              payoutData.weeklyStats.totalViews) *
-                            100
-                          ).toFixed(1)}%`
-                        : "0%"}
-                    </div>
-                    <div className="text-sm text-yellow-600 font-medium">
-                      Conversion
-                    </div>
-                    <div className="text-xs text-gray-500">Orders / Views</div>
-                  </div>
+                        {day.isPast || day.isToday ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                              <div className="text-base font-semibold text-gray-900">
+                                {day.orders}
+                              </div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Orders
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-base font-semibold text-gray-900">
+                                ₹{grossSales.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-500 mb-1">
+                                Sales
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center py-4 text-gray-400">
+                            <ClockIcon className="w-5 h-5 mr-2" />
+                            <span className="text-sm">Pending</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* How Weekly Payouts Work */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="flex items-start">
-              <InformationCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
-              <div>
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">
-                  How Weekly Payouts Work
-                </h3>
-                <div className="text-blue-800 text-sm space-y-1">
-                  <p>
-                    • <strong>Monday-Sunday:</strong> Your daily earnings
-                    accumulate automatically
-                  </p>
-                  <p>
-                    • <strong>Every Sunday at 10 AM:</strong> Automatic payout
-                    to your bank account
-                  </p>
-                  <p>
-                    • <strong>No action needed:</strong> Your earnings are
-                    calculated and paid automatically
-                  </p>
-                  <p>
-                    • <strong>Platform fee:</strong> 10% deducted from gross
-                    sales (you keep 90%)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Trust Signals */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center mb-2">
-              <ShieldCheckIcon className="w-5 h-5 text-green-500 mr-2" />
-              <span className="font-medium text-gray-900">
-                Secure & Reliable Payouts
-              </span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600">
-              <div>• ₹10+ Crores paid</div>
-              <div>• 99.9% success rate</div>
-              <div>• Bank-grade security</div>
-              <div>• 24/7 support</div>
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3"></div>
             </div>
           </div>
 
@@ -590,9 +572,9 @@ export default function SellerPayout() {
                 </h2>
                 <button
                   onClick={() => setShowAddMethod(true)}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary btn-sm flex items-center gap-1"
                 >
-                  <PlusIcon className="w-4 h-4 mr-2" />
+                  <PlusIcon className="w-4 h-4" />
                   Add Method
                 </button>
               </div>
@@ -618,10 +600,10 @@ export default function SellerPayout() {
                   {payoutData.payoutMethods.map((method) => (
                     <div
                       key={method.id}
-                      className="p-4 border rounded-lg bg-gray-50"
+                      className="p-4 border rounded-lg bg-gray-50 hover:bg-gray-100 transition"
                     >
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center">
+                        <div className="flex items-center flex-1">
                           <div className="p-2 bg-white rounded-lg">
                             {method.type === "bank" ? (
                               <BanknotesIcon className="w-5 h-5 text-gray-600" />
@@ -629,7 +611,7 @@ export default function SellerPayout() {
                               <CreditCardIcon className="w-5 h-5 text-gray-600" />
                             )}
                           </div>
-                          <div className="ml-3">
+                          <div className="ml-3 flex-1">
                             <p className="font-medium text-gray-900">
                               {method.type === "bank"
                                 ? method.bankName
@@ -637,17 +619,48 @@ export default function SellerPayout() {
                             </p>
                             <p className="text-sm text-gray-600">
                               {method.type === "bank"
-                                ? method.accountNumber
+                                ? `****${method.accountNumber?.slice(-4)}`
                                 : method.upiId}
                             </p>
+                            {method.type === "bank" && (
+                              <p className="text-xs text-gray-500">
+                                IFSC: {method.ifsc}
+                              </p>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          {method.isDefault && (
-                            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
+
+                        <div className="flex items-center gap-2">
+                          {method.isDefault ? (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
                               Active
                             </span>
+                          ) : (
+                            <button
+                              onClick={() => setActivePaymentMethod(method.id)}
+                              disabled={settingActiveId === method.id}
+                              className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-medium rounded-full transition disabled:opacity-50"
+                            >
+                              {settingActiveId === method.id ? (
+                                <LoadingSpinner size="xs" />
+                              ) : (
+                                "Set Active"
+                              )}
+                            </button>
                           )}
+
+                          <button
+                            onClick={() => deletePaymentMethod(method.id)}
+                            disabled={deletingMethodId === method.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
+                            title="Delete payment method"
+                          >
+                            {deletingMethodId === method.id ? (
+                              <LoadingSpinner size="xs" />
+                            ) : (
+                              <TrashIcon className="w-5 h-5" />
+                            )}
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -661,255 +674,353 @@ export default function SellerPayout() {
             </div>
           </div>
 
-          {/* Recent Payouts */}
+          {/* Recent Payouts - Payout History */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                Recent Weekly Payouts
+                Payout History
               </h2>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Period
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Daily Breakdown
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {payoutData.recentPayouts.map((payout) => (
-                    <tr key={payout.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          ₹{payout.amount.toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          {getStatusIcon(payout.status)}
-                          <span
-                            className={`ml-2 px-2 py-1 text-xs font-medium rounded ${getStatusColor(
-                              payout.status
-                            )}`}
-                          >
-                            {payout.status.charAt(0).toUpperCase() +
-                              payout.status.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {payout.weekEnding}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(payout.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {payout.dailyBreakdown ? (
-                          <div className="flex space-x-1">
-                            {payout.dailyBreakdown.map((day, index) => (
-                              <div
-                                key={index}
-                                className="text-xs bg-gray-100 rounded px-1 py-0.5"
-                                title={`${day.day}: ₹${day.earnings}`}
-                              >
-                                ₹{Math.round(day.earnings)}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 flex items-center">
-                          <EyeIcon className="w-4 h-4 mr-1" />
-                          View
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {payoutData.recentPayouts.length === 0 && (
+            {payoutData.recentPayouts.length === 0 ? (
               <div className="text-center py-8">
                 <ClockIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">No payouts yet</p>
                 <p className="text-sm text-gray-400">
-                  Your first payout will appear here after your first week of
+                  Your payout history will appear here after your first week of
                   sales
                 </p>
               </div>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {payoutData.recentPayouts.map((payout, i) => (
+                  <Disclosure
+                    key={payout.id || i}
+                    as="li"
+                    defaultOpen={i === 0}
+                  >
+                    {({ open }) => (
+                      <>
+                        <Disclosure.Button className="flex w-full items-center justify-between px-6 py-4 hover:bg-gray-50 transition">
+                          <div>
+                            <div className="text-sm font-bold text-gray-900">
+                              {new Date(
+                                payout.date || payout.createdAt
+                              ).toLocaleDateString("en-IN")}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {payout.weekEnding || payout.periodEnd}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-green-600 font-semibold text-lg">
+                              ₹
+                              {(
+                                payout.amount ||
+                                payout.earnings ||
+                                0
+                              ).toLocaleString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              {getStatusIcon(payout.status)}
+                              <span
+                                className={`ml-1 px-2 py-0.5 rounded text-xs font-medium ${getStatusColor(
+                                  payout.status
+                                )}`}
+                              >
+                                {(payout.status || "pending")
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                  (payout.status || "pending").slice(1)}
+                              </span>
+                            </span>
+                            <ChevronDownIcon
+                              className={`w-5 h-5 transition-transform duration-200 ${
+                                open ? "rotate-180" : ""
+                              }`}
+                            />
+                          </div>
+                        </Disclosure.Button>
+
+                        <Disclosure.Panel className="bg-gray-50 px-6 py-4 text-sm text-gray-700 space-y-2">
+                          <div>
+                            <strong>Transaction ID:</strong>{" "}
+                            {payout.transactionId || "N/A"}
+                          </div>
+                          <div>
+                            <strong>Payout Method:</strong>{" "}
+                            {payout.method || "Bank Transfer"}
+                          </div>
+                          <div>
+                            <strong>COD Transactions:</strong> ₹
+                            {payout.codAmount || 0}
+                          </div>
+                          <div>
+                            <strong>Digital Transactions:</strong> ₹
+                            {payout.totalSales - payout.codAmount || 0}
+                          </div>
+                          <div>
+                            <strong>Total Sales:</strong> ₹
+                            {(payout.totalSales || 0).toLocaleString()}
+                          </div>
+                          <div>
+                            <strong>Platform Fee (5%):</strong> ₹
+                            {(payout.platformFee || 0).toLocaleString()}
+                          </div>
+                          <div>
+                            <strong>Your Earnings:</strong> ₹
+                            {(
+                              payout.earnings ||
+                              payout.amount ||
+                              0
+                            ).toLocaleString()}
+                          </div>
+                          <div>
+                            <strong>Your Payout:</strong> ₹
+                            {(
+                              payout.earnings - payout.codAmount || 0
+                            ).toLocaleString()}
+                          </div>
+                          {payout.remarks && (
+                            <div>
+                              <strong>Remarks:</strong> {payout.remarks}
+                            </div>
+                          )}
+                        </Disclosure.Panel>
+                      </>
+                    )}
+                  </Disclosure>
+                ))}
+              </ul>
             )}
+          </div>
+
+          {/* How Weekly Payouts Work */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <div className="flex items-start">
+              <InformationCircleIcon className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">
+                  How Weekly Payouts Work
+                </h3>
+                <div className="text-blue-800 text-sm space-y-1">
+                  <p>
+                    • <strong>Saturday-Friday:</strong> Your daily earnings
+                    accumulate automatically
+                  </p>
+                  <p>
+                    • <strong>Every Friday at 11:50 PM:</strong> Automatic
+                    payout to your active bank account
+                  </p>
+                  <p>
+                    • <strong>No action needed:</strong> Your earnings are
+                    calculated and paid automatically
+                  </p>
+                  <p>
+                    • <strong>Platform fee:</strong> 5% deducted from gross
+                    sales (you keep 95%)
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Add Payment Method Modal */}
         {showAddMethod && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-lg font-semibold mb-4">Add Payout Method</h3>
-              <p className="text-gray-600 text-sm mb-4">
-                Add your bank account details to receive weekly payouts
-                automatically.
-              </p>
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  onClick={() => setShowAddMethod(false)}
-                  className="btn btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button className="btn btn-primary">Add Method</button>
-              </div>
-            </div>
-          </div>
-        )}
-        {showComingSoon && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="relative bg-gradient-to-br from-white via-amber-50/30 to-orange-50/30 backdrop-blur-sm rounded-2xl max-w-md w-full p-8 shadow-2xl mx-4 border border-amber-200/50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
               <button
-                onClick={() => router.back()}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-700"
+                onClick={() => {
+                  setShowAddMethod(false);
+                  setAddFormFields({
+                    bankName: "",
+                    accountNumber: "",
+                    ifsc: "",
+                    accountHolderName: "",
+                    upiId: "",
+                  });
+                }}
+                aria-label="Close"
+                disabled={addMethodLoading}
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
 
-              {/* Anniversary Badge */}
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-1 rounded-full text-xs font-semibold shadow-lg">
-                  🎉 ANNIVERSARY FEATURE
-                </div>
-              </div>
+              <h3 className="text-lg font-semibold mb-4">Add Payout Method</h3>
 
-              {/* Icon */}
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-100 to-blue-100 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-                <svg
-                  className="w-10 h-10 text-emerald-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-
-              {/* Main Content */}
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  Enhanced Payout Dashboard
-                  <span className="block text-lg text-amber-600 font-semibold mt-1">
-                    Coming This Anniversary!
-                  </span>
-                </h3>
-
-                <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                  As part of our{" "}
-                  <strong className="text-amber-700">
-                    1st Anniversary celebration
-                  </strong>
-                  , we're launching an advanced payout management system with
-                  real-time tracking, instant transfers, and detailed earning
-                  analytics.
-                </p>
-
-                {/* Feature Preview */}
-                <div className="bg-white/80 rounded-lg p-4 mb-4 border border-amber-200/50">
-                  <h4 className="font-semibold text-gray-800 mb-2 text-sm">
-                    🚀 What's Coming:
-                  </h4>
-                  <ul className="text-xs text-gray-600 space-y-1 text-left">
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      <span>Instant payout processing & real-time status</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      <span>Multiple payment methods (UPI, Bank, Wallet)</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      <span>Detailed earning breakdowns & tax reports</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      <span>Anniversary milestone bonus tracking</span>
-                    </li>
-                  </ul>
+              <form onSubmit={submitAddPaymentMethod} className="space-y-4">
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+                      addMethodType === "bank"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setAddMethodType("bank")}
+                    disabled={addMethodLoading}
+                  >
+                    Bank Account
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
+                      addMethodType === "upi"
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setAddMethodType("upi")}
+                    disabled={addMethodLoading}
+                  >
+                    UPI
+                  </button>
                 </div>
 
-                {/* Anniversary Timeline */}
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-3 mb-4 border border-amber-200">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-amber-600">📅</span>
-                    <span className="text-sm font-semibold text-amber-800">
-                      Launch Timeline
-                    </span>
+                {addMethodType === "bank" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        Account Holder Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addFormFields.accountHolderName}
+                        onChange={(e) =>
+                          setAddFormFields((f) => ({
+                            ...f,
+                            accountHolderName: e.target.value,
+                          }))
+                        }
+                        required
+                        disabled={addMethodLoading}
+                        placeholder="John Doe"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addFormFields.bankName}
+                        onChange={(e) =>
+                          setAddFormFields((f) => ({
+                            ...f,
+                            bankName: e.target.value,
+                          }))
+                        }
+                        required
+                        disabled={addMethodLoading}
+                        placeholder="State Bank of India"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        Account Number
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addFormFields.accountNumber}
+                        onChange={(e) =>
+                          setAddFormFields((f) => ({
+                            ...f,
+                            accountNumber: e.target.value,
+                          }))
+                        }
+                        required
+                        disabled={addMethodLoading}
+                        placeholder="1234567890"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        IFSC Code
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={addFormFields.ifsc}
+                        onChange={(e) =>
+                          setAddFormFields((f) => ({
+                            ...f,
+                            ifsc: e.target.value.toUpperCase(),
+                          }))
+                        }
+                        required
+                        disabled={addMethodLoading}
+                        placeholder="SBIN0001234"
+                        maxLength={11}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {addMethodType === "upi" && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1 text-gray-700">
+                      UPI ID
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={addFormFields.upiId}
+                      onChange={(e) =>
+                        setAddFormFields((f) => ({
+                          ...f,
+                          upiId: e.target.value,
+                        }))
+                      }
+                      required
+                      disabled={addMethodLoading}
+                      placeholder="yourname@paytm"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter your UPI ID (e.g., yourname@paytm, phone@upi)
+                    </p>
                   </div>
-                  <p className="text-xs text-amber-700">
-                    <strong>Beta Launch:</strong> October 2025 (Anniversary
-                    Month)
-                    <br />
-                    <strong>Full Release:</strong> November 2025
-                  </p>
+                )}
+
+                <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      setShowAddMethod(false);
+                      setAddFormFields({
+                        bankName: "",
+                        accountNumber: "",
+                        ifsc: "",
+                        accountHolderName: "",
+                        upiId: "",
+                      });
+                    }}
+                    disabled={addMethodLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={addMethodLoading}
+                  >
+                    {addMethodLoading ? (
+                      <span className="flex items-center gap-2">
+                        <LoadingSpinner size="sm" /> Adding...
+                      </span>
+                    ) : (
+                      "Add Method"
+                    )}
+                  </button>
                 </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <button
-                  onClick={() =>
-                    (window.location.href =
-                      "mailto:shivansh.jauhari@gmail.com?subject=Anniversary Payout System - Early Access Request&body=Hi Team,%0A%0AI'm interested in early access to the new Anniversary Payout Dashboard.%0A%0ASeller ID: " +
-                      (user?.uid || "N/A") +
-                      "%0A%0AThank you!")
-                  }
-                  className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 text-white px-4 py-3 rounded-lg hover:from-emerald-700 hover:to-blue-700 transition-all font-semibold shadow-lg"
-                >
-                  🎉 Join Anniversary Beta
-                </button>
-
-                <button
-                  onClick={() => router.push("/seller/milestones")}
-                  className="w-full bg-amber-100 text-amber-800 px-4 py-2 rounded-lg hover:bg-amber-200 transition-colors font-medium text-sm border border-amber-200"
-                >
-                  View Milestone Bonuses Instead
-                </button>
-              </div>
-
-              {/* Footer Note */}
-              <div className="mt-4 p-3 bg-white/60 rounded-lg border border-gray-200/50">
-                <p className="text-xs text-gray-500 text-center">
-                  <span className="text-amber-600 font-semibold">
-                    Anniversary Promise:
-                  </span>{" "}
-                  All existing payouts continue normally. New system adds
-                  features without disrupting current processes.
-                </p>
-              </div>
+              </form>
             </div>
           </div>
         )}

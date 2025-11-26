@@ -145,7 +145,7 @@ export default function Profile() {
       }
     } catch (error) {
       console.error("Error loading user data:", error);
-      notify.error("Failed to load profile data");
+      notify.error("Failed to load profile data", { duration: 3000 });
     } finally {
       setLoading(false);
     }
@@ -158,12 +158,12 @@ export default function Profile() {
 
     // Validate file
     if (file.size > 5 * 1024 * 1024) {
-      notify.error("Image size should be less than 5MB");
+      notify.error("Image size should be less than 5MB", { duration: 3000 });
       return;
     }
 
     if (!file.type.startsWith("image/")) {
-      notify.error("Please select a valid image file");
+      notify.error("Please select a valid image file",{ duration: 3000 });
       return;
     }
 
@@ -229,7 +229,7 @@ export default function Profile() {
       }
     } catch (error) {
       console.error("Error cropping image:", error);
-      notify.error("Failed to crop image");
+      notify.error("Failed to crop image", { duration: 3000 });
     }
   }, [crop, getCroppedImg]);
 
@@ -264,13 +264,15 @@ export default function Profile() {
       const result = await response.json();
       if (result.success) {
         setUserProfile(result.data);
-        notify.success("Profile updated successfully");
+        notify.success("Profile updated successfully", { duration: 3000 });
       } else {
-        notify.error(result.error || "Failed to update profile");
+        notify.error(result.error || "Failed to update profile", {
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Error updating profile:", error);
-      notify.error("Failed to update profile");
+      notify.error("Failed to update profile", { duration: 3000 });
     }
   };
 
@@ -288,7 +290,8 @@ export default function Profile() {
       for (const field of requiredFields) {
         if (!addressForm[field]) {
           notify.error(
-            `Please enter ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`
+            `Please enter ${field.replace(/([A-Z])/g, " $1").toLowerCase()}`,
+            { duration: 3000 }
           );
           return;
         }
@@ -316,10 +319,10 @@ export default function Profile() {
               addr.id === editingAddress.id ? result.data : addr
             )
           );
-          notify.success("Address updated successfully");
+          notify.success("Address updated successfully", { duration: 3000 });
         } else {
           setAddresses((prev) => [...prev, result.data]);
-          notify.success("Address added successfully");
+          notify.success("Address added successfully", { duration: 3000 });
         }
 
         setShowAddAddress(false);
@@ -336,11 +339,13 @@ export default function Profile() {
           isDefault: false,
         });
       } else {
-        notify.error(result.error || "Failed to save address");
+        notify.error(result.error || "Failed to save address", {
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Error saving address:", error);
-      notify.error("Failed to save address");
+      notify.error("Failed to save address", { duration: 3000 });
     }
   };
 
@@ -357,13 +362,15 @@ export default function Profile() {
       const result = await response.json();
       if (result.success) {
         setAddresses((prev) => prev.filter((addr) => addr.id !== addressId));
-        notify.success("Address deleted successfully");
+        notify.success("Address deleted successfully", { duration: 3000 });
       } else {
-        notify.error(result.error || "Failed to delete address");
+        notify.error(result.error || "Failed to delete address", {
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Error deleting address:", error);
-      notify.error("Failed to delete address");
+      notify.error("Failed to delete address", { duration: 3000 });
     }
   };
 
@@ -416,11 +423,13 @@ export default function Profile() {
           ...prev,
           photoURL: uploadResult.secure_url,
         }));
-        notify.success("Profile image updated successfully");
+        notify.success("Profile image updated successfully", {
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error("Error uploading image:", error);
-      notify.error("Failed to upload image");
+      notify.error("Failed to upload image", { duration: 2000 });
     } finally {
       setUploading(false);
     }

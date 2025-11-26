@@ -119,7 +119,7 @@ export default function Checkout() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        notify.error("Please login to checkout");
+        notify.error("Please login to checkout", { duration: 3000 });
         router.push("buyer/auth/login");
       } else {
         setUser(currentUser);
@@ -154,7 +154,7 @@ export default function Checkout() {
     try {
       const checkoutData = sessionStorage.getItem("checkoutData");
       if (!checkoutData) {
-        notify.error("No items to checkout");
+        notify.error("No items to checkout", { duration: 3000 });
         router.push("/products");
         return;
       }
@@ -166,7 +166,7 @@ export default function Checkout() {
      
      
     } catch {
-      notify.error("Failed to load checkout data");
+      notify.error("Failed to load checkout data", { duration: 3000 });
       router.push("/products");
     }
   }
@@ -212,7 +212,7 @@ export default function Checkout() {
       "pincode",
     ]) {
       if (!newAddress[f]) {
-        notify.error(`Please enter ${f}`);
+        notify.error(`Please enter ${f}`, { duration: 3000 });
         return;
       }
     }
@@ -241,12 +241,12 @@ export default function Checkout() {
           pincode: "",
           isDefault: false,
         });
-        notify.success("Address added");
+        notify.success("Address added", { duration: 3000 });
       } else {
-        notify.error(r.error || "Failed to add address");
+        notify.error(r.error || "Failed to add address", { duration: 3000 });
       }
     } catch {
-      notify.error("Failed to add address");
+      notify.error("Failed to add address", { duration: 3000 });
     }
   }
 
@@ -399,7 +399,9 @@ export default function Checkout() {
   // Handle Razorpay payment with email integration
   async function handleRazorpayPayment(orderData) {
     if (!razorpayLoaded) {
-      notify.error("Payment system is loading. Please try again.");
+      notify.error("Payment system is loading. Please try again.", {
+        duration: 3000,
+      });
       return;
     }
 
@@ -477,17 +479,23 @@ export default function Checkout() {
 
                 // Clear checkout data and redirect
                 sessionStorage.removeItem("checkoutData");
-                notify.success("Order placed successfully!");
+                notify.success("Order placed successfully!", {
+                  duration: 3000,
+                });
                 router.push(`/order-success?orderId=${orderResult.data.id}`);
               } else {
-                notify.error("Order creation failed after payment");
+                notify.error("Order creation failed after payment", {
+                  duration: 3000,
+                });
               }
             } else {
-              notify.error("Payment verification failed");
+              notify.error("Payment verification failed", { duration: 3000 });
             }
           } catch (error) {
             console.error("Post-payment processing error:", error);
-            notify.error("Payment completed but order processing failed");
+            notify.error("Payment completed but order processing failed", {
+              duration: 3000,
+            });
           } finally {
             setProcessing(false);
           }
@@ -508,7 +516,7 @@ export default function Checkout() {
         modal: {
           ondismiss: function () {
             setProcessing(false);
-            notify.error("Payment cancelled");
+            notify.error("Payment cancelled", { duration: 3000 });
           },
         },
       };
@@ -517,7 +525,9 @@ export default function Checkout() {
       razorpay.open();
     } catch (error) {
       console.error("Razorpay payment error:", error);
-      notify.error(error.message || "Payment initialization failed");
+      notify.error(error.message || "Payment initialization failed", {
+        duration: 3000,
+      });
       setProcessing(false);
     }
   }
@@ -561,20 +571,20 @@ export default function Checkout() {
 
         // Clear checkout data and redirect
         sessionStorage.removeItem("checkoutData");
-        notify.success("Order placed successfully!");
+        notify.success("Order placed successfully!", { duration: 3000 });
         router.push(`/order-success?orderId=${result.data.id}`);
       } else {
-        notify.error(result.error || "Order failed");
+        notify.error(result.error || "Order failed", { duration: 3000 });
       }
     } catch (error) {
       log.error("COD order error:", error);
-      notify.error("Order failed");
+      notify.error("Order failed", { duration: 3000 });
     }
   }
 
   async function handlePlaceOrder() {
     if (!selectedAddressId) {
-      notify.error("Select delivery address");
+      notify.error("Select delivery address", { duration: 3000 });
       return;
     }
 
@@ -618,7 +628,7 @@ export default function Checkout() {
       }
     } catch (error) {
       console.error("Order placement error:", error);
-      notify.error("Order failed");
+      notify.error("Order failed", { duration: 3000 });
       setProcessing(false);
     }
   }
@@ -727,7 +737,7 @@ export default function Checkout() {
         onLoad={() => setRazorpayLoaded(true)}
         onError={() => {
           console.error("Failed to load Razorpay");
-          notify.error("Payment system failed to load");
+          notify.error("Payment system failed to load", { duration: 3000 });
         }}
       />
 

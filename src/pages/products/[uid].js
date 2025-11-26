@@ -219,12 +219,12 @@ export default function ProductDetails() {
           loadRelatedProducts(productResult.data.sellerId, uid);
         }
       } else {
-        notify.error("Product not found");
+        notify.error("Product not found", { duration: 3000 });
         router.push("/products");
       }
     } catch (error) {
       log.error("Error loading product:", error);
-      notify.error("Failed to load product");
+      notify.error("Failed to load product", { duration: 3000 });
       router.push("/products");
     } finally {
       setLoading(false);
@@ -255,7 +255,7 @@ export default function ProductDetails() {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
     if (customImages.length + files.length > 5) {
-      notify.error("Maximum 5 images allowed");
+      notify.error("Maximum 5 images allowed", { duration: 3000 });
       return;
     }
     setUploadingImages(true);
@@ -285,10 +285,15 @@ export default function ProductDetails() {
       });
       const uploadedImages = await Promise.all(uploadPromises);
       setCustomImages((prev) => [...prev, ...uploadedImages]);
-      notify.success(`${uploadedImages.length} image(s) uploaded successfully`);
+      notify.success(
+        `${uploadedImages.length} image(s) uploaded successfully`,
+        { duration: 3000 }
+      );
     } catch (error) {
       log.error("Error uploading images:", error);
-      notify.error(error.message || "Failed to upload images");
+      notify.error(error.message || "Failed to upload images", {
+        duration: 3000,
+      });
     } finally {
       setUploadingImages(false);
     }
@@ -302,7 +307,7 @@ export default function ProductDetails() {
     if (!product?.customizationOptions) return true;
     for (const option of product.customizationOptions) {
       if (option.required && !selectedCustomizations[option.id]) {
-        notify.error(`Please provide ${option.name}`);
+        notify.error(`Please provide ${option.name}`, { duration: 3000 });
         return false;
       }
     }
@@ -311,24 +316,24 @@ export default function ProductDetails() {
 
   const handleBuyNow = () => {
     if (!user) {
-      notify.error("Please login to continue");
+      notify.error("Please login to continue", { duration: 3000 });
       router.push("/buyer/auth/login");
       return;
     }
 
     // Validate variant/set selection
     if (product?.pricingType === "variant" && !selectedSet) {
-      notify.error("Please select a variant");
+      notify.error("Please select a variant", { duration: 3000 });
       return;
     }
     if (product?.pricingType === "set" && !selectedSet) {
-      notify.error("Please select a set");
+      notify.error("Please select a set", { duration: 3000 });
       return;
     }
 
     if (!validateCustomizations()) return;
     if (product.stock < quantity) {
-      notify.error("Insufficient stock");
+      notify.error("Insufficient stock", { duration: 3000 });
       return;
     }
 
@@ -405,7 +410,7 @@ export default function ProductDetails() {
   const toggleWishlist = async () => {
     if (!user) {
       log.info("Random checkout tried");
-      notify.error("Please login to add to wishlist");
+      notify.error("Please login to add to wishlist", { duration: 3000 });
       return;
     }
     try {
@@ -423,12 +428,13 @@ export default function ProductDetails() {
         log.info("user added product in wishlist "+ user.uid.slice(0,5)); //user uid
         setIsWishlisted(!isWishlisted);
         notify.success(
-          isWishlisted ? "Removed from wishlist" : "Added to wishlist"
+          isWishlisted ? "Removed from wishlist" : "Added to wishlist",
+          { duration: 3000 }
         );
       }
     } catch (error) {
       log.error("Error updating wishlist:", error);
-      notify.error("Failed to update wishlist");
+      notify.error("Failed to update wishlist", { duration: 3000 });
     }
   };
 
@@ -445,7 +451,7 @@ export default function ProductDetails() {
       }
     } else {
       navigator.clipboard.writeText(window.location.href);
-      notify.success("Product link copied to clipboard!");
+      notify.success("Product link copied to clipboard!", { duration: 3000 });
     }
   };
 

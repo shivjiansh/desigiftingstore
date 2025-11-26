@@ -145,7 +145,7 @@ async function handleCreateOrder(req, res) {
   if (!Array.isArray(orderData.items) || orderData.items.length === 0) {
     return res.status(400).json({
       success: false,
-      error: 'At least one product is required'
+      error: "At least one product is required",
     });
   }
 
@@ -153,7 +153,7 @@ async function handleCreateOrder(req, res) {
   if (isNaN(orderData.totalAmount) || orderData.totalAmount <= 0) {
     return res.status(400).json({
       success: false,
-      error: 'Total amount must be a positive number'
+      error: "Total amount must be a positive number",
     });
   }
 
@@ -161,49 +161,128 @@ async function handleCreateOrder(req, res) {
   const sellerId = orderData.items[0].sellerId;
   console.log("Seller ID:", sellerId);
 
-
   // Prepare order document
   const newOrder = {
     ...orderData,
-    
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    status: 'pending',
+    status: "pending",
   };
   console.log("New order data before adding system fields:", newOrder);
 
-  // Validate shipping address
-  // const requiredAddressFields = ['name', 'street', 'city', 'state', 'zipCode'];
-  // validateRequiredFields(orderData.shippingAddress, requiredAddressFields);
-
   // Create order in Firestore
-  const orderRef = await adminDb.collection('orders').add(newOrder);
+  const orderRef = await adminDb.collection("orders").add(newOrder);
   console.log("Order created with ID:", orderRef.id);
-  // Update product sales count and seller stats
+
+  // Batch update product sales count and seller stats
   const batch = adminDb.batch();
 
   for (const product of orderData.items) {
-    const productRef = adminDb.collection('products').doc(product.productId);
+    const productRef = adminDb.collection("products").doc(product.productId);
     batch.update(productRef, {
       totalSales: admin.firestore.FieldValue.increment(product.quantity || 1),
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
   }
 
-  // Update seller stats
-  const sellerRef = adminDb.collection('seller').doc(sellerId);
+  const sellerRef = adminDb.collection("seller").doc(sellerId);
   batch.update(sellerRef, {
-    'sellerStats.totalOrders': admin.firestore.FieldValue.increment(1),
-    'sellerStats.totalRevenue': admin.firestore.FieldValue.increment(parseFloat(orderData.totalAmount)),
-    updatedAt: new Date().toISOString()
+    "sellerStats.totalOrders": admin.firestore.FieldValue.increment(1),
+    "sellerStats.totalRevenue": admin.firestore.FieldValue.increment(
+      parseFloat(orderData.totalAmount)
+    ),
+    updatedAt: new Date().toISOString(),
   });
 
   await batch.commit();
 
+  // Handle payment collection
+  const paymentDocRef = adminDb.collection("payments").doc(sellerId);
+  const paymentDoc = await paymentDocRef.get();
+
+  const orderId = orderRef.id;
+  const totalAmount = parseFloat(orderData.totalAmount);
+
+  // Get current day number (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+  const currentDayNumber = new Date().getDay();
+  // Initialize dailyStats with Sunday as day 0
+  const dailyStatsTemplate = [
+    { day: 0, orders: [], sales: 0 }, // Sunday
+    { day: 1, orders: [], sales: 0 }, // Monday
+    { day: 2, orders: [], sales: 0 }, // Tuesday
+    { day: 3, orders: [], sales: 0 }, // Wednesday
+    { day: 4, orders: [], sales: 0 }, // Thursday
+    { day: 5, orders: [], sales: 0 }, // Friday
+    { day: 6, orders: [], sales: 0 }, // Saturday
+  ];
+
+  if (paymentDoc.exists) {
+    const paymentData = paymentDoc.data();
+    const updatedDailyStats = paymentData.dailyStats
+      ? [...paymentData.dailyStats]
+      : dailyStatsTemplate;
+
+    // Find the day index for today using currentDayNumber (0–6)
+    const dayIndex = updatedDailyStats.findIndex(
+      (item) => item.day === currentDayNumber
+    );
+
+    if (dayIndex !== -1) {
+      // Append new order info
+      updatedDailyStats[dayIndex].orders.push({ orderId, sales: totalAmount });
+      // Add sales amount to the day's total
+      updatedDailyStats[dayIndex].sales += totalAmount;
+    }
+
+    // Base update payload
+    const updateData = {
+      totalSales: admin.firestore.FieldValue.increment(totalAmount),
+      dailyStats: updatedDailyStats,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Only update cod field if this is a COD order (paymentStatus === "pending")
+    if (orderData.paymentStatus === "pending") {
+      updateData.cod = admin.firestore.FieldValue.increment(totalAmount);
+    }
+
+    await paymentDocRef.update(updateData);
+  } else {
+    // Create new payment doc with initialized dailyStats
+    const initDailyStats = dailyStatsTemplate.map((dayStat) => ({
+      day: dayStat.day,
+      orders: [],
+      sales: 0,
+    }));
+
+    const dayIndex = currentDayNumber;
+
+    // Add today’s order
+    initDailyStats[dayIndex].orders.push({ orderId, sales: totalAmount });
+    initDailyStats[dayIndex].sales = totalAmount;
+
+    // Base data for new doc
+    const newDocData = {
+      sellerId,
+      totalSales: totalAmount,
+      dailyStats: initDailyStats,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Only add cod field if this is a COD order
+    if (orderData.paymentStatus === "pending") {
+      newDocData.cod = totalAmount; // first COD amount for this seller
+    }
+
+    await paymentDocRef.set(newDocData);
+  }
+
   const createdOrder = { id: orderRef.id, ...newOrder };
 
-  sendSuccess(res, createdOrder, 'Order created successfully', 201);
+  sendSuccess(res, createdOrder, "Order created successfully", 201);
 }
+
 
 // Helper function to generate order number
 function generateOrderNumber() {

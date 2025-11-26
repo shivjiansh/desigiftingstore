@@ -997,33 +997,35 @@ let description =
             </div>
 
             {/* Trust bar (optional, boosts credibility) */}
-            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-500">
-              <div className="inline-flex items-center gap-2 justify-between">
+            <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-4 text-xs sm:text-sm text-gray-600">
+              <div className="inline-flex items-center gap-2">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
                   <path
                     fill="currentColor"
                     d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
                   />
                 </svg>
-                <span>Trusted by 10k+ shoppers</span>
+                <span>Secure & Verified Checkout</span>
               </div>
-              <div className="inline-flex items-center gap-2 justify-between">
+
+              <div className="inline-flex items-center gap-2">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
                   <path
                     fill="currentColor"
                     d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
                   />
                 </svg>
-                <span>Completed over 18k orders successfully</span>
+                <span>On-Time Delivery Guarantee</span>
               </div>
-              <div className="inline-flex items-center gap-2 justify-between">
+
+              <div className="inline-flex items-center gap-2">
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600">
                   <path
                     fill="currentColor"
                     d="M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.5-1.5z"
                   />
                 </svg>
-                <span>24/7 support for order tracking and delivery</span>
+                <span>24/7 Support & Hassle-Free Assistance</span>
               </div>
             </div>
           </header>
