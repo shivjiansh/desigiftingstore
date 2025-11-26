@@ -197,13 +197,14 @@ export default function SellerOrders() {
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
   const [sellerLatestReplyMessage,setLatestSellerMsg] = useState("");
+  const [sellerLastMsg, setSellerLastMsg] = useState("");
 
   // Local shipping/fulfillment input state
   const [carrier, setCarrier] = useState("");
   const [trackingId, setTrackingId] = useState("");
   const [buyerMessage, setBuyerMessage] = useState("");
   const [expectedDelivery, setExpectedDelivery] = useState("");
-const [sellerReplyMessage, setSellerReplyMessage] = useState("");
+  const [sellerReplyMessage, setSellerReplyMessage] = useState("");
 
 
   const scrollToTop = () => {
@@ -466,14 +467,24 @@ const [sellerReplyMessage, setSellerReplyMessage] = useState("");
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          message: message.trim(),
+          sellerLatestMessage: {
+            text: message.trim(),
+            createdAt: new Date().toISOString(),
+          },
         }),
       });
+
 
       const data = await res.json();
       if (data.success) {
         toast.success("Message sent to customer!");
         setLatestSellerMsg(sellerReplyMessage);
+         const newMsgObj = {
+           text: sellerReplyMessage.trim(),
+           createdAt: new Date().toISOString(),
+           sender: "seller",
+         };
+         setSellerLastMsg(newMsgObj);
         setSellerReplyMessage("");
         // Refresh orders to show updated message
         fetchOrders();
@@ -877,94 +888,99 @@ const [sellerReplyMessage, setSellerReplyMessage] = useState("");
                   </div>
                 </section>
 
-                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6">
-                  <div className="px-5 py-4 border-b border-gray-100">
+                <section className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6 flex flex-col h-[480px] max-w-md mx-auto">
+                  <header className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">
                       Messages
                     </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Communication with customer
+                    <span>
+                    <p className="text-sm text-gray-500">
+                      Anything for customer?
                     </p>
-                  </div>
+                    </span>
+                  </header>
 
-                  <div className="p-5">
-                    <div className="mt-5">
-                      {/* Display customer's Latest Message */}
-                      <div className="mb-6">
-                        <label className="block text-sm font-medium text-gray-900 mb-2">
-                          Message from customer
-                        </label>
-                        {selected.buyerLatestMessage ? (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-800">
-                              {selected.buyerLatestMessage}
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-500 italic">
-                              No messages from customer yet
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Seller's Reply */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">
-                          Your Reply to customer
-                        </label>
-                        <textarea
-                          value={sellerReplyMessage}
-                          onChange={(e) =>
-                            setSellerReplyMessage(e.target.value)
-                          }
-                          disabled={updating}
-                          placeholder="e.g., 'Thank you for reaching out! Your order has been dispatched and will arrive within 2-3 business days. Track your package using the link above.'"
-                          maxLength={500}
-                          rows={3}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none"
-                        />
-                        <div className="mt-2 flex items-center justify-between">
-                          <p className="text-xs text-gray-500">
-                            This message will be visible to the customer in their
-                            order details.
-                          </p>
-                          <span className="text-xs text-gray-400">
-                            {sellerReplyMessage.length || 0}/500
-                          </span>
-                        </div>
-
-                        <div className="mt-3 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              saveSellerMessage(selected.id, sellerReplyMessage)
+                  <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
+                    {
+                      // Combine both messages, sort by createdAt
+                      [
+                        selected.buyerLatestMessage
+                          ? { ...selected.buyerLatestMessage, sender: "buyer" }
+                          : null,
+                        selected.sellerLatestMessage
+                          ? {
+                              ...selected.sellerLatestMessage,
+                              sender: "seller",
                             }
-                            disabled={updating || !sellerReplyMessage.trim()}
-                            className="px-4 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                          : null,
+                          sellerLastMsg
+                      ]
+                        .filter(Boolean)
+                        .sort(
+                          (a, b) =>
+                            new Date(a.createdAt) - new Date(b.createdAt)
+                        )
+                        .map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex ${
+                              msg.sender === "buyer"
+                                ? "justify-start"
+                                : "justify-end"
+                            }`}
                           >
-                            Send Reply
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Display Your Latest Message */}
-                      {selected.sellerLatestMessage && (
-                        <div className="mt-6 pt-6 border-t border-gray-200">
-                          <label className="block text-sm font-medium text-gray-900 mb-2">
-                            Your Last Message
-                          </label>
-                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-800">
-                              {sellerLatestReplyMessage ||
-                                selected.sellerLatestMessage}
-                            </p>
+                            <div
+                              className={`max-w-xs break-words px-4 py-2 rounded-lg shadow ${
+                                msg.sender === "buyer"
+                                  ? "bg-blue-500 text-white rounded-bl-none"
+                                  : "bg-emerald-500 text-white rounded-br-none"
+                              }`}
+                            >
+                              <div>{msg.text}</div>
+                              {msg.createdAt && (
+                                <div
+                                  className={`text-xs mt-2 ${
+                                    msg.sender === "buyer"
+                                      ? "text-blue-200"
+                                      : "text-emerald-200"
+                                  }`}
+                                >
+                                  {new Date(msg.createdAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        ))
+                    }
                   </div>
+
+                  {/* Reply input box */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (sellerReplyMessage.trim()) {
+                        saveSellerMessage(selected.id, sellerReplyMessage);
+                      }
+                    }}
+                    className="border-t border-gray-100 px-4 py-3 bg-white flex items-center space-x-3"
+                  >
+                    <textarea
+                      value={sellerReplyMessage}
+                      onChange={(e) => setSellerReplyMessage(e.target.value)}
+                      disabled={updating}
+                      placeholder="Type your reply..."
+                      maxLength={500}
+                      rows={1}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <button
+                      type="submit"
+                      disabled={updating || !sellerReplyMessage.trim()}
+                      className="flex-none bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-full px-4 py-2 text-white text-sm font-semibold"
+                    >
+                      Send
+                    </button>
+                  </form>
                 </section>
 
                 {/* Customer Information */}

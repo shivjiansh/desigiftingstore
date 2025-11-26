@@ -181,7 +181,6 @@ function StatusTimeline({ currentStatus }) {
   );
 }
 
-
 export default function MyOrders() {
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
@@ -191,9 +190,9 @@ export default function MyOrders() {
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [showCustom, setShowCustom] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
-const [buyerReplyMessage, setBuyerReplyMessage] = useState("");
-const [sendingReply, setSendingReply] = useState(false);
-
+  const [buyerReplyMessage, setBuyerReplyMessage] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
+  const [buyerLastMsg, setBuyerLastMsg] = useState(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -312,14 +311,24 @@ const [sendingReply, setSendingReply] = useState(false);
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          message: buyerReplyMessage,
+          buyerLatestMessage: {
+            text: buyerReplyMessage,
+            createdAt: new Date().toISOString(),
+          },
         }),
       });
 
       const data = await res.json();
       if (data.success) {
         toast.success("Message sent!");
-        setBuyerReplyMessage("");
+         const newMsgObj = {
+           text: buyerReplyMessage,
+           createdAt: new Date().toISOString(),
+           sender: "buyer",
+         };
+         setBuyerLastMsg(newMsgObj); // update last sent message
+         setBuyerReplyMessage("");
+        
         // Update local state
         setSelectedOrder({
           ...selectedOrder,
@@ -337,12 +346,13 @@ const [sendingReply, setSendingReply] = useState(false);
     }
   }
 
-
   const viewOrderDetails = (order) => {
     setSelectedOrder(order);
     setShowOrderDetails(true);
     setShowCustom(true);
   };
+
+
 
   const closeOrderDetails = () => {
     setSelectedOrder(null);
@@ -561,7 +571,6 @@ const [sendingReply, setSendingReply] = useState(false);
                 <section>
                   <StatusTimeline currentStatus={selectedOrder.status} />
                 </section>
-
                 {/* Items */}
                 <section>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -635,7 +644,6 @@ const [sendingReply, setSendingReply] = useState(false);
                     </ul>
                   </div>
                 </section>
-
                 {/* Customizations */}
                 <section>
                   <CustomizationsView
@@ -648,7 +656,6 @@ const [sendingReply, setSendingReply] = useState(false);
                     }
                   />
                 </section>
-
                 {/* Delivery Address */}
                 <section>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -674,7 +681,6 @@ const [sendingReply, setSendingReply] = useState(false);
                     </address>
                   </div>
                 </section>
-
                 {/* Shipping */}
                 <section>
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
@@ -751,77 +757,102 @@ const [sendingReply, setSendingReply] = useState(false);
                     )}
                   </div>
                 </section>
-
                 {/* Message from Seller */}
                 {selectedOrder && (
-                  <section>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Messages
-                    </h3>
-
-                    <div className="space-y-4">
-                      {/* Seller Message */}
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                          From Seller
+                  <section className="bg-white rounded-2xl border border-gray-200 shadow-sm mt-6 flex flex-col max-w-md mx-auto h-[480px]">
+                    <header className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Messages
+                      </h3>
+                      <spam>
+                        <p className="text-sm text-gray-500">
+                          Anything for seller?
                         </p>
-                        {selectedOrder.sellerLatestMessage ? (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-800">
-                              {selectedOrder.sellerLatestMessage}
-                            </p>
-                            
-                          </div>
-                        ) : (
-                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-500 italic">
-                              No messages from seller yet
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      </spam>
+                    </header>
 
-                      {/* Buyer Reply */}
-                      <div>
-                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                          Your Message
-                        </p>
-                        <div className="space-y-3">
-                          <textarea
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                            placeholder="Type your message..."
-                            rows="3"
-                            value={buyerReplyMessage}
-                            onChange={(e) =>
-                              setBuyerReplyMessage(e.target.value)
+                    <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50">
+                      {[
+                        selectedOrder.sellerLatestMessage
+                          ? {
+                              ...selectedOrder.sellerLatestMessage,
+                              sender: "seller",
                             }
-                            disabled={sendingReply}
-                          />
-                          <button
-                            onClick={handleSendMessage}
-                            disabled={!buyerReplyMessage.trim() || sendingReply}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg font-medium text-sm transition"
+                          : null,
+                        selectedOrder.buyerLatestMessage
+                          ?.text? {
+                              ...selectedOrder.buyerLatestMessage,
+                              sender: "buyer",
+                            }
+                          : null,
+                        buyerLastMsg
+                      ]
+                        .filter(Boolean)
+                        .sort(
+                          (a, b) =>
+                            new Date(a.createdAt) - new Date(b.createdAt)
+                        )
+                        .map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex ${
+                              msg.sender === "buyer"
+                                ? "justify-end"
+                                : "justify-start"
+                            }`}
                           >
-                            {sendingReply ? "Sending..." : "Send Message"}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Buyer's Latest Message Display */}
-                      {selectedOrder.buyerLatestMessage && (
-                        <div>
-                          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-                            Your Last Message
-                          </p>
-                          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                            <p className="text-sm text-gray-800">
-                              {selectedOrder.buyerLatestMessage}
-                            </p>
-                            
+                            <div
+                              className={`max-w-xs break-words p-4 rounded-lg shadow
+                ${
+                  msg.sender === "buyer"
+                    ? "bg-emerald-500 text-white rounded-br-none"
+                    : "bg-blue-500 text-white rounded-bl-none"
+                }`}
+                            >
+                              <div>{msg.text}</div>
+                              {msg.createdAt && (
+                                <div
+                                  className={`text-xs mt-2 ${
+                                    msg.sender === "buyer"
+                                      ? "text-emerald-200"
+                                      : "text-blue-200"
+                                  }`}
+                                >
+                                  {new Date(msg.createdAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        ))}
                     </div>
+
+                    {/* Buyer reply input */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (buyerReplyMessage.trim()) {
+                          handleSendMessage();
+                        }
+                      }}
+                      className="border-t border-gray-100 px-4 py-3 bg-white flex items-center space-x-3"
+                    >
+                      <textarea
+                        placeholder="Type your message..."
+                        maxLength={500}
+                        rows={1}
+                        value={buyerReplyMessage}
+                        onChange={(e) => setBuyerReplyMessage(e.target.value)}
+                        disabled={sendingReply}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-full text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!buyerReplyMessage.trim() || sendingReply}
+                        className="flex-none bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-full font-semibold text-sm transition"
+                      >
+                        {sendingReply ? "Sending..." : "Send"}
+                      </button>
+                    </form>
                   </section>
                 )}
               </div>
