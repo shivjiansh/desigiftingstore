@@ -8,6 +8,7 @@ import { toast } from "react-hot-toast";
 import { useSellerStore } from "../../stores/sellerStore";
 import { CheckCircleIcon, ClockIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
+import Notifications from "../Notifications.js";
 
 export default function SellerLayout({ children }) {
   const [user] = useAuthState(auth);
@@ -312,36 +313,37 @@ export default function SellerLayout({ children }) {
       </div>
 
       {/* Right column: shift only when sidebar is open */}
-      <div
-        className={`${
-          sidebarOpen ? "pl-64" : ""
-        } flex flex-col min-h-screen transition-[padding] duration-300`}
-      >
+      <div className="flex flex-col min-h-screen">
         {/* Header with universal toggle */}
         <header className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center justify-between h-16">
-              <button
-                onClick={() => setSidebarOpen((o) => !o)}
-                className="inline-flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 font-medium"
-                aria-label="Toggle sidebar"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div>
+                <button
+                  onClick={() => setSidebarOpen((o) => !o)}
+                  className="inline-flex items-center space-x-2 px-3 py-2 text-gray-700 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 font-medium"
+                  aria-label="Toggle sidebar"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-                <span className="hidden sm:inline text-2xl">Seller Studio</span>
-              </button>
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
 
+                  <span className="hidden sm:inline text-2xl">
+                    Seller Studio
+                  </span>
+                </button>
+                <Notifications />
+              </div>
               <div className="flex items-center gap-2 my-4">
                 <div className="w-10 h-10 relative overflow-hidden rounded-lg">
                   <Image

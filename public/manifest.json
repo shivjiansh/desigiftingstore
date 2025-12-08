@@ -5,7 +5,7 @@
   "start_url": "/products",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "theme_color": "#10b981", 
   "icons": [
     {
       "src": "/images/icon-192.png",
@@ -18,9 +18,8 @@
       "type": "image/png"
     }
   ],
-    "serviceworker": {                       
-    "src": "/my-service-worker.js",
-    "scope": "/products",
-    "type": "classic"
+  "serviceworker": {                 
+    "src": "/sw.js",              
+    "scope": "/"                  
   }
 }

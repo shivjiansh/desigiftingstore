@@ -1302,7 +1302,7 @@ export default function SellerProducts() {
       <SellerLayout>
         <div className="min-h-screen bg-gray-50">
           {/* HEADER */}
-          <div className="bg-white shadow-sm border-b sticky top-0 z-30">
+          <div className="bg-white shadow-sm border-b top-0 z-30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex justify-between items-center py-4 sm:py-6">
                 <div>

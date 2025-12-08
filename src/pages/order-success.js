@@ -8,6 +8,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { CheckCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { notify } from "../lib/notifications";
+import { sendNotification } from "../lib/sendNotification";
+
 
 export default function OrderSuccess() {
   const router = useRouter();
@@ -17,6 +19,7 @@ export default function OrderSuccess() {
 
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null); // ✅ Add user state
 
   // single fetchOrder used by auth listener
   const fetchOrder = async (user) => {
@@ -26,6 +29,7 @@ export default function OrderSuccess() {
 
     try {
       const idToken = await user.getIdToken();
+      setCurrentUser(user);
       const res = await fetch(`/api/orders?id=${orderId}`, {
         method: "GET",
         headers: {
@@ -43,6 +47,18 @@ export default function OrderSuccess() {
       console.log("Fetch order result:", result);
       if (result?.success && mounted) {
         setOrder(result.data);
+        // Usage examples (same as before)
+
+        await sendNotification(
+          result.data.sellerId,
+          "order",
+          "Order received",
+          `You have received a new order <b>DG-${result.data.id.slice(
+            0,
+            8
+          )}</b> from ${result.data.buyerName.trim().split(" ")[0]}, waiting for you confirmation`,
+          "https://www.desigifting.store/seller/orders"
+        );
       } else {
         // If API responded but success false, clear order (keeps not-found UI)
         if (mounted) setOrder(null);
@@ -85,7 +101,6 @@ export default function OrderSuccess() {
       // call fetchOrder; it will handle loading and minimum-duration
       fetchOrder(currentUser);
     });
-
     return () => {
       isMounted = false;
       unsubscribe();

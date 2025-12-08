@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import SellerLayout from "../../components/seller/SellerLayout";
+import { sendNotification } from "../../lib/sendNotification";
 import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
@@ -196,7 +197,7 @@ export default function SellerOrders() {
   const [modalOpen, setModalOpen] = useState(false);
   const [updating, setUpdating] = useState(false);
   const router = useRouter();
-  const [sellerLatestReplyMessage,setLatestSellerMsg] = useState("");
+  const [sellerLatestReplyMessage, setLatestSellerMsg] = useState("");
   const [sellerLastMsg, setSellerLastMsg] = useState("");
 
   // Local shipping/fulfillment input state
@@ -205,7 +206,6 @@ export default function SellerOrders() {
   const [buyerMessage, setBuyerMessage] = useState("");
   const [expectedDelivery, setExpectedDelivery] = useState("");
   const [sellerReplyMessage, setSellerReplyMessage] = useState("");
-
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -281,7 +281,6 @@ export default function SellerOrders() {
     setExpectedDelivery(selected.expectedDelivery || "");
   }, [modalOpen, selected]);
 
-
   //arrange in desc order
   const fetchOrders = async (sellerId) => {
     setLoading(true);
@@ -324,9 +323,22 @@ export default function SellerOrders() {
           setSelected({ ...selected, status: newStatus });
         }
         toast.success(`Order status updated to ${newStatus}`);
+        await sendNotification(
+          selected.userId,
+          "message",
+          "Update", //customer name
+          `The status of your order <b>DG-${selected.id.slice(
+            0,
+            8
+          )}</b> has been updated to <b>${
+            selected.status
+          }</b>, your delivery is proceeding as scheduled.`,
+          "https://www.desigifting.store/orders"
+        );
       } else {
         throw new Error(result.error);
       }
+      
     } catch (error) {
       console.error("Update failed:", error);
       toast.error("Failed to update status");
@@ -359,7 +371,7 @@ export default function SellerOrders() {
       });
 
       if (!res.ok) throw new Error("Failed to update delivery date");
-
+      
       const result = await res.json();
       if (result.success) {
         setOrders((prev) =>
@@ -371,9 +383,24 @@ export default function SellerOrders() {
           setSelected({ ...selected, expectedDelivery: expectedDate });
         }
         toast.success("Expected delivery date updated");
+        
       } else {
         throw new Error(result.error);
       }
+      await sendNotification(
+        selected.userId,
+        "message",
+        "Update", //customer name
+        `Your order <b>DG-${selected.id.slice(
+          0,
+          8
+        )}</b> is arriving by <b>${new Date(selected.expectedDelivery).toLocaleDateString("en-US", {
+  month: "long",
+  day: "2-digit",
+  year: "numeric",
+})}</b>`,
+        "https://www.desigifting.store/orders"
+      );
     } catch (error) {
       console.error("Update failed:", error);
       toast.error(error.message || "Failed to update delivery date");
@@ -400,7 +427,6 @@ export default function SellerOrders() {
         body: JSON.stringify({
           carrier: carrier || "other",
           trackingId: trackingId.trim(),
-         
         }),
       });
 
@@ -415,7 +441,6 @@ export default function SellerOrders() {
                   ...o,
                   carrier,
                   trackingId: trackingId.trim(),
-                  
                 }
               : o
           )
@@ -425,10 +450,20 @@ export default function SellerOrders() {
             ...selected,
             carrier,
             trackingId: trackingId.trim(),
-            
           });
         }
         toast.success("Shipping updated");
+        await sendNotification(
+          selected.userId,
+          "message",
+          "Update", //customer name
+          `Good news! Your order <b>DG-${selected.id.slice(
+            0,
+            8
+          )}</b> is on its way. Track your shipment now.`,
+
+          "https://www.desigifting.store/orders"
+        );
       } else {
         throw new Error(result.error);
       }
@@ -474,17 +509,26 @@ export default function SellerOrders() {
         }),
       });
 
-
       const data = await res.json();
       if (data.success) {
         toast.success("Message sent to customer!");
         setLatestSellerMsg(sellerReplyMessage);
-         const newMsgObj = {
-           text: sellerReplyMessage.trim(),
-           createdAt: new Date().toISOString(),
-           sender: "seller",
-         };
-         setSellerLastMsg(newMsgObj);
+        console.log("message sent kiya seller ne",selected);
+        const newMsgObj = {
+          text: sellerReplyMessage.trim(),
+          createdAt: new Date().toISOString(),
+          sender: "seller",
+        };
+        setSellerLastMsg(newMsgObj);
+        await sendNotification(
+          selected.userId,
+          "message",
+          "Message", //customer name
+          `You received a new message from ${
+            selected?.businessName?.trim() || "Seller"
+          } regarding your order <b>DG-${selected.id.slice(0, 8)}</b>`,
+          "https://www.desigifting.store/orders"
+        );
         setSellerReplyMessage("");
         // Refresh orders to show updated message
         fetchOrders();
@@ -498,8 +542,6 @@ export default function SellerOrders() {
       setUpdating(false);
     }
   }
-
-
 
   const getStatusColor = (status) => {
     const statusOption = statusOptions.find((opt) => opt.value === status);
@@ -894,9 +936,9 @@ export default function SellerOrders() {
                       Messages
                     </h3>
                     <span>
-                    <p className="text-sm text-gray-500">
-                      Anything for customer?
-                    </p>
+                      <p className="text-sm text-gray-500">
+                        Anything for customer?
+                      </p>
                     </span>
                   </header>
 
@@ -913,7 +955,7 @@ export default function SellerOrders() {
                               sender: "seller",
                             }
                           : null,
-                          sellerLastMsg
+                        sellerLastMsg,
                       ]
                         .filter(Boolean)
                         .sort(

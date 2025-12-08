@@ -10,6 +10,7 @@ import {
   Bars3Icon as MenuIcon,
   XMarkIcon as XIcon,
 } from "@heroicons/react/24/outline";
+import Notification from "./Notifications.js"; // Add this import
 
 export default function Header() {
   const [user] = useAuthState(auth);
@@ -25,12 +26,12 @@ export default function Header() {
     setIsSeller(sessionStorage.getItem("isSeller") === "1");
   }, []);
 
-    useEffect(() => {
-      if (typeof window === "undefined") return;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-      const role = localStorage.getItem("isSeller");
-      setIsSeller(role === "1");
-    }, []);
+    const role = localStorage.getItem("isSeller");
+    setIsSeller(role === "1");
+  }, []);
 
   const handleSignOut = async () => {
     try {
@@ -145,11 +146,9 @@ export default function Header() {
           {/* Actions */}
           <div className="flex items-center space-x-4">
             {user ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen((open) => !open)}
-                  className="flex items-center space-x-3 text-gray-600 hover:text-emerald-600 transition-colors"
-                >
+              <div className="flex items-center space-x-2">
+                {/* User avatar/name + Notification - Large screen */}
+                <div className="hidden sm:flex items-center space-x-3 text-gray-600 hover:text-emerald-600 transition-colors">
                   {user.photoURL ? (
                     <div className="w-8 h-8 rounded-full overflow-hidden">
                       <Image
@@ -169,13 +168,43 @@ export default function Header() {
                       </span>
                     </div>
                   )}
-
-                  <span className="font-medium hidden sm:inline">
+                  <span className="font-medium">
                     {user.displayName
                       ? user.displayName.split(" ")[0]
                       : "Buyer"}
                   </span>
-                </button>
+                  <Notification />{" "}
+                  {/* Added here for large screen */}
+                </div>
+
+                {/* User avatar only + Notification - Mobile screen */}
+                <div className="sm:hidden flex items-center space-x-2 relative">
+                  <button
+                    onClick={() => setUserMenuOpen((open) => !open)}
+                    className="flex items-center space-x-3 text-gray-600 hover:text-emerald-600 transition-colors"
+                  >
+                    {user.photoURL ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden">
+                        <Image
+                          src={user.photoURL}
+                          alt={user.displayName || "User"}
+                          width={32}
+                          height={32}
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 bg-emerald-400 rounded-full flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">
+                          {user?.displayName?.charAt(0)?.toUpperCase() ||
+                            user?.email?.charAt(0)?.toUpperCase() ||
+                            "U"}
+                        </span>
+                      </div>
+                    )}
+                  </button>
+                  <Notification /> {/* Added here for mobile */}
+                </div>
               </div>
             ) : (
               <div className="hidden md:flex space-x-4 py-2 ">

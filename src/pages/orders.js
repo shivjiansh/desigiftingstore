@@ -4,6 +4,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../lib/firebase";
+import { sendNotification } from "../lib/sendNotification";
 import { toast } from "react-hot-toast";
 import {
   ChevronUpIcon,
@@ -327,6 +328,20 @@ export default function MyOrders() {
            sender: "buyer",
          };
          setBuyerLastMsg(newMsgObj); // update last sent message
+        //  console.log(JSON.stringify(selectedOrder.sellerId,0,2));
+         
+         await sendNotification(
+           selectedOrder.sellerId,
+           "message",
+           "Message", //customer name
+           `You received a new message from ${
+             selectedOrder?.buyerName?.trim()?.split(" ")?.[0] || "Buyer"
+           } regarding Order <b>DG-${selectedOrder.id.slice(
+             0,
+             8
+           )}</b>`,
+           "https://www.desigifting.store/seller/orders"
+         );
          setBuyerReplyMessage("");
         
         // Update local state

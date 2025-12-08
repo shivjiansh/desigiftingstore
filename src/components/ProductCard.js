@@ -385,7 +385,7 @@ export default function ProductCard({ product, className = "" }) {
             {product.status === "active" && (
               <>
                 <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
-                <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
                   In Stock
                 </span>
               </>
@@ -393,20 +393,20 @@ export default function ProductCard({ product, className = "" }) {
             {product.status === "fewleft" && (
               <>
                 <ExclamationTriangleIcon className="w-4 h-4 text-yellow-600" />
-                <span className="text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
+                <span className="text-[11px] text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
                   Few Left
                 </span>
               </>
             )}
             {product.status === "inactive" && (
-              <span className="text-red-600 bg-red-50 px-2 py-1 rounded-full">
+              <span className="text-[11px] text-red-600 bg-red-50 px-2 py-1 rounded-full">
                 Unavailable
               </span>
             )}
           </div>
 
           {savings && (
-            <span className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">
+            <span className=" text-[12px] px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">
               Save ₹{savings}
             </span>
           )}

@@ -58,15 +58,10 @@ export default function Footer() {
 
   const footerLinks = {
     shop: [
+      { name: "About Us", href: "/aboutus" },
       { name: "All Products", href: "/products" },
       { name: "Personalized Gifts", href: "/products" },
       { name: "Best Sellers", href: "/sellers" },
-      { name: "Gift Ideas", href: "/products" },
-    ],
-    company: [
-      { name: "About Us", href: "/products" },
-      { name: "Contact", href: "/products" },
-      { name: "Blog", href: "/products" },
     ],
     support: [
       { name: "Help Center", href: "/help" },
