@@ -57,20 +57,22 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/products" className="flex items-center space-x-2">
+          <Link href="/products" className="flex items-center space-x-1">
             <div className="w-10 h-10 relative overflow-hidden rounded-lg">
               <Image
-                src="/images/logo1.png"
+                src="/images/dglogo.png"
                 alt="DesiGifting Logo"
                 width={100}
                 height={100}
                 style={{ objectFit: "contain" }}
               />
             </div>
-            <span className="text-2xl font-bold text-gray-700 tracking-tight leading-none">
+            
+            <span className="text-2xl font-bold text-gray-750 tracking-tight leading-none">
               DesiGifting
             </span>
           </Link>
+          
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center space-x-6">
@@ -173,8 +175,7 @@ export default function Header() {
                       ? user.displayName.split(" ")[0]
                       : "Buyer"}
                   </span>
-                  <Notification />{" "}
-                  {/* Added here for large screen */}
+                  <Notification /> {/* Added here for large screen */}
                 </div>
 
                 {/* User avatar only + Notification - Mobile screen */}

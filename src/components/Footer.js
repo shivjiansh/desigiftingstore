@@ -94,9 +94,9 @@ export default function Footer() {
         <div className="flex flex-col md:grid md:grid-cols-3 lg:grid-cols-6 gap-6">
           {/* Brand/About */}
           <div className="flex flex-col gap-3 md:col-span-2">
-            <Link href="/products" className="flex items-center gap-2 mb-2">
+            <Link href="/products" className="flex items-center gap-1 mb-2">
               <Image
-                src="/images/logo1.png"
+                src="/images/dglogo.png"
                 alt="DesiGifting Logo"
                 width={40}
                 height={40}
