@@ -675,7 +675,6 @@ export default function ProductDetails() {
                           <button
                             key={variantId}
                             onClick={() => {
-                              
                               setSelectedSet(variantId);
                               setQuantity(1);
                             }}
@@ -739,6 +738,9 @@ export default function ProductDetails() {
                     {product.stock > 0 && (
                       <p className="text-green-600 text-sm">✔️ In stock</p>
                     )}
+                    <div className="mb-2 text-sm text-orange-700">
+                      🚚 Dispatches within {product.processingTime}
+                    </div>
                     {product.stock === 0 && (
                       <p className="text-red-600 text-sm">❌ Out of Stock</p>
                     )}

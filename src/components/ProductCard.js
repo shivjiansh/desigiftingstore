@@ -336,80 +336,77 @@ export default function ProductCard({ product, className = "" }) {
       </div>
 
       {/* INFO */}
-      <div className="p-3 flex flex-col flex-1">
-        <h3
-          className="text-sm font-medium text-gray-800 line-clamp-2 cursor-pointer"
-          onClick={goToProduct}
-        >
-          {product.name}
-        </h3>
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
+        {/* NAME + BRAND + RATING */}
+        <div className="space-y-1.5">
+          <h4
+            onClick={goToProduct}
+            className="line-clamp-2 text-sm font-semibold tracking-tight text-slate-900 cursor-pointer hover:text-emerald-600 transition-colors"
+          >
+            {product.name}
+          </h4>
 
-        <p className="text-[11px] text-gray-500 line-clamp-2 my-1">
-          {product.description}
-        </p>
-
-        {product.businessName && (
-          <p className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 w-max rounded-full">
-            by {product.businessName}
-          </p>
-        )}
-
-        {/* PRICES */}
-        <div className="flex items-center space-x-2 mt-2">
-          {isSimple ? (
-            isOfferLive ? (
-              <>
-                <span className="text-lg font-bold text-emerald-600">
-                  ₹{offerPrice}
+          {/* PRICE */}
+          <div className="mt-2 flex items-baseline gap-2">
+            {isSimple ? (
+              isOfferLive ? (
+                <>
+                  <span className="text-lg font-semibold text-emerald-600">
+                    ₹{offerPrice}
+                  </span>
+                  <span className="text-xs text-slate-400 line-through">
+                    ₹{originalPrice}
+                  </span>
+                </>
+              ) : (
+                <span className="text-lg font-semibold text-slate-900">
+                  ₹{product.price}
                 </span>
-                <span className="text-sm text-gray-400 line-through">
-                  ₹{originalPrice}
-                </span>
-              </>
+              )
             ) : (
-              <span className="text-lg font-bold">₹{product.price}</span>
-            )
-          ) : (
-            <>
-              <span className="text-[10px] text-gray-600">From</span>
-              <span className="text-lg font-bold text-gray-900">
+              <span className="text-lg font-semibold text-slate-900">
                 {rangeText}
               </span>
-            </>
-          )}
+            )}
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {product.businessName && (
+              <div className="space-y-1">
+                {/* Brand pill */}
+                <p className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-medium text-emerald-700">
+                  {product.businessName}
+                </p>
+
+                {/* Rating line: 4.5 ★★★★★ (191) */}
+                <div className="inline-flex items-center gap-1 text-[11px] text-slate-600">
+                  <span className="font-semibold text-slate-900">4.5</span>
+                  <span className="text-amber-400">★★★★★</span>
+                  <span className="text-[10px] text-slate-500">(191)</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* STOCK + SAVINGS */}
-        <div className="mt-auto flex justify-between text-xs">
-          <div className="flex items-center gap-1">
-            {product.status === "active" && (
-              <>
-                <CheckCircleIcon className="w-4 h-4 text-emerald-600" />
-                <span className="text-[10px] text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
-                  In Stock
-                </span>
-              </>
-            )}
+        <div className="mt-3 flex items-center justify-between gap-2 text-[11px]">
+          <div className="flex items-center gap-1.5">
             {product.status === "fewleft" && (
               <>
-                <ExclamationTriangleIcon className="w-4 h-4 text-yellow-600" />
-                <span className="text-[11px] text-yellow-600 bg-yellow-50 px-2 py-1 rounded-full">
-                  Few Left
+                <ExclamationTriangleIcon className="h-3.5 w-3.5 text-amber-500" />
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+                  Few left
                 </span>
               </>
             )}
+
             {product.status === "inactive" && (
-              <span className="text-[11px] text-red-600 bg-red-50 px-2 py-1 rounded-full">
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 font-medium text-rose-600">
                 Unavailable
               </span>
             )}
           </div>
-
-          {savings && (
-            <span className=" text-[12px] px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full">
-              Save ₹{savings}
-            </span>
-          )}
         </div>
       </div>
     </div>
